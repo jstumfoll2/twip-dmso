@@ -1,0 +1,71 @@
+\chapter{INTRODUCTION}
+\label{ch:intro}
+
+\section{TWO WHEELED INVERTED PENDULUM}
+
+The two-wheeled inverted pendulum (TWIP) is a mobile robot consisting of a body
+mounted on a single wheel axis, with the center of gravity located above that
+axis. The system is statically unstable and must be actively controlled to
+remain upright, which makes it a convenient laboratory analogue for a broad
+class of unstable, underactuated aerospace systems: it has more degrees of
+freedom than control inputs, it has strongly coupled translational and
+rotational dynamics, and its linearization is valid only in a neighborhood of
+the operating point.
+
+The TWIP is attractive as a testbed for three reasons. First, its dynamics are
+well understood and can be derived from first principles, so a truth model is
+available against which estimator performance can be assessed. Second, the
+uncertainty in a physical build is real and not synthetic: mass properties are
+difficult to measure accurately, the motor constants drift with temperature and
+load, and the gear train exhibits deadzone and backlash. Third, the system is
+genuinely underactuated, with a single motor voltage command driving both the
+translational and rotational accelerations, so the uncertainties entering the
+two acceleration equations cannot both be cancelled directly. The uncertainty is
+therefore \emph{unmatched}, and this is the case of practical interest.
+
+\section{CONTRIBUTION OF THIS WORK}
+
+This work makes three contributions.
+
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+
+\item \textbf{A discrete-time Modified State Observer with a complete stability
+proof.} The MSO of Rajagopal et al.\ is extended to discrete time. Every digital
+implementation is a discrete-time system, so a discrete-time result is required
+before the technique can be claimed for digital flight control, rover autonomy,
+or hardware-in-the-loop use. \rev{The proof given in
+Chapter~\ref{ch:dmso} evaluates the Lyapunov first difference exactly. The
+resulting admissibility conditions are $\sigmax(F-\Km)<1$ together with an upper
+bound on the adaptation gain, both of which are satisfiable over an open set of
+designs.}
+
+\item \textbf{A command-filtered neural control law for unmatched uncertainty.}
+Chapter~\ref{ch:control} develops an additive control signal that uses the tilt
+angle as a virtual control for the position subsystem. \rev{The design is posed
+as a four-step backstepping procedure with command filtering, which assigns
+damping to every error coordinate, retains and cancels the coupling between the
+position and attitude error subsystems, and makes each neural network's
+approximation target a function of measured state and reference trajectory
+alone.}
+
+\item \textbf{Hardware validation.} The observer is implemented on a physical
+TWIP robot. Chapter~\ref{ch:platform} documents the platform and the practical
+obstacles encountered; Appendix~\ref{app:validation} gives a staged validation
+procedure for reproducing and extending the results.
+
+\end{enumerate}
+
+\section{ORGANIZATION}
+
+Chapter~\ref{ch:lit} reviews the relevant literature on two-wheeled inverted
+pendulum control and on modified state observers. Chapter~\ref{ch:dmso} develops
+the DMSO and its stability proof. Chapter~\ref{ch:platform} describes the
+physical robot. Chapter~\ref{ch:model} derives the TWIP equations of motion from
+the DC motor model upward. Chapter~\ref{ch:control} presents the LQR baseline
+and the command-filtered neural controller. Chapter~\ref{ch:simulation}
+describes the simulation environment, including the discretization, the noise
+models, and the actuator nonlinearities. Chapter~\ref{ch:results} presents
+results. Chapter~\ref{ch:conclusions} concludes.
+Appendix~\ref{app:validation} gives implementation and test guidance;
+Appendix~\ref{app:errata} records the specific technical differences between
+this revision and revision~7.

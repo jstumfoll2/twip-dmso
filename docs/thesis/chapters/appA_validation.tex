@@ -1,0 +1,296 @@
+\chapter{IMPLEMENTATION AND VALIDATION GUIDANCE}
+\label{app:validation}
+
+This appendix gives a staged procedure for implementing and testing the observer
+of Chapter~\ref{ch:dmso} and the controller of Chapter~\ref{ch:control}. The
+organizing principle is that each stage must have a falsifiable pass criterion
+that is checkable without the next stage being correct. A design that is
+assembled all at once and then tuned until it balances provides no evidence
+about which component is working.
+
+\section{STAGE 0: PARAMETER IDENTIFICATION}
+
+The detuning of the LQR gains reported in Section~\ref{sec:difficulties} is
+evidence of parameter error, and the two parameters most likely responsible are
+the pendulum inertia $I_p$ and the CG offset $l$. Both can be measured directly
+and should be, before any estimator is judged.
+
+\paragraph{Procedure.} Remove the wheels and suspend the chassis from a knife
+edge at the wheel axis so that it swings as a physical pendulum. Record the
+small-amplitude period $T$ with the onboard gyroscope. Then
+\begin{equation}\label{eq:pendid}
+T=2\pi\sqrt{\frac{I_{\mathrm{pivot}}}{M_pgl}},
+\qquad
+I_{\mathrm{pivot}}=I_p+M_pl^2 .
+\end{equation}
+Measure $l$ independently by balancing the chassis on a knife edge to locate the
+CG, then solve \eqref{eq:pendid} for $I_p$. Repeat at several amplitudes to
+confirm the small-angle regime.
+
+\paragraph{Motor constants.} Measure $R$ by four-wire resistance at a dozen
+shaft positions and average, since commutator position changes the reading.
+Obtain $k_e$ by back-driving the motor at a measured rate and reading the
+open-circuit terminal voltage; $k_e$ from the slope of $V$ against
+$\dot\vartheta$ is far more reliable than $k_e$ inferred from catalog free-run
+and stall figures. For a brushed DC motor in SI units $k_m=k_e$, and any
+substantial discrepancy between a measured $k_e$ and a catalog-derived $k_m$
+indicates that one of the two is wrong.
+
+\paragraph{Deadzone and backlash.} Ramp the commanded voltage slowly in both
+directions with the wheels off the ground and record the breakaway voltages
+$\delta_+$ and $\delta_-$ of \eqref{eq:deadzone}. Measure backlash by holding
+the motor shaft and rotating the wheel through the deadband, reading the
+free rotation directly; this gives $\Delta_b$ in \eqref{eq:backlash}.
+
+\paragraph{Pass criterion.} The LQR gains computed from the measured parameters
+stabilize the hardware without manual detuning. If they do not, the model is
+still wrong and no amount of online estimation will make the comparison in
+Chapter~\ref{ch:results} interpretable.
+
+\section{STAGE 1: OFFLINE ESTIMATOR REPLAY}
+
+Before the observer is allowed to influence any control signal, run it open
+loop on recorded data.
+
+\begin{enumerate}[label=\arabic*.,leftmargin=*]
+
+\item Drive the robot with the LQR controller alone and log, at the full loop
+rate, the raw gyroscope and accelerometer samples, the raw encoder counts, the
+commanded voltage, and a timestamp taken from a hardware timer rather than from
+a software counter.
+
+\item Replay the log offline through the DMSO. Because $y_k=x_k$ here, the
+observer can be evaluated without closing any loop.
+
+\item Verify the theoretical conditions numerically on the replayed data:
+compute $\sigmax(F-\Km)$ for the $\Delta t$ actually achieved, compute
+$\phi_{\max}=\max_k\norm{\phi(x_k)}$ realized along the recorded trajectory, and
+confirm \eqref{eq:simple}. \rev{This is the step most often skipped. The
+$\phi_{\max}$ used to select $\Gamma$ is a design assumption, and the trajectory
+is free to violate it.}
+
+\end{enumerate}
+
+\paragraph{Pass criterion.} The estimation error settles inside the predicted
+ultimate bound $b_e$ of \eqref{eq:bounds}, and $\Gamma\phi_{\max}^2$ computed
+from realized data satisfies \eqref{eq:simple}. If the error settles but the
+bound is violated, the gains are outside the proven region and the result is
+empirical only.
+
+\section{STAGE 2: OBSERVER GAIN SELECTION}
+
+The conditions of Corollary~\ref{cor:theta1} give a constructive selection
+order.
+
+\begin{enumerate}[label=\arabic*.,leftmargin=*]
+
+\item \textbf{Place $A$ first.} Choose $\Km$ so that $\sigmax(F-\Km)$ takes a
+target value $\bar\sigma$. Note that $\sigmax$, not the eigenvalues, is what
+matters; a gain that places the eigenvalues of $A$ well inside the unit circle
+can still have $\sigmax(A)>1$ if $A$ is strongly non-normal. Compute the
+singular values explicitly. A practical starting point is
+$\bar\sigma\in[0.5,0.8]$: smaller values reject model error faster but amplify
+measurement noise, since \eqref{eq:limbounds} shows the noise floor scales as
+$1/(1-\bar\sigma)$ while the response time scales as $1/\log(1/\bar\sigma)$.
+
+\item \textbf{Bound $\phi_{\max}$ by construction.} Rather than estimating
+$\phi_{\max}$ from a nominal trajectory, choose activation functions that are
+bounded by construction, for example a Gaussian radial basis or a
+$\tanh$ polynomial basis, so that $\phi_{\max}$ is known a priori and
+independent of how far the trajectory wanders.
+
+\item \textbf{Select $\Gamma$ from \eqref{eq:simple}.} With $\bar\sigma$ and
+$\phi_{\max}$ fixed,
+\[
+\Gamma<\frac{1}{\phi_{\max}^2}\min\left\{\frac{1}{2},\,
+\frac{1-\bar\sigma^2}{2\bar\sigma^2}\right\}.
+\]
+Begin at one tenth of this bound and increase. \rev{The speed of uncertainty
+identification is set by $\Gamma$, and the conditions permit any sufficiently
+small value, so there is no reason to operate near the boundary.}
+
+\item \textbf{Add $\sigma$-modification.} Use \eqref{eq:sigmod} with
+$\kappa$ chosen so that $\Gamma\kappa\ll1$; a decade below $\Gamma$ is a
+reasonable start. \rev{This is strongly recommended over relying on persistency
+of excitation. During regulation about the upright equilibrium the regressor is
+nearly constant and \eqref{eq:pe} will not hold, which is exactly the condition
+under which weight drift occurs. Drift is insidious: the state estimate remains
+good while the weights wander, and the failure appears only when the trajectory
+eventually excites a direction the drifted weights misrepresent.}
+
+\end{enumerate}
+
+\paragraph{Diagnostic.} Log $\norm{\What_k}_F$ throughout every run. A weight
+norm that grows slowly and monotonically while the estimation error stays small
+is the signature of drift, and it is the reason to add leakage rather than to
+increase $\Gamma$.
+
+\section{STAGE 3: CONTROLLER BRING-UP}
+
+The controller of Section~\ref{sec:cffb} has four damping gains, three filter
+bandwidths, four learning rates, and four leakage gains. Bring them up in this
+order, and only in this order.
+
+\begin{enumerate}[label=\arabic*.,leftmargin=*]
+
+\item \textbf{LQR alone.} Confirm stable regulation with the measured
+parameters from Stage~0. Record the baseline metrics of
+Section~\ref{sec:testmatrix}.
+
+\item \textbf{Backstepping with networks disabled.} Set $\hat F_1=\hat F_2=0$
+and run the structure of Section~\ref{sec:cffb} with $u_e$ active. This tests
+the command filters, the error coordinate bookkeeping, and the sign conventions
+without any adaptation. \rev{Most implementation errors in a backstepping design
+are sign errors in the cross-term cancellations, and they are far easier to find
+with the adaptation off.} Verify numerically that the three groups of terms
+identified in the proof of Theorem~\ref{thm:control} actually cancel: log
+$z_1z_2-z_2z_1$, $A_2z_2z_3-A_2z_3z_2$, and $z_3z_4-z_4z_3$ from the
+implemented code, and confirm each is zero to machine precision. If one is not,
+the implementation does not match the derivation.
+
+\item \textbf{Filter bandwidths.} Raise $\varpi_i$ until $\chi_i$ is small
+relative to the corresponding $z_i$, then stop. The upper limit is the lesser of
+one fifth of the sample rate and the lowest unmodeled structural mode of the
+chassis. \rev{The stiffening rods described in
+Section~\ref{sec:difficulties} exist because that mode was originally low enough
+to contaminate the inertial measurements; it should be measured, not assumed,
+by striking the chassis and recording the gyroscope response.}
+
+\item \textbf{One network at a time.} Enable network one with network two
+disabled, then the reverse, then both. Each network has its own error
+coordinate driving it, $z_2$ and $z_4$ respectively, so a network that is not
+helping shows up as a failure to reduce its own coordinate.
+
+\item \textbf{Leakage last.} Raise $\kappa_{ij}$ only as far as needed to hold
+the weight norms flat over a long run. Every increase adds
+$\kappa_{ij}W_{ijm}^2/2$ to the residual $\mathcal{C}$ in
+\eqref{eq:Vdotfinal} and therefore to the steady-state error.
+
+\end{enumerate}
+
+\section{STAGE 4: HARDWARE ARCHITECTURE}
+
+Two limitations identified in Section~\ref{sec:difficulties} are architectural
+rather than algorithmic, and both bound what any estimator can achieve.
+
+\subsection{Separate the control path from the telemetry path}
+
+Serial transmission dominated the loop budget. The remedy is to make the control
+path deterministic and the telemetry path best-effort:
+
+\begin{itemize}[leftmargin=*]
+\item Run the control law from a hardware timer interrupt at fixed period, and
+do no I/O inside it beyond sensor reads and the actuator write.
+\item Write telemetry into a ring buffer from the interrupt and drain the buffer
+from the main loop, so that a slow or blocked link cannot extend the control
+period.
+\item Log to onboard storage at full rate and stream a decimated subset, rather
+than streaming everything.
+\item Timestamp from a free-running hardware counter, not from a software
+accumulator, so that jitter is measurable after the fact. \rev{Report the
+achieved loop period distribution, not its nominal value. The discretization
+\eqref{eq:zoh} assumes a fixed $\Delta t$, and jitter enters as an unmodeled
+disturbance that the networks will attempt, and fail, to explain.}
+\end{itemize}
+
+\subsection{The encoder placement limits the achievable result}
+
+The encoders are on the motor shaft, ahead of the gearbox, so backlash is
+structurally unobservable. \rev{Increasing the loop rate does not help: the
+measurement is not noisy, it is measuring the wrong thing.} Two remedies are
+available, in increasing order of effort:
+
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item \textbf{Load-side encoding.} Add a second encoder on the output shaft or
+the wheel. The difference between motor-side and load-side angle is then a
+direct measurement of the backlash state, which converts an unmodeled
+nonlinearity into an observable quantity and permits an explicit backlash
+inverse. This is the single highest-value hardware change available.
+\item \textbf{Deterministic timing in hardware.} Implementing the fixed-point
+control law in programmable logic removes scheduler jitter entirely and permits
+loop rates well beyond what the microcontroller supports. This is worth doing
+only after (a); a faster loop around a blind measurement does not improve the
+estimate.
+\end{enumerate}
+
+\subsection{The sample rate trade}
+
+\rev{There is an interior optimum in $\Delta t$ and it should be found rather
+than assumed. Shortening $\Delta t$ improves the fidelity of \eqref{eq:zoh} and
+reduces the interval over which the zero-order hold is in error, but the encoder
+velocity quantization in Table~\ref{tab:noise} scales as
+$1.47\times10^{-4}/\Delta t$, so the velocity measurement degrades linearly as
+the loop speeds up. Sweep $\Delta t$ in replay over the logged data from
+Stage~1, plot the RMS velocity estimation error against $\Delta t$, and operate
+at the minimum. If the minimum lies at the shortest $\Delta t$ tested, the
+encoder resolution is not the binding constraint and the loop rate may be raised
+further; if it lies in the interior, raising the loop rate requires raising the
+encoder resolution first.}
+
+\section{STAGE 5: FALSIFICATION TESTS}
+
+Each of the following is designed to fail if a specific claim is untrue.
+
+\begin{enumerate}[label=T\arabic*.,leftmargin=*]
+
+\item \textbf{Bound verification.} Run case O2 with a deliberately inflated
+parameter error and confirm that the estimation error settles inside $b_e$ from
+\eqref{eq:bounds} computed with the realized $\phi_{\max}$. A violation means
+either the conditions are not met or the implementation does not match the
+derivation.
+
+\item \textbf{Small-gain admissibility.} Run the observer at
+$\Gamma$ one and two decades below the bound in \eqref{eq:simple}. \rev{Stability
+must be retained, with slower identification. This test directly falsifies the
+revision~7 condition, which excluded small gains, and confirms the corrected
+one.}
+
+\item \textbf{Position drift.} Run cases C2 and C4 for at least ten times the
+dominant closed-loop time constant with the two-step and command-filtered
+designs side by side, and plot $z_1$ over the full run. \rev{Remark~\ref{rem:twostep} predicts
+that the two-step design permits a slow position ramp. Either it appears, which
+confirms the analysis, or it does not, which means the LQR term is supplying the
+missing damping and should be credited explicitly in the design rather than
+absorbed into the approximation targets.}
+
+\item \textbf{Algebraic loop.} Disable the command filters, replacing $x_3^c$
+with $\alpha_2$ directly, and attempt to execute the ordering of
+Remark~\ref{rem:order}. \rev{The computation should fail to be well posed. This
+confirms that the filters are structural rather than cosmetic.}
+
+\item \textbf{Weight drift.} Run a long regulation case with leakage disabled
+and log $\norm{\What_k}_F$. Growth in the weight norm with a flat estimation
+error confirms that persistency of excitation does not hold in regulation and
+justifies $\sigma$-modification.
+
+\item \textbf{Nonsmoothness floor.} Run case C4 with the backlash amplitude
+$\Delta_b$ swept over a range including zero. \rev{The residual limit cycle
+amplitude should scale with $\Delta_b$ and vanish as $\Delta_b\to0$. If it does
+not, the limit cycle has another cause and the explanation in Remark~\ref{rem:backlash} is wrong.}
+
+\end{enumerate}
+
+\section{SOFTWARE ORGANIZATION}
+
+A structure that supports the above is worth stating explicitly.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{One model, three consumers.} The continuous model
+\eqref{eq:nl1}--\eqref{eq:nl2}, the discretization \eqref{eq:zoh}, and the
+parameter set should exist in exactly one place and be consumed by the truth
+propagator, the estimator, and the controller. Divergence between a simulation
+model and a flight model is a classic and silent source of error.
+\item \textbf{Same source, both targets.} The estimator and controller should
+compile for both the desktop simulation and the embedded target from the same
+source, with the platform differences confined to sensor and actuator
+interfaces. This makes replay meaningful: the code that is tested is the code
+that runs.
+\item \textbf{Fixed-point discipline early.} If the eventual target is
+fixed-point, introduce the scaling in simulation and compare against the
+floating-point result, rather than discovering the scaling problems on
+hardware.
+\item \textbf{Record the conditions, not just the results.} Every run should
+emit $\sigmax(A)$, realized $\phi_{\max}$, $\Gamma\phi_{\max}^2$, the achieved
+loop period distribution, and the weight norms, alongside the state histories.
+These are what make a result checkable a year later.
+\end{itemize}

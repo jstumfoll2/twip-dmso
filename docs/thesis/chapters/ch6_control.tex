@@ -1,0 +1,401 @@
+\chapter{CONTROL DESIGN}
+\label{ch:control}
+
+The TWIP is unstable and must be actively controlled. Linear control is
+effective near the upright equilibrium when the parameters are accurately known,
+so a linear quadratic regulator is used as the nominal control. An additive
+signal is then formulated to compensate for the unmatched uncertainties
+appearing in the two acceleration equations of \eqref{eq:plantform}.
+
+\section{LQR CONTROL DESIGN}
+\label{sec:lqr}
+
+Because the controller is implemented digitally, the discrete-time infinite
+horizon formulation is used. The performance index
+\begin{equation}\label{eq:lqrJ}
+J=\sum_{k=0}^{\infty}\bigl(x_k^TQ_{\mathrm{L}}x_k+u_k^TR_{\mathrm{L}}u_k\bigr)
+\end{equation}
+is minimized by solving the discrete algebraic Riccati equation
+\cite{simon2006optimal}
+\begin{equation}\label{eq:dare}
+P=Q_{\mathrm{L}}+F^T\Bigl(P-PG\bigl(R_{\mathrm{L}}+G^TPG\bigr)^{-1}G^TP\Bigr)F,
+\end{equation}
+with $F$ and $G$ from the discretized model of Section~\ref{sec:discretization}
+and $Q_{\mathrm{L}}\succeq0$, $R_{\mathrm{L}}\succ0$ the weighting matrices.
+\rev{Note that \eqref{eq:dare} carries $F$ on both sides; revision~7 wrote the
+trailing factor as $A$, which is a typographical carryover from the
+continuous-time notation and is corrected here.} The control law is
+\begin{equation}\label{eq:lqrlaw}
+u_{\mathrm{nom},k}=-K_{\mathrm{LQR}}\bigl(x_k-x_{\mathrm{des},k}\bigr),
+\qquad
+K_{\mathrm{LQR}}=\bigl(R_{\mathrm{L}}+G^TPG\bigr)^{-1}G^TPF .
+\end{equation}
+
+\section{UNMATCHED UNCERTAINTY AND THE VIRTUAL CONTROL}
+
+When the uncertainty enters the same channel as the control, the system is said
+to have matched uncertainty, and an estimate of that uncertainty can be used
+directly to cancel it. The TWIP does not have this structure. In
+\eqref{eq:plantform} the scalar input $u$ enters both $\dot x_2$ and $\dot x_4$
+through $B_1$ and $B_2$, while two independent uncertainties $d_1$ and $d_2$
+appear in the same two equations. No choice of $u$ cancels both.
+
+The device used here, following Huang \cite{huang2002lyapunov} and related in
+spirit to the partial feedback linearization of Pathak et al.\
+\cite{pathak2005twip}, is to treat
+the tilt state $x_3$ as a virtual control for the position subsystem
+$(x_1,x_2)$, and then to design the actual control $u$ so that $x_3$ tracks the
+value the position subsystem requires. The construction below is a four-step
+backstepping procedure with command filtering.
+
+\rev{\subsection{Three requirements on the construction}
+
+Three requirements shape the design and distinguish it from a two-step version.
+
+\begin{enumerate}[label=(R\arabic*),leftmargin=*]
+
+\item \emph{The coupling term must be retained.} Substituting the desired value
+of $x_3$ into $\dot x_2$ is valid only if $x_3$ equals that value. It does not;
+the difference is precisely the error coordinate $z_3$ introduced at the next
+step. Carrying $x_3=z_3+x_3^c$ through leaves an $A_2z_3$ term in $\dot z_2$
+that must be cancelled explicitly. Dropping it removes a term of the same order
+as the ones being cancelled.
+
+\item \emph{Every error coordinate needs damping.} If $z_1$ and $z_3$ appear in
+the Lyapunov function but not in its derivative, uniform ultimate boundedness
+cannot be concluded for them: the standard argument requires the derivative to
+be negative outside a compact set in the full error space, and a coordinate
+absent from the derivative fails this in its own direction. Concretely,
+$\dot z_1=z_2$ is a pure integrator, so a merely bounded $z_2$ permits $z_1$ to
+ramp. Damping is assigned to all four coordinates below.
+
+\item \emph{Each network's target must be a function of measurable signals
+alone.} If the function $F_1$ that network one is required to approximate
+contains the control $u$, and $u$ contains the output of network two, and the
+target $F_2$ of network two contains derivatives of the output of network one,
+then neither target is a fixed continuous function of its network input and the
+universal approximation hypothesis does not apply. Command filtering removes
+this dependence: the filter outputs are states, so the required signals are
+available at the current instant without differentiating any adaptive law.
+
+\end{enumerate}}
+
+\section{COMMAND FILTERS}
+\label{sec:cmdfilter}
+
+For each virtual control $\alpha_i$, $i=1,2,3$, define a second-order command
+filter with bandwidth $\varpi_i>0$ and damping $\varsigma_i\in(0,1]$:
+\begin{equation}\label{eq:cmdfilt}
+\dot q_{i,1}=q_{i,2},\qquad
+\dot q_{i,2}=-2\varsigma_i\varpi_i q_{i,2}-\varpi_i^2\bigl(q_{i,1}-\alpha_i\bigr),
+\end{equation}
+with filtered command $x_{i+1}^c:=q_{i,1}$ and its derivative
+$\dot x_{i+1}^c:=q_{i,2}$, both available as filter states. Magnitude, rate, and
+bandwidth limits may be imposed on \eqref{eq:cmdfilt} to respect actuator
+constraints. Define the filter errors
+\begin{equation}\label{eq:chi}
+\chi_i:=x_{i+1}^c-\alpha_i .
+\end{equation}
+
+\begin{assumption}[Filter error]\label{as:filt}
+On the compact operating set, the virtual controls $\alpha_i$ and their first
+derivatives are bounded, and for each $i$ there exists $\bar\chi_i>0$ with
+$\abs{\chi_i}\le\bar\chi_i$ and $\bar\chi_i=O(1/\varpi_i)$.
+\end{assumption}
+
+Assumption~\ref{as:filt} is the standard command-filtered backstepping result of
+Farrell et al.\ \cite{farrell2009command} and Swaroop et al.\
+\cite{swaroop2000dsc}: the filter error can be made
+arbitrarily small by raising the bandwidth, subject to the usual separation from
+the unmodeled dynamics and the sample rate.
+
+\section{COMMAND-FILTERED NEURAL BACKSTEPPING}
+\label{sec:cffb}
+
+Let $x_{1d}(t)$ be the position reference, assumed twice continuously
+differentiable with bounded derivatives. Write $u=u_{\mathrm{nom}}+u_e$ as in
+Section~\ref{sec:lqr}.
+
+\paragraph{Step 1.} Define $z_1:=x_1-x_{1d}$ and the virtual control
+\begin{equation}\label{eq:alpha1}
+\alpha_1:=\dot x_{1d}-c_1z_1 ,
+\end{equation}
+filtered to $x_2^c$. With $z_2:=x_2-x_2^c$,
+\begin{equation}\label{eq:z1dot}
+\dot z_1=x_2-\dot x_{1d}=z_2+\chi_1-c_1z_1 .
+\end{equation}
+
+\paragraph{Step 2.} With $x_3=z_3+x_3^c=z_3+\chi_2+\alpha_2$,
+\begin{equation}\label{eq:z2raw}
+\dot z_2=A_1x_2+A_2\alpha_2+A_2\bigl(z_3+\chi_2\bigr)+B_1u+d_1-\dot x_2^c .
+\end{equation}
+Define the first approximation target
+\begin{equation}\label{eq:F1}
+F_1:=A_1x_2+d_1(\mathbf{x})-\dot x_2^c ,
+\end{equation}
+which depends only on the measured state and on the filter state $\dot x_2^c$,
+and in particular \emph{not} on the control. Choose
+\begin{equation}\label{eq:alpha2}
+\alpha_2:=A_2^{-1}\Bigl[-\hat F_1-B_1u-c_2z_2-z_1\Bigr].
+\end{equation}
+Substituting into \eqref{eq:z2raw},
+\begin{equation}\label{eq:z2dot}
+\dot z_2=\bigl(F_1-\hat F_1\bigr)+A_2z_3+A_2\chi_2-c_2z_2-z_1 .
+\end{equation}
+\rev{The term $A_2z_3$ is retained; it is cancelled at Step~3.}
+
+\paragraph{Step 3.} With $z_3:=x_3-x_3^c$ and $x_4=z_4+x_4^c=z_4+\chi_3+\alpha_3$,
+choose
+\begin{equation}\label{eq:alpha3}
+\alpha_3:=\dot x_3^c-c_3z_3-A_2z_2 ,
+\end{equation}
+filtered to $x_4^c$, giving
+\begin{equation}\label{eq:z3dot}
+\dot z_3=z_4+\chi_3-c_3z_3-A_2z_2 .
+\end{equation}
+The term $-A_2z_2$ in \eqref{eq:alpha3} is what cancels $+A_2z_3$ in
+\eqref{eq:z2dot} when the two are combined in the Lyapunov derivative.
+
+\paragraph{Step 4.} With $z_4:=x_4-x_4^c$, define the second approximation target
+\begin{equation}\label{eq:F2}
+F_2:=A_3x_2+A_4x_3+d_2(\mathbf{x})-\dot x_4^c ,
+\end{equation}
+again free of the control, and choose the extra control
+\begin{equation}\label{eq:ue}
+u_e:=B_2^{-1}\Bigl[-\hat F_2-B_2u_{\mathrm{nom}}-c_4z_4-z_3\Bigr],
+\end{equation}
+so that
+\begin{equation}\label{eq:z4dot}
+\dot z_4=\bigl(F_2-\hat F_2\bigr)-c_4z_4-z_3 .
+\end{equation}
+
+\rev{\begin{remark}[Execution order, and why there is no algebraic loop]
+\label{rem:order}
+At each sample the following order is used:
+(1) read the state and the filter states $q_{i,\cdot}$;
+(2) form $z_1,\dots,z_4$ from the state and the filter states;
+(3) evaluate $\hat F_1,\hat F_2$;
+(4) compute $u_{\mathrm{nom}}$ from \eqref{eq:lqrlaw} and $u_e$ from
+\eqref{eq:ue}, hence $u$ (note that substituting \eqref{eq:ue} gives
+$B_2u=-\hat F_2-c_4z_4-z_3$, so $u_{\mathrm{nom}}$ cancels and the LQR gain
+does not affect the applied control);
+(5) compute $\alpha_1,\alpha_2,\alpha_3$, with $\alpha_2$ using the $u$ just
+computed;
+(6) propagate \eqref{eq:cmdfilt} one step.
+Although $\alpha_2$ depends on $u$ and $u$ depends on $z_3$, $z_3$ is formed
+from the filter state $x_3^c$ rather than from $\alpha_2$ itself. The
+dependence is therefore through a dynamic element and is resolved by the
+ordering above. Without command filtering, $x_3^c$ would be replaced by
+$\alpha_2$ and steps (4) and (5) would be mutually defining.
+\end{remark}}
+
+\section{NEURAL NETWORK APPROXIMATION}
+
+A single-layer network was found inadequate for $F_1$ and $F_2$, so two-layer
+networks are used. For $i=1,2$,
+\begin{equation}\label{eq:nn2layer}
+F_i=W_{i2}^T\sigma_{i2}\bigl(W_{i1}^T\sigma_{i1}(V_i^TP_i)\bigr)+\varepsilon_i,
+\qquad \abs{\varepsilon_i}\le\varepsilon_{im},
+\end{equation}
+with $V_i$ a fixed randomly selected input layer, $P_i$ the network input
+vector, and $\sigma_{i1},\sigma_{i2}$ bounded activation functions. The
+estimates are
+\begin{equation}\label{eq:nnhat}
+\hat F_i=\What_{i2}^T\hat\sigma_{i2}
+\bigl(\What_{i1}^T\hat\sigma_{i1}(V_i^TP_i)\bigr).
+\end{equation}
+Network inputs are taken as
+$P_1=\bigl[x_2,\ x_3,\ \dot x_2^c,\ 1\bigr]^T$ and
+$P_2=\bigl[x_2,\ x_3,\ x_4,\ \dot x_4^c,\ 1\bigr]^T$; by construction neither
+contains a control signal or an adaptive parameter.
+
+Writing $\Wt_{ij}:=W_{ij}-\What_{ij}$ and expanding the hidden-layer activation
+about $\What_{i1}^T\hat\sigma_{i1}$ in the standard manner
+\cite{lewis1999neural},
+\begin{equation}\label{eq:nnerr}
+F_i-\hat F_i
+=\Wt_{i2}^T\Bigl(\hat\sigma_{i2}-\hat\sigma_{i2}'\What_{i1}^T\hat\sigma_{i1}\Bigr)
++\What_{i2}^T\hat\sigma_{i2}'\,\Wt_{i1}^T\hat\sigma_{i1}
++w_i ,
+\end{equation}
+where $\hat\sigma_{i2}'$ is the Jacobian of $\sigma_{i2}$ evaluated at the
+estimate and $w_i$ collects $\varepsilon_i$ with the higher-order Taylor
+residual, bounded by $w_{im}$ on the compact operating set.
+
+\rev{Equation \eqref{eq:nnerr} is the form that makes both layers' weight errors
+appear explicitly and linearly. Bounding the hidden-layer activation error by a
+constant instead, as in revision~7, leaves the first-layer weight error
+unmatched in the Lyapunov derivative, so that the first-layer update law is
+unjustified by the analysis and the network is effectively single-layer as far
+as the proof is concerned.}
+
+Let $\varrho_1:=z_2$ and $\varrho_2:=z_4$ denote the error coordinate driving
+network $i$. The weight update laws, each with $\sigma$-modification, are
+\begin{align}
+\dot{\What}_{i2}&=\gamma_{i2}\Bigl[
+\bigl(\hat\sigma_{i2}-\hat\sigma_{i2}'\What_{i1}^T\hat\sigma_{i1}\bigr)\varrho_i^T
+-\kappa_{i2}\What_{i2}\Bigr],
+\label{eq:upd2}\\[4pt]
+\dot{\What}_{i1}&=\gamma_{i1}\Bigl[
+\hat\sigma_{i1}\,\varrho_i^T\,\What_{i2}^T\hat\sigma_{i2}'
+-\kappa_{i1}\What_{i1}\Bigr],
+\label{eq:upd1}
+\end{align}
+with $\gamma_{ij}>0$ the learning rates and $\kappa_{ij}>0$ the leakage gains of
+the $\sigma$-modification \cite{ioannou1983adaptive,ioannou1984sigma}.
+\rev{Both laws now carry the same sign convention; the mismatch between the two
+layers in revision~7 is removed.}
+
+\section{STABILITY ANALYSIS}
+
+\begin{theorem}[Closed-loop boundedness]\label{thm:control}
+Consider \eqref{eq:plantform} with the control \eqref{eq:lqrlaw},
+\eqref{eq:ue}, the virtual controls \eqref{eq:alpha1}, \eqref{eq:alpha2},
+\eqref{eq:alpha3}, the command filters \eqref{eq:cmdfilt}, and the update laws
+\eqref{eq:upd2}--\eqref{eq:upd1}. Let Assumption~\ref{as:filt} hold, let the
+ideal weights satisfy $\norm{W_{ij}}_F\le W_{ijm}$, and let the damping gains
+satisfy
+\begin{equation}\label{eq:gaincond}
+c_1>\tfrac{1}{2},\qquad
+c_2>\tfrac{1}{2},\qquad
+c_3>\tfrac{1}{2},\qquad
+c_4>\tfrac{1}{2}
+\end{equation}
+after the cross terms are absorbed as below. Then all tracking errors
+$z_1,\dots,z_4$ and all weight estimation errors $\Wt_{ij}$ are uniformly
+ultimately bounded.
+\end{theorem}
+
+\begin{proof}
+Take
+\begin{equation}\label{eq:Vctrl}
+\mathcal{V}=\frac{1}{2}\sum_{i=1}^{4}z_i^Tz_i
++\frac{1}{2}\sum_{i=1}^{2}\sum_{j=1}^{2}
+\frac{1}{\gamma_{ij}}\Tr\bigl(\Wt_{ij}^T\Wt_{ij}\bigr).
+\end{equation}
+Differentiating and substituting
+\eqref{eq:z1dot}, \eqref{eq:z2dot}, \eqref{eq:z3dot}, \eqref{eq:z4dot},
+\[
+\begin{aligned}
+\dot{\mathcal{V}}=&-c_1z_1^2-c_2z_2^2-c_3z_3^2-c_4z_4^2\\
+&+\underbrace{z_1z_2-z_2z_1}_{=0}
++\underbrace{A_2z_2z_3-A_2z_3z_2}_{=0}
++\underbrace{z_3z_4-z_4z_3}_{=0}\\
+&+z_1\chi_1+A_2z_2\chi_2+z_3\chi_3
++z_2\bigl(F_1-\hat F_1\bigr)+z_4\bigl(F_2-\hat F_2\bigr)
+-\sum_{i,j}\frac{1}{\gamma_{ij}}\Tr\bigl(\Wt_{ij}^T\dot{\What}_{ij}\bigr).
+\end{aligned}
+\]
+The three bracketed groups vanish identically: the first because $\alpha_1$
+contributes $-z_1$ to $\dot z_2$ via \eqref{eq:alpha2}, the second because of
+the $-A_2z_2$ term in \eqref{eq:alpha3}, and the third because of the $-z_3$
+term in \eqref{eq:ue}.
+
+Substituting \eqref{eq:nnerr} for $F_i-\hat F_i$, and writing
+$\Lambda_i:=\hat\sigma_{i2}-\hat\sigma_{i2}'\What_{i1}^T\hat\sigma_{i1}$ for the
+effective second-layer regressor, the approximation terms become
+\begin{equation}\label{eq:approxterms}
+\varrho_i^T\bigl(F_i-\hat F_i\bigr)
+=\varrho_i^T\Wt_{i2}^T\Lambda_i
++\varrho_i^T\What_{i2}^T\hat\sigma_{i2}'\Wt_{i1}^T\hat\sigma_{i1}
++\varrho_i^Tw_i .
+\end{equation}
+Each of the first two is a scalar and may be written as a trace,
+\begin{align}
+\varrho_i^T\Wt_{i2}^T\Lambda_i
+&=\Tr\bigl(\Wt_{i2}^T\Lambda_i\varrho_i^T\bigr),\label{eq:tr1}\\[2pt]
+\varrho_i^T\What_{i2}^T\hat\sigma_{i2}'\Wt_{i1}^T\hat\sigma_{i1}
+&=\Tr\bigl(\Wt_{i1}^T\hat\sigma_{i1}\varrho_i^T\What_{i2}^T\hat\sigma_{i2}'\bigr).
+\label{eq:tr2}
+\end{align}
+The weight error contributions to $\dot{\mathcal{V}}$ follow from
+$\dot{\Wt}_{ij}=-\dot{\What}_{ij}$ and \eqref{eq:upd2}--\eqref{eq:upd1},
+\begin{align}
+\frac{1}{\gamma_{i2}}\Tr\bigl(\Wt_{i2}^T\dot{\Wt}_{i2}\bigr)
+&=-\Tr\bigl(\Wt_{i2}^T\Lambda_i\varrho_i^T\bigr)
++\kappa_{i2}\Tr\bigl(\Wt_{i2}^T\What_{i2}\bigr),\label{eq:wdot2}\\[2pt]
+\frac{1}{\gamma_{i1}}\Tr\bigl(\Wt_{i1}^T\dot{\Wt}_{i1}\bigr)
+&=-\Tr\bigl(\Wt_{i1}^T\hat\sigma_{i1}\varrho_i^T\What_{i2}^T\hat\sigma_{i2}'\bigr)
++\kappa_{i1}\Tr\bigl(\Wt_{i1}^T\What_{i1}\bigr).\label{eq:wdot1}
+\end{align}
+Comparing \eqref{eq:tr1} with \eqref{eq:wdot2} and \eqref{eq:tr2} with
+\eqref{eq:wdot1}, every term containing both a weight error and an error
+coordinate appears exactly twice with opposite sign and cancels. \rev{This
+pairwise cancellation is the purpose of the specific regressors chosen in
+\eqref{eq:upd2}--\eqref{eq:upd1}, and it is available only because
+\eqref{eq:nnerr} keeps both layers' weight errors explicit and linear. Bounding
+the hidden-layer activation error by a constant leaves \eqref{eq:tr2} with no
+counterpart, and the first-layer update law then contributes nothing that the
+analysis can use.}
+
+What survives is the leakage,
+\[
+\sum_{i,j}\kappa_{ij}\Tr\bigl(\Wt_{ij}^T\What_{ij}\bigr)
+=\sum_{i,j}\kappa_{ij}\Tr\bigl(\Wt_{ij}^T(W_{ij}-\Wt_{ij})\bigr)
+\le\sum_{i,j}\Bigl[-\frac{\kappa_{ij}}{2}\norm{\Wt_{ij}}_F^2
++\frac{\kappa_{ij}}{2}W_{ijm}^2\Bigr],
+\]
+together with the filter-error and residual cross terms. Hence
+\[
+\dot{\mathcal{V}}\le
+-\sum_{i=1}^{4}c_iz_i^2
+-\sum_{i,j}\frac{\kappa_{ij}}{2}\norm{\Wt_{ij}}_F^2
++z_1\chi_1+A_2z_2\chi_2+z_3\chi_3+z_2w_1+z_4w_2
++\sum_{i,j}\frac{\kappa_{ij}}{2}W_{ijm}^2 .
+\]
+Applying $ab\le\tfrac12a^2+\tfrac12b^2$ to each cross term,
+\begin{equation}\label{eq:Vdotfinal}
+\dot{\mathcal{V}}\le
+-\Bigl(c_1-\tfrac12\Bigr)z_1^2
+-\Bigl(c_2-1\Bigr)z_2^2
+-\Bigl(c_3-\tfrac12\Bigr)z_3^2
+-\Bigl(c_4-\tfrac12\Bigr)z_4^2
+-\sum_{i,j}\frac{\kappa_{ij}}{2}\norm{\Wt_{ij}}_F^2
++\mathcal{C},
+\end{equation}
+where
+\[
+\mathcal{C}:=\tfrac12\bar\chi_1^2+\tfrac12A_2^2\bar\chi_2^2
++\tfrac12\bar\chi_3^2+\tfrac12w_{1m}^2+\tfrac12w_{2m}^2
++\sum_{i,j}\frac{\kappa_{ij}}{2}W_{ijm}^2 .
+\]
+With $c_2>1$ and $c_1,c_3,c_4>\tfrac12$, every coefficient in
+\eqref{eq:Vdotfinal} is negative and $\dot{\mathcal{V}}<0$ outside a compact set
+in $(z_1,z_2,z_3,z_4,\Wt_{11},\Wt_{12},\Wt_{21},\Wt_{22})$. Uniform ultimate
+boundedness follows by the standard Lyapunov argument, with ultimate bound
+proportional to $\sqrt{\mathcal{C}}$.
+\end{proof}
+
+\rev{\begin{remark}[What the bound depends on]
+The residual $\mathcal{C}$ has three distinct contributions, and they can be
+reduced independently. The filter terms $\bar\chi_i^2$ shrink as the filter
+bandwidths $\varpi_i$ are raised, limited by the sample rate and by the
+unmodeled structural modes of the chassis. The network residuals $w_{im}^2$
+shrink with the richness of the basis. The leakage terms $\kappa_{ij}W_{ijm}^2$
+shrink with $\kappa_{ij}$, at the cost of weaker protection against weight
+drift. This decomposition gives the tuning order recommended in
+Appendix~\ref{app:validation}.
+\end{remark}}
+
+\rev{\begin{remark}[Realizability]\label{rem:realizability}
+Theorem~\ref{thm:control} is conditional on Assumption~\ref{as:filt}, and for
+the TWIP that assumption does not follow from the construction. The control
+enters $\dot x_2$ as well as $\dot x_4$, so $\alpha_2$ contains $B_1u$, and $u$
+depends on the filter states. The virtual controls and their derivatives
+therefore depend on the filter errors that the assumption requires to be small.
+With $x_1$ as the tracked output, the recursion inverts the plant from $u$ to
+$x_1$, which has a right-half-plane zero. Section~\ref{sec:cfinstab} shows that
+the implemented closed loop has an unstable eigenvalue at that zero for every
+gain set tested, and discusses two remedies.
+\end{remark}}
+
+\rev{\begin{remark}[Relation to the two-step design]\label{rem:twostep}
+If the $A_2z_3$ term is dropped from \eqref{eq:z2dot} and no damping is assigned
+to $z_1$ and $z_3$, the surviving negative terms in \eqref{eq:Vdotfinal} are
+those in $z_2$ and $z_4$ only. The resulting statement bounds $z_2$ and $z_4$
+but not $z_1$ and $z_3$, and since $\dot z_1=z_2$ is a pure integrator, a
+bounded but nonvanishing $z_2$ permits unbounded $z_1$. In practice the position
+loop is held by the LQR term, but because $u_{\mathrm{nom}}$ is absorbed into
+the approximation targets in that formulation, the analysis does not credit it.
+The design above makes the position damping explicit.
+\end{remark}}

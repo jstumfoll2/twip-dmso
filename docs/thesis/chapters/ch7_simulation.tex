@@ -1,0 +1,372 @@
+\chapter{TWO WHEELED INVERTED PENDULUM SIMULATION}
+\label{ch:simulation}
+
+\section{DISCRETIZATION}
+\label{sec:discretization}
+
+The linear model \eqref{eq:linss} is discretized at sample period $\Delta t$
+using the matrix exponential,
+\begin{equation}\label{eq:zoh}
+F=e^{\mathcal{A}\Delta t},
+\qquad
+G=\left(\int_0^{\Delta t}e^{\mathcal{A}\tau}\,\dd\tau\right)\mathcal{B},
+\end{equation}
+which is exact for a zero-order hold input. The plant used for truth propagation
+is the nonlinear model \eqref{eq:nl1}--\eqref{eq:nl2}, integrated at a step at
+least an order of magnitude smaller than $\Delta t$, so that the estimator and
+controller see a discretized measurement of a continuous truth rather than a
+discretized truth.
+
+\rev{\begin{remark}[The sample period enters the stability conditions]
+The quantity $\sigmax(A)=\sigmax(F-\Km)$ depends on $\Delta t$ through
+\eqref{eq:zoh}, so the admissible range of $\Gamma$ in
+Corollary~\ref{cor:theta1} is a function of the sample rate. Reducing $\Delta t$
+moves $F$ toward the identity and requires a correspondingly larger $\Km$ for
+the same $\sigmax(A)$. The design must be rechecked whenever the loop rate
+changes rather than assumed to carry over.
+\end{remark}}
+
+\section{SIMULATION MODEL}
+\label{sec:simmodel}
+
+\rev{The truth model used for the results of Chapter~\ref{ch:results} is the
+nonlinear model of Section~\ref{sec:twipmodel} with three corrections. Each was
+identified while reimplementing the simulations, and each can be checked
+against material already in this thesis.
+
+\paragraph{Back-EMF kinematics.} The motor stator is fixed to the pendulum
+body, so the back-EMF and the friction of each motor depend on the rotation of
+the wheel \emph{relative to the body}, not on the absolute wheel rate
+$\dot\theta_w=\dot x/r$ of \eqref{eq:noslip}. In the upright-referenced
+coordinates of \eqref{eq:linss} the relative rate is $\dot x/r-\dot\phi$, and
+the total motor torque is
+\begin{equation}\label{eq:relemf}
+T=\frac{2k_m}{R}\Bigl(V-k_e\bigl(\tfrac{\dot x}{r}-\dot\phi\bigr)\Bigr).
+\end{equation}
+The input terms of \eqref{eq:linss} already imply this kinematics: the torque
+enters the wheel equation as $T/r$ and the pendulum equation as $-T$, which is
+the virtual work of $T$ acting through the relative angle. Using
+\eqref{eq:relemf} adds the tilt-rate terms $\mathcal{A}_{24}=-r\mathcal{A}_{22}$ and
+$\mathcal{A}_{44}=-r\mathcal{A}_{42}$ to \eqref{eq:linss}, which are zero in the
+original. It is also the form that makes the motor strictly dissipative at zero
+voltage.
+
+\paragraph{Back-EMF constant.} From the free-run data of Table~\ref{tab:motor},
+the steady armature equation $V=Ri+k_e\omega$ at the free-run speed of
+\SI{350}{rpm} (\SI{36.65}{rad/s}) gives
+\[
+k_e=\frac{\SI{12}{V}-(\SI{0.3}{A})(\SI{2.5}{\ohm})}{\SI{36.65}{rad/s}}
+=\SI{0.307}{V.s/rad},
+\]
+about 85 times the value used in revision~7. The torque constant is retained.
+The stall data give $k_m\approx\SI{0.155}{N.m/A}$, and the discrepancy
+between the two is one reason Stage~0 of Appendix~\ref{app:validation} calls
+for direct measurement.
+
+\paragraph{Pendulum inertia.} The value of $I_p$ in Table~\ref{tab:phys} is
+computed from a lumped-mass model of the plates that includes parallel-axis
+terms, so it is the inertia about the wheel axis. Equations
+\eqref{eq:nl1}--\eqref{eq:nl2} require the inertia about the center of
+gravity, $I_p-M_pl^2=\SI{0.0169}{kg.m^2}$.
+
+Table~\ref{tab:linvals} compares the resulting linearizations. The corrected
+model has substantially more back-EMF damping and a faster unstable pole. The
+right-half-plane zero of $x_1(s)/u(s)$, which matters in
+Section~\ref{sec:cfinstab}, is present in both.
+
+\begin{table}[htbp]
+\centering
+\caption{Linearized model entries, revision 7 and corrected}
+\label{tab:linvals}
+\begin{tabular}{lcc}
+\toprule
+Quantity & Revision 7 & Corrected \\
+\midrule
+$\mathcal{A}_{22},\ \mathcal{A}_{24}$ & $-0.098,\ 0$ & $-8.55,\ 0.385$ \\
+$\mathcal{A}_{42},\ \mathcal{A}_{43},\ \mathcal{A}_{44}$ & $-0.095,\ 39.7,\ 0$ & $-11.5,\ 57.0,\ 0.519$ \\
+$\mathcal{B}_2,\ \mathcal{B}_4$ & $1.22,\ 1.18$ & $1.25,\ 1.69$ \\
+Unstable pole (rad/s) & 6.30 & 7.50 \\
+RHP zero of $x_1/u$ (rad/s) & 6.11 & 7.23 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Sensors.} The accelerometer is modeled as the specific force at the
+IMU location, \SI{2}{cm} above the wheel axis on the body, expressed in body
+axes. The tilt presented to the estimators is therefore computed from a signal
+that includes the robot's own acceleration, as on the hardware, rather than
+being the true tilt plus white noise. The encoders measure the rotation of the
+wheel relative to the body, so the encoder position is $x-r\phi$; it is
+corrected by adding $r\hat\phi$ before use. Velocity is the difference of
+successive quantized positions divided by $\Delta t$.}
+
+\section{CONTROL}
+
+The nominal control is the LQR law of Section~\ref{sec:lqr}, computed from the
+nominal parameters of Table~\ref{tab:phys} and Table~\ref{tab:motor}. The extra
+control of Section~\ref{sec:cffb} is added when the neural compensation is
+active. The command filters \eqref{eq:cmdfilt} are integrated with the same
+solver and step as the controller.
+
+\section{UNCERTAINTY}
+
+Uncertainty is introduced by propagating the truth model with perturbed physical
+parameters while the observer and controller retain the nominal values. Because
+the physical parameters enter only through the coefficients of the two
+acceleration equations, this produces uncertainty in those two equations and
+nowhere else, which is why the selection matrix is
+\begin{equation}\label{eq:Bmso}
+\Bm=\begin{bmatrix}0&1&0&0\\0&0&0&1\end{bmatrix}^T .
+\end{equation}
+The uncertainty vector has dimension four in the full state, but only the second
+and fourth entries are assigned, so $p=2$ and $\Bm\in\R^{4\times2}$ satisfies
+Assumption~\ref{as:B}. Unmodeled dynamics are introduced separately by retaining
+in the truth model the nonlinear terms that the linearization
+\eqref{eq:smallangle}--\eqref{eq:smallrate} discards.
+
+\section{SIMULATED NOISE}
+\label{sec:noise}
+
+Sensor noise is not white in general, but both the gyroscope and the
+accelerometer can be modeled with three principal sources of error
+\cite{gebreegziabher2004design,flenniken2005modeling}. Both sensors are modeled as
+\begin{equation}\label{eq:sensormodel}
+m=m_r+c_r+b_r+w_r ,
+\end{equation}
+where $m$ is the sensor reading, $m_r$ the true measurement, $c_r$ a constant
+bias that changes on each initialization of the sensor, $b_r$ the walking bias,
+and $w_r$ a white noise process with variance $\sigma_r^2$.
+
+The constant bias is easily remedied and is removed on initialization of the
+sensor in digital logic, as described in Section~\ref{sec:measurements}. The
+other two remain and must be considered in simulation. White noise is the
+dominant source in low cost sensors and is characterized by finding the variance
+of a long run of data taken with the sensor stationary. The walking bias is more
+involved but can be modeled as a first-order Markov process,
+\begin{equation}\label{eq:walkingbias}
+\dot b_r=-\frac{1}{\tau_r}b_r+w_{b_r},
+\end{equation}
+where $\tau_r$ is the time constant of the Markov process and $w_{b_r}$ is white
+noise with intensity $2\sigma_{b_r}^2/\tau_r$, so that $\sigma_{b_r}^2$ is the
+steady-state variance of $b_r$. The walking bias captures the tendency of
+the sensor bias to drift over time. Its parameters are obtained by performing an
+autocorrelation analysis of a long run of filtered data; further detail is given
+by Flenniken \cite{flenniken2005modeling}.
+
+Allan variance plots are the standard method of characterizing the accuracy of
+gyroscopes and accelerometers. Figure~\ref{fig:allan} shows an Allan variance
+plot of measured gyroscope data against data simulated from
+\eqref{eq:sensormodel}--\eqref{eq:walkingbias}. The agreement is not perfect and
+other error sources are clearly present, but the result is far more
+representative than simply adding white noise to the measurements.
+
+The resulting parameters, measured from the sensors used in the TWIP
+implementation, are given in Table~\ref{tab:noise}. Encoder measurements carry
+quantization error set by the counts per revolution and the gear ratio; the
+velocity quantization is the position quantization divided by $\Delta t$,
+because velocity is obtained by differencing successive position readings.
+
+\begin{table}[htbp]
+\centering
+\caption{Noise simulation parameters}
+\label{tab:noise}
+\begin{tabular}{lcc}
+\toprule
+Parameter & Tilt angle & Gyroscope \\
+\midrule
+$\sigma_r^2$    & $4.0474\times10^{-6}$ \si{rad^2}
+                & $0.0012$ (\si{\degree/s})$^2$ \\
+$\sigma_{br}^2$ & $1.8929\times10^{-7}$ \si{rad^2}
+                & $1.0986\times10^{-4}$ (\si{\degree/s})$^2$ \\
+$\tau_r$        & \SI{2160}{s} & \SI{1610}{s} \\
+\midrule
+\multicolumn{2}{l}{Encoder position quantization}
+                & \SI{1.47e-4}{m} \\
+\multicolumn{2}{l}{Encoder velocity quantization}
+                & $1.47\times10^{-4}/\Delta t$ \si{m/s} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{allan_variance}
+\caption{Gyroscope Allan deviation: measured (1.95 million samples at
+\SI{140}{Hz}, stationary) against data simulated from
+\eqref{eq:sensormodel}--\eqref{eq:walkingbias} with the parameters of
+Table~\ref{tab:noise}, and against white noise alone.}
+\label{fig:allan}
+\end{figure}
+
+\rev{\begin{remark}[The sample rate trade]\label{rem:dttrade}
+The encoder velocity quantization interacts with the sample rate in the opposite
+direction from everything else. Halving $\Delta t$ improves the fidelity of
+\eqref{eq:zoh} but doubles the velocity quantization noise. There is therefore
+an interior optimum in $\Delta t$ for a fixed encoder resolution, and raising the
+loop rate without raising the encoder resolution eventually degrades the
+velocity estimate. A procedure for locating this optimum from logged data is
+given in Appendix~\ref{app:validation}.
+\end{remark}}
+
+\section{NONLINEARITIES}
+
+The Pololu DC motors exhibit several obvious nonlinearities that can be
+accounted for in simulation. Friction is an important nonlinearity to consider,
+but owing to the difficulty of evaluating the forces and obtaining an accurate
+model it was left out of the simulation; its effect is absorbed into $d_1$ and
+$d_2$ and forms part of what the networks estimate.
+
+\subsection{Saturation}
+
+The commanded voltage is limited by the supply rail,
+\begin{equation}\label{eq:sat}
+\mathrm{sat}(u)=
+\begin{cases}
+u_{\max}, & u>u_{\max},\\
+u, & \abs{u}\le u_{\max},\\
+-u_{\max}, & u<-u_{\max}.
+\end{cases}
+\end{equation}
+Saturation is applied to the control signal output in all simulation cases.
+
+\subsection{Deadzone}
+
+Below a threshold voltage the motor does not turn. The standard deadzone model
+is continuous at the breakaway points, but the physical motors exhibit a jump
+discontinuity: the output steps to a finite value at breakaway rather than
+rising continuously from zero. The model used is
+\begin{equation}\label{eq:deadzone}
+\mathcal{D}(u)=
+\begin{cases}
+m_d\bigl(u-\delta_+\bigr)+j_+, & u>\delta_+,\\
+0, & -\delta_-\le u\le\delta_+,\\
+m_d\bigl(u+\delta_-\bigr)-j_-, & u<-\delta_- ,
+\end{cases}
+\end{equation}
+with $\delta_\pm$ the breakaway voltages, $m_d$ the slope outside the deadband,
+and $j_\pm$ the jump magnitudes.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{deadzone}
+\caption{Deadzone nonlinearity with jump discontinuities.}
+\label{fig:deadzone}
+\end{figure}
+
+\subsection{Backlash}
+
+Gear backlash is modeled as hysteresis \cite{tao1993backlash,durdevic2013hybrid} in which the output holds while the input
+reverses through a deadband of half-width $\Delta_b$,
+\begin{equation}\label{eq:backlash}
+\dot y=
+\begin{cases}
+m_b\dot u, & \dot u>0 \text{ and } y=m_b\bigl(u-\Delta_b\bigr),\\
+m_b\dot u, & \dot u<0 \text{ and } y=m_b\bigl(u+\Delta_b\bigr),\\
+0, & \text{otherwise.}
+\end{cases}
+\end{equation}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{backlash}
+\caption{Backlash nonlinearity: response to a decaying sinusoidal input with
+$m_b=1$, $\Delta_b=0.5$.}
+\label{fig:backlash}
+\end{figure}
+
+\rev{\begin{remark}[Backlash is outside the approximation hypothesis]
+\label{rem:backlash}
+On the physical robot the backlash was measured at less than one degree of
+output-shaft rotation. Two observations follow. First, because the encoders are
+mounted on the motor shaft, this deadband is invisible to the measurement, so it
+appears to the estimator as an unmodeled input nonlinearity rather than as a
+measurable state discrepancy. Second, \eqref{eq:backlash} is not smooth and
+therefore violates the smoothness assumption underlying
+Assumption~\ref{as:nn}. The networks can approximate it only in an averaged
+sense, and the residual appears in $\epsilon_N$ and in $w_{im}$. This is the
+correct explanation for the persistent oscillation in the uncertainty estimates
+reported in Chapter~\ref{ch:results}: the limit cycle is the signature of a
+nonsmooth input nonlinearity that no smooth approximator can cancel, not a
+tuning failure.
+\end{remark}}
+
+\section{DISCRETE KALMAN FILTER}
+\label{sec:dkf}
+
+The discrete Kalman filter is used for comparison against the DMSO. The Kalman
+filter, developed by Kalman in 1960, provides the statistically optimal state
+estimate for a linear system with measurements corrupted by Gaussian,
+zero-mean, uncorrelated, white noise \cite{kalman1960}. The filter processes
+measurements together with knowledge of the system dynamics to produce a more
+accurate state estimate. The version used here is the discrete-time filter and
+follows Simon \cite{simon2006optimal}.
+
+Assume the dynamic system is given by
+\begin{equation}\label{eq:kfplant}
+x_{k+1}=Fx_k+Gu_k+w_k ,
+\end{equation}
+with measurements
+\begin{equation}\label{eq:kfmeas}
+y_k=Hx_k+v_k ,
+\end{equation}
+where $w_k$ and $v_k$ are zero-mean, uncorrelated, white Gaussian sequences with
+\begin{equation}\label{eq:kfstats}
+w_k\sim\mathcal{N}\bigl(0,Q_{\mathrm{K}}\bigr),
+\qquad
+v_k\sim\mathcal{N}\bigl(0,R_{\mathrm{K}}\bigr).
+\end{equation}
+$Q_{\mathrm{K}}$ is the process noise covariance and $R_{\mathrm{K}}$ the
+measurement noise covariance; both may be adjusted for performance. States with
+greater uncertainty in the dynamics can be assigned larger values in
+$Q_{\mathrm{K}}$, which causes the filter to weight the measurements more
+heavily. $R_{\mathrm{K}}$ can be obtained accurately by statistical analysis of
+the available measurements.
+
+The filter is given by the update equations
+\begin{align}
+P_{k+1}^-&=FP_k^+F^T+Q_{\mathrm{K}},\label{eq:kf1}\\[2pt]
+L_{k+1}&=P_{k+1}^-H^T\bigl(HP_{k+1}^-H^T+R_{\mathrm{K}}\bigr)^{-1},\label{eq:kf2}\\[2pt]
+\xhat_{k+1}^-&=F\xhat_k^++Gu_k ,\label{eq:kf3}\\[2pt]
+\xhat_{k+1}^+&=\xhat_{k+1}^-+L_{k+1}\bigl(y_k-H\xhat_{k+1}^-\bigr),\label{eq:kf4}\\[2pt]
+P_{k+1}^+&=\bigl(I-L_{k+1}H\bigr)P_{k+1}^-\bigl(I-L_{k+1}H\bigr)^T
++L_{k+1}R_{\mathrm{K}}L_{k+1}^T ,\label{eq:kf5}
+\end{align}
+where the superscripts $-$ and $+$ denote a priori and a posteriori quantities,
+$P$ is the estimation error covariance, $L$ is the Kalman gain, and $\xhat$ the
+state estimate. The equations are processed sequentially from \eqref{eq:kf1} to
+\eqref{eq:kf5}. Equation \eqref{eq:kf5} is the Joseph form, which preserves
+symmetry and positive definiteness of the covariance under finite-precision
+arithmetic. Measurements need not arrive at the same rate as the dynamics are
+propagated; \eqref{eq:kf4} may be processed only at intervals where measurements
+are available. In the simulations here the measurements are assumed available at
+the dynamics rate.
+
+\rev{\subsection{Three Baselines}
+
+A comparison between the DMSO and a Kalman filter must be constructed carefully
+to be meaningful. The Kalman filter is optimal for a linear system driven by
+zero-mean white process noise of known covariance. It is not designed to reject
+a deterministic modeling error, and demonstrating that it fails to do so
+establishes little about the DMSO. Three baselines are therefore used in
+Chapter~\ref{ch:results}:
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item a Kalman filter with $Q_{\mathrm{K}}$ tuned to the sensor noise alone,
+which is the naive baseline and the one used in revision~7;
+\item a Kalman filter with $Q_{\mathrm{K}}$ inflated to account for the
+parameter error, which is what a competent practitioner would actually do;
+\item an augmented-state Kalman filter in which the uncertainty is modeled as a
+random-walk state and estimated alongside the dynamic states, which is the
+closest linear analogue of the DMSO and the fairest comparison.
+\end{enumerate}
+For baseline (c) the state is augmented as
+$x^{\mathrm{aug}}=\begin{bmatrix}x^T&f^T\end{bmatrix}^T$ with
+\begin{equation}\label{eq:augkf}
+F^{\mathrm{aug}}=\begin{bmatrix}F&\Bm\\0&I_p\end{bmatrix},
+\qquad
+G^{\mathrm{aug}}=\begin{bmatrix}G\\0\end{bmatrix},
+\qquad
+H^{\mathrm{aug}}=\begin{bmatrix}H&0\end{bmatrix},
+\end{equation}
+and the process noise covariance on the appended block set to the assumed
+random-walk intensity of the uncertainty. Claims of improvement are stated
+against (c).}

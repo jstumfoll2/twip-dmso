@@ -1,0 +1,66 @@
+\chapter{CONCLUSIONS}
+\label{ch:conclusions}
+
+The Modified State Observer has been extended to discrete time and its stability
+established by Lyapunov analysis. \rev{The proof evaluates the first difference
+of the Lyapunov function exactly, which exposes the cancellations that the
+adaptation law was constructed to produce. The resulting conditions are
+$\sigmax(F-\Km)<1$ together with an upper bound on the adaptation gain, both
+satisfiable over an open set of designs, and both reducing to the expected
+limiting behavior as the adaptation gain tends to zero. The analysis bounds the
+state estimation error and the functional approximation error
+$\Wt_k^T\phi_k$; boundedness of the weight estimate itself follows either from
+persistency of excitation or, without that requirement, from
+$\sigma$-modification of the update law.}
+
+\rev{In simulation on the corrected robot model, the observer satisfies its
+conditions with margin, settles inside the predicted ultimate bound, and under
+deterministic parameter error identifies the uncertainty an order of magnitude
+more accurately than an augmented-state Kalman filter. With realistic sensor
+noise the advantage is confined to the velocity channel. The diagonal error
+injection that makes the proof simplest cannot use the model to reject the
+structured error of the accelerometer-derived tilt, which a Kalman-gain
+injection recovers empirically.}
+
+\rev{A command-filtered neural backstepping controller has been developed for
+the two-wheeled inverted pendulum, an underactuated system with unmatched
+uncertainty. The design assigns damping to every error coordinate, retains and
+explicitly cancels the coupling between the position and attitude error
+subsystems, and uses command filtering so that each network approximates a
+function of measured state and reference alone. Its boundedness result is
+conditional on the command-filter error assumption. For the TWIP that
+assumption does not hold: tracking the non-minimum-phase position output
+places a closed-loop pole at the right-half-plane zero of $x_1(s)/u(s)$, and the
+design could not be stabilized. The revision~7 two-step extra control does
+balance the robot in every case, with mixed effect on tracking accuracy.}
+
+Four directions follow naturally from this work.
+
+\paragraph{A realizable backstepping output.} \rev{Repeating the four-step
+construction on the flat output $y=Cx$, $CB=CAB=CA^2B=0$, which has no zero
+dynamics, or restructuring it as a cascade with a position loop slower than the
+zero, would retain the damping and command-filtering ideas of
+Chapter~\ref{ch:control} while removing the obstruction identified in
+Section~\ref{sec:cfinstab}.}
+
+\paragraph{Output feedback.} The present development assumes full state
+measurement, so the DMSO is properly a filter and uncertainty identifier. The
+structure of Proposition~\ref{prop:exact} carries over to $y_k=Cx_k$ with
+$A=F-\Km C$, and the extension requires only a detectability assumption. This
+is the most direct route to a result that applies to systems where the tilt rate
+or the wheel velocity is not directly measured.
+
+\paragraph{Nonsmooth input nonlinearities.} Backlash violates the smoothness
+assumption underlying the universal approximation property, and the residual
+limit cycles observed both in simulation and on hardware are its signature. A
+network cannot cancel what it cannot approximate. Two remedies are worth
+pursuing: an explicit deadzone- and backlash-inverse placed ahead of the plant,
+or a discontinuous term in the control law that is robust to the deadband rather
+than attempting to estimate it.
+
+\paragraph{Deterministic timing.} \rev{The achievable sample rate on the
+platform was set by telemetry rather than by the control computation, and the
+encoder velocity quantization scales inversely with the sample period. Both are
+implementation choices rather than properties of the algorithm, and both bound
+what any estimator can deliver. Appendix~\ref{app:validation} treats the loop
+rate as a design variable and gives the trade.}

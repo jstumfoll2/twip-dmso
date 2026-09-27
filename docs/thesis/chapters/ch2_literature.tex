@@ -1,0 +1,212 @@
+\chapter{LITERATURE REVIEW}
+\label{ch:lit}
+
+\section{TWO WHEELED INVERTED PENDULUM}
+
+Research on two wheeled inverted pendulums began in the 1990s. Ha and Yuta at
+the University of Tsukuba created the Yamabico Kurara and used a linear
+quadratic regulator design for trajectory tracking control \cite{ha1994trajectory}.
+Shiroma et al.\ built a wheeled inverted pendulum and analyzed its stability in
+the presence of applied forces, using an observer to estimate the unknown force
+\cite{shiroma1996cooperative}. Ozaki et al.\ implemented decoupling control by
+adding an additional state variable, creating a square system, and proposed
+algorithms to cope with the singularity introduced by the feedback
+\cite{ozaki2001position}. Grasser et al.\ at the Industrial Electronics
+Laboratory of the Swiss Federal Institute of Technology created JOE, a mobile
+inverted pendulum, decoupling the robot dynamics and applying pole placement
+together with a filter to suppress the backlash effects of the DC motors
+\cite{grasser2002joe}. Ooi at the University of Western Australia built a
+balancing robot to investigate Kalman filtering for sensor fusion, implementing
+both pole placement and linear quadratic regulator controllers
+\cite{ooi2003balancing}. Various forms of PID control have been investigated by
+a number of researchers
+\cite{solis2011waseda,sun2010researching,guerrero2013realtime,miranda2009application}.
+Kim and Kwon developed a feedforward controller based on the state dependent
+Riccati equation \cite{kim2013nonlinear}.
+
+\rev{Two observations about this body of work bear on the present development.
+First, every one of these designs depends on the physical parameters being known
+accurately, since the gains are computed from them; the sensitivity of the
+closed loop to parameter error is the practical limitation rather than the
+linearization itself. Second, Grasser et al.\ treat backlash as something to be
+filtered out of the measurement rather than compensated in the control, which is
+a reasonable engineering choice but leaves the nonlinearity in the loop. Both
+points recur in Chapter~\ref{ch:platform}.}
+
+The work above is based on linearization of the equations of motion. Nonlinear
+control of two wheeled inverted pendulums is a current topic of research. Kim et
+al.\ investigated the exact dynamics of a two wheeled inverted pendulum robot,
+examining stability on an inclined plane and in turning motion
+\cite{kim2005dynamic}. Pathak et al.\ used the full nonlinear equations obtained
+by the Euler-Lagrange method and applied partial feedback linearization to
+control velocity and position \cite{pathak2005twip}. \rev{This last is worth
+singling out: the partial feedback linearization decomposition makes explicit
+that the actuated and unactuated subsystems must be treated differently, and
+that the tilt state rather than the motor voltage is the effective control
+authority available to the position loop. That observation is the structural
+basis for the virtual control used in Chapter~\ref{ch:control}.} Askari et al.\
+implemented a form of model predictive control and studied performance under
+input disturbances \cite{askari2009model}. Shibayama et al.\ implemented an
+observer-based robust controller to counteract unknown disturbances, permitting
+the use of a simplified system model \cite{shibayama2010robust}. Ja and Lee
+implemented sliding mode control, improving on linear controllers when far from
+equilibrium \cite{ja2012position}. Tsai and Ju implemented backstepping sliding
+mode control for trajectory tracking and stabilization by first decoupling the
+kinematics and dynamics \cite{tsai2010trajectory}. Do and Seet combined partial
+feedback linearization with $p$-times differentiable saturation and backstepping;
+the resulting controller has a large domain of attraction and is simple to tune
+\cite{do2010motion}. Rudra and Barai developed a robust adaptive backstepping
+technique that estimates the system parameters and removes the need for prior
+knowledge of them \cite{rudra2012robust}. Durdevic and Yang proposed a hybrid
+switching controller to overcome the backlash nonlinearity of DC motors and
+demonstrated its effectiveness experimentally \cite{durdevic2013hybrid}. Yue,
+Wei, and Li developed an adaptive sliding mode technique based on zero dynamics
+theory, allowing parameter uncertainties to be estimated and providing
+robustness in the presence of nonlinearities \cite{yue2014adaptive}.
+
+The general backstepping machinery underlying several of these designs is due to
+Krsti\'c et al.\ \cite{krstic1995nonlinear}, and the standard stability tools
+used throughout are collected in Khalil \cite{khalil2002nonlinear} and in Slotine
+and Li \cite{slotine1991applied}.
+
+Neural networks have been used by a number of researchers to control the two
+wheeled inverted pendulum. Noh, Lee, and Jung used radial basis function
+networks to control the unstable system, deriving an online training law from
+the back-propagation algorithm \cite{noh2008position,jung2008control}. Tsai,
+Huang, and Lin proposed an adaptive technique using radial basis function
+networks, employing backstepping and Lyapunov analysis to synthesize stable
+adaptive control laws \cite{tsai2010adaptive}. Li and Yang formulated an output
+feedback adaptive neural network controller with a linear dynamic compensator
+and showed that it outperforms a model based controller when parametric
+uncertainties are present \cite{li2012neural}. Li, Yang, and Fan devote a
+chapter of their book on advanced nonlinear control of wheeled inverted
+pendulums to neural network control using radial basis functions
+\cite{li2013advanced}. Optimal control remains a smaller area of research for
+these systems, though Gomez et al.\ developed a strategy based on Control
+Adjoining Cell Mapping Reinforcement Learning and tested it on a robot built
+from LEGO NXT components \cite{gomez2012optimal}.
+
+Applications of the wheeled inverted pendulum configuration extend beyond the
+laboratory; Neugebauer et al.\ describe mobile systems of this type used for
+machining large work pieces \cite{neugebauer2012mobile}.
+
+\rev{The common difficulty across all of the nonlinear and adaptive work above,
+for the TWIP specifically, is underactuation. A single input drives both
+acceleration equations, so an uncertainty appearing in the tilt acceleration
+cannot be cancelled by the same signal that cancels an uncertainty in the
+translational acceleration. Two of the works cited treat the actuator
+nonlinearity directly rather than absorbing it into a lumped uncertainty
+\cite{grasser2002joe,durdevic2013hybrid}, and the broader adaptive treatment of
+actuator nonlinearities is due to Tao and Kokotovi\'c \cite{tao1993backlash}.
+This matters here because backlash is not smooth and therefore falls outside the
+function class covered by the universal approximation property. A network can
+approximate such a nonlinearity only in an averaged sense, and the residual
+appears as a floor on the achievable tracking error rather than as something
+further adaptation can remove; see Remark~\ref{rem:backlash}.}
+
+\rev{\subsection{Command Filtering}
+
+Classical backstepping requires analytic differentiation of each virtual control
+law, which produces an expanding chain of terms and, when the virtual control
+contains an online function estimate, requires differentiating the weight update
+law itself. Command filtering, introduced by Farrell et al.\
+\cite{farrell2009command} and developed as dynamic surface control by Swaroop et
+al.\ \cite{swaroop2000dsc}, replaces analytic differentiation with a
+bandwidth-limited filter and compensates for the resulting filter error within
+the stability argument. This device is used in Chapter~\ref{ch:control}, where
+it serves a second purpose beyond avoiding the explosion of terms: it breaks the
+algebraic dependence that would otherwise exist between the two neural networks'
+approximation targets, as detailed in Remark~\ref{rem:order}.}
+
+\section{MODIFIED STATE OBSERVER}
+
+Artificial neural networks have emerged as a capable tool in adaptive control.
+Modeled after the behavior of neurons in biological systems, they have proven
+effective as function approximators \cite{hornik1989multilayer,sadegh1993nonlinear}.
+This approximation capability has been adapted into many methods of adaptive
+control that use networks to estimate nonlinear system uncertainty
+\cite{yang2013electrohydraulic,jagannathan2006neural}. Rajagopal et al.\
+developed the Modified State Observer (MSO) as a method of estimating nonlinear
+uncertainty by combining a standard Luenberger observer structure with a neural
+network \cite{rajagopal2009mso}. The MSO allows the designer to use large
+adaptive gains without the high frequency oscillation in the control signal that
+could otherwise excite unmodeled dynamics.
+
+Although originally applied to control, the MSO has also been used purely for
+state estimation. Harl et al.\ applied it to an orbit uncertainty estimation
+problem and extended the method to a reduced order formulation for cases where
+the full state cannot be measured \cite{harl2011orbit}. Darling et al.\ used the
+MSO and its reduced order form in an atmospheric reentry uncertainty estimation
+problem, estimating the uncertain aerodynamic acceleration of falling debris
+\cite{darling2012reentry}, and subsequently developed the Sigma Point MSO, which
+applies sigma point filtering in the manner of the unscented Kalman filter and
+admits nonlinear measurements with a variable observer gain
+\cite{darling2013sigma}. Yang et al.\ formulated a model reference adaptive
+control design based on the MSO to control a nonlinear electrohydraulic system
+with parameter uncertainty from a simplified linear model
+\cite{yang2013electrohydraulic}. Pappu et al.\ formulated an MSO-based adaptive
+control law and applied it to the Black Kite micro air vehicle
+\cite{pappu2014blackkite}.
+
+All of this previous work on the MSO is in continuous time. In practice,
+implementation on a digital system requires integrating the dynamics over time
+at every step. Discrete time implementations have the advantage of reduced
+computation in addition to being designed for digital hardware directly.
+Discrete time neural networks have themselves been a topic of study in adaptive
+control \cite{jagannathan2006neural}. To a lesser extent they have been used
+specifically as observers. Salgado and Chairez used recurrent networks with
+offline training based on a least mean square method to construct a discrete
+time neural observer \cite{salgado2013nonlinear}. Alanis et al.\ proposed a
+reduced order discrete time neural observer trained offline by an extended
+Kalman filter using high order recurrent networks \cite{alanis2010reduced}. What
+these works lack is an online training law with guaranteed boundedness. Lewis et
+al.\ developed a multilayer discrete time neural network observer using online
+training \cite{lewis1999neural}; the present work differs in the weight update
+law and in the observer structure, and requires substantially fewer tunable
+parameters, which simplifies both the design and the tuning effort.
+
+\rev{\subsection{Method Notes}
+
+Three points of technique motivate the proof given in Chapter~\ref{ch:dmso}.
+
+First, the weight error recursion in discrete time adaptive schemes has the form
+$\Wt_{k+1}=(I-\Gamma\phi_k\phi_k^T)\Wt_k+(\cdot)$, in which
+$I-\Gamma\phi\phi^T$ is a symmetric rank-one perturbation of the identity. Its
+spectrum is $\{1,\,1-\Gamma\norm{\phi}^2\}$, so its induced two-norm is
+$\max\{1,\abs{1-\Gamma\norm{\phi}^2}\}$ and not $\abs{1-\Gamma\norm{\phi}^2}$
+\cite{horn2013matrix}. Bounding this quantity before the Lyapunov difference is
+formed discards the structure that the adaptation law was constructed to
+produce.
+
+Second, the condition $0<\Gamma\norm{\phi_k}^2<2$ familiar from the persistency
+of excitation literature \cite{sadegh1993nonlinear,lewis1999neural} is recovered
+directly from the exact first difference, and is not an independent assumption.
+
+Third, weight drift in the absence of persistent excitation is a long-standing
+concern in adaptive control, and $\sigma$-modification was introduced by Ioannou
+and Kokotovi\'c \cite{ioannou1983adaptive,ioannou1984sigma} precisely to address
+it. The device is used twice in this work: on the controller networks in
+Chapter~\ref{ch:control}, as in the previous revision, and additionally on the
+observer network in Section~\ref{sec:sigmod}. Applying it in both places makes
+the two stability arguments structurally consistent and removes reliance on an
+excitation condition that regulation about an equilibrium does not supply.}
+
+\section{SUPPORTING MATERIAL}
+
+The matrix algebra used in Chapter~\ref{ch:dmso}, in particular the properties of
+semi-orthogonal matrices and of the Frobenius norm, follows Abadir and Magnus
+\cite{abadir2005matrix} and Horn and Johnson \cite{horn2013matrix}. Young's
+inequality is due to Young \cite{young1912classes}, and the triangle inequality
+and related numerical results follow Kress \cite{kress1998numerical}. The
+rotation sequences used to obtain the tilt angle from the accelerometer in
+Section~\ref{sec:measurements} follow Kuipers \cite{kuipers1999quaternions}, and
+the complementary filter used to fuse the accelerometer and gyroscope follows
+Higgins \cite{higgins1975comparison}. The rigid body dynamics used in
+Chapter~\ref{ch:model} follow Hibbeler \cite{hibbeler2010dynamics}, and the DC
+motor and mechatronic subsystem models follow de Silva
+\cite{desilva2004mechatronics}. The virtual control construction extended in
+Chapter~\ref{ch:control} is due to Huang \cite{huang2002lyapunov}. The Kalman
+filter baseline follows Kalman \cite{kalman1960} and Simon
+\cite{simon2006optimal}, and the inertial sensor error models used in
+Section~\ref{sec:noise} follow Gebre-Egziabher \cite{gebreegziabher2004design}
+and Flenniken \cite{flenniken2005modeling}.

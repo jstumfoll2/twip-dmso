@@ -1,0 +1,140 @@
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+%=======================================================================
+\thispagestyle{empty}
+\begin{center}
+\singlespacing
+\vspace*{0.5in}
+
+{\large\bfseries
+DISCRETE-TIME NEURAL NETWORK BASED STATE OBSERVER\\[0.4em]
+WITH COMMAND-FILTERED NEURAL NETWORK CONTROL FOR A CLASS\\[0.4em]
+OF SYSTEMS WITH UNMATCHED UNCERTAINTIES}
+
+\vspace{0.8in}
+by
+\vspace{0.4in}
+
+JASON MICHAEL STUMFOLL
+
+\vspace{0.8in}
+A THESIS
+\vspace{0.4in}
+
+Presented to the Faculty of the Graduate School of the
+
+\vspace{0.3in}
+MISSOURI UNIVERSITY OF SCIENCE AND TECHNOLOGY
+
+\vspace{0.4in}
+In Partial Fulfillment of the Requirements for the Degree
+
+\vspace{0.5in}
+MASTER OF SCIENCE IN AEROSPACE ENGINEERING
+
+\vspace{0.5in}
+Revision 8
+
+\vfill
+\end{center}
+\doublespacing
+\clearpage
+
+%=======================================================================
+\chapter*{ABSTRACT}
+\addcontentsline{toc}{chapter}{ABSTRACT}
+
+An observer is a dynamic system that estimates the state variables of another
+system from noisy measurements, either to reconstruct unmeasured states or to
+improve the accuracy of measured ones. The Modified State Observer (MSO) is a
+standard observer structure augmented with an online neural network that
+estimates both the system states and the system uncertainty. It has been applied
+to orbit uncertainty estimation, atmospheric reentry uncertainty estimation, and
+the control of a nonlinear electrohydraulic system with parameter uncertainty.
+
+This work develops the discrete-time extension of the MSO (DMSO) and establishes
+its stability using Lyapunov theory. \rev{The stability argument presented here
+evaluates the Lyapunov first difference exactly rather than bounding it term by
+term. Doing so exposes a family of cancellations produced by the adaptation law
+itself, and yields admissibility conditions that are both satisfiable and
+physically interpretable: the error-injection matrix must satisfy
+$\sigmax(F-\Km)<1$, and the adaptation gain must be bounded above. In
+particular, small adaptation gains are admissible, which a term-by-term bound
+incorrectly excludes.}
+
+To demonstrate the DMSO, simulation studies are performed on a two-wheeled
+inverted pendulum (TWIP) robot, an unstable nonlinear system with unmatched
+uncertainties, and the observer is implemented on hardware.
+
+\rev{A command-filtered backstepping controller with neural network uncertainty
+compensation is then developed for the TWIP. The controller uses the tilt angle
+as a virtual control for the position subsystem. Relative to a two-step design,
+the formulation here (i) retains the coupling term between the position and
+attitude error subsystems and cancels it explicitly, (ii) assigns damping to
+every error coordinate rather than only to the two driven coordinates, and (iii)
+uses command filtering so that the functions approximated by the neural networks
+depend only on measured states and the reference trajectory, removing the
+algebraic dependence of each network's target on the other network's output.
+Uniform ultimate boundedness of all tracking errors and all weight estimation
+errors follows, with $\sigma$-modification supplying weight boundedness without
+a persistency-of-excitation requirement.}
+
+\clearpage
+
+%=======================================================================
+\chapter*{ACKNOWLEDGMENTS}
+\addcontentsline{toc}{chapter}{ACKNOWLEDGMENTS}
+
+I want to acknowledge my advisor, Dr.\ S.\ N.\ Balakrishnan, for all of his
+support and guidance throughout this project. I want to thank my committee,
+Dr.\ Jagannathan Sarangapani and Dr.\ Joshua Rovey, for their classes and for
+the research opportunities provided throughout my collegiate career. A large
+part of this goes to Avimanyu Sahoo, who proved invaluable during my
+difficulties with the mathematics necessary for this work. I also want to thank
+my parents for their support through my years in school, and, lastly but not
+least, the love of my life, for being there with me every step of the way.
+
+\clearpage
+
+%=======================================================================
+\singlespacing
+\tableofcontents
+\clearpage
+\listoffigures
+\addcontentsline{toc}{chapter}{LIST OF ILLUSTRATIONS}
+\clearpage
+\listoftables
+\addcontentsline{toc}{chapter}{LIST OF TABLES}
+\clearpage
+
+%=======================================================================
+\chapter*{NOMENCLATURE}
+\addcontentsline{toc}{chapter}{NOMENCLATURE}
+
+\begin{tabbing}
+\hspace{1.3in}\=\kill
+$x_k$        \> System state vector at time step $k$, $x_k\in\R^n$ \\
+$\xhat_k$    \> State estimate \\
+$e_k$        \> State estimation error, $e_k=x_k-\xhat_k$ \\
+$F,\,G$      \> Discretized system and input matrices \\
+$\Bm$        \> Uncertainty selection matrix, $\Bm\in\R^{n\times p}$ \\
+$\Km$        \> Observer error-injection gain \\
+$A$          \> Error-injection matrix, $A=F-\Km$ \\
+$f(\cdot)$   \> Unknown uncertainty vector \\
+$W,\,\What_k$\> Ideal and estimated neural network weights \\
+$\Wt_k$      \> Weight estimation error, $\Wt_k=W-\What_k$ \\
+$\phi_k$     \> Basis (activation) vector, $\phi_k=\phi(x_k)$ \\
+$\psi_k$     \> Functional approximation error, $\psi_k=\Wt_k^T\phi_k$ \\
+$\epsilon_k$ \> Network reconstruction error, $\norm{\epsilon_k}\le\epsilon_N$ \\
+$\Gamma$     \> Observer network adaptation gain \\
+$\kappa$     \> $\sigma$-modification (leakage) gain \\
+$z_i$        \> Backstepping error coordinates, $i=1,\dots,4$ \\
+$\chi_i$     \> Command filter errors \\
+$c_i$        \> Backstepping damping gains \\
+$\varpi_i$   \> Command filter bandwidths \\
+$\theta$     \> Pendulum tilt angle from vertical \\
+$V$          \> Motor terminal voltage (control input) \\
+\end{tabbing}
+\doublespacing
+\clearpage

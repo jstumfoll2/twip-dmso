@@ -1,0 +1,95 @@
+%=======================================================================
+%  Discrete-Time Modified State Observer and Command-Filtered Neural
+%  Control for a Two-Wheeled Inverted Pendulum
+%
+%  Revision 8 -- corrected stability derivations
+%  Build:  latexmk -pdf main.tex     (or: pdflatex main; bibtex main; x2)
+%=======================================================================
+\documentclass[12pt,letterpaper,oneside]{report}
+
+%------------------------- packages -----------------------------------
+\usepackage[margin=1in,top=1.25in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{tocloft}
+\usepackage{siunitx}
+\usepackage[nottoc]{tocbibind}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+
+\graphicspath{{figures/}}
+\doublespacing
+
+%------------------------- theorem environments -----------------------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+%------------------------- macros -------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Tr}{\operatorname{Tr}}
+\newcommand{\sigmax}{\sigma_{\max}}
+\newcommand{\lmin}{\lambda_{\min}}
+\newcommand{\lmax}{\lambda_{\max}}
+\newcommand{\Bm}{B_{\mathrm{MSO}}}
+\newcommand{\Km}{K_{\mathrm{MSO}}}
+\newcommand{\What}{\hat{W}}
+\newcommand{\Wt}{\tilde{W}}
+\newcommand{\xhat}{\hat{x}}
+\newcommand{\fhat}{\hat{f}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\dd}{\mathrm{d}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% placeholder for a figure not yet regenerated
+\usepackage{xcolor}
+\newcommand{\figslot}[2][0.8]{%
+  \fboxsep=0pt\fcolorbox{black!35}{black!4}{%
+    \parbox[c][\dimexpr #1\textwidth*55/100\relax][c]{#1\textwidth}{%
+      \centering\small\itshape\color{black!55}#2}}}
+
+% change-bar marker for material that differs from revision 7
+\newcommand{\rev}[1]{#1}
+
+%------------------------- front matter titles ------------------------
+\renewcommand{\bibname}{BIBLIOGRAPHY}
+
+\begin{document}
+
+\include{frontmatter}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{chapters/ch1_introduction}
+\include{chapters/ch2_literature}
+\include{chapters/ch3_dmso}
+\include{chapters/ch4_platform}
+\include{chapters/ch5_model}
+\include{chapters/ch6_control}
+\include{chapters/ch7_simulation}
+\include{chapters/ch8_results}
+\include{chapters/ch9_conclusions}
+
+\appendix
+\include{chapters/appA_validation}
+\include{chapters/appB_errata}
+
+\bibliographystyle{ieeetr}
+\bibliography{refs}
+
+\include{vita}
+
+\end{document}

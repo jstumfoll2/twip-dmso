@@ -1,0 +1,161 @@
+\chapter{TECHNICAL CHANGES FROM REVISION 7}
+\label{app:errata}
+
+This appendix records the specific technical differences between this revision
+and revision~7, with the equation numbers of the earlier document given for
+reference.
+
+\section{CHAPTER 3: THE DMSO STABILITY PROOF}
+
+\paragraph{B.1.1 Bound on $\norm{I-\Gamma\phi\phi^T}$ (was Eq.~22).}
+Revision~7 used
+$\norm{(I-\Gamma\phi\phi^T)\Wt}^2\le(1-\Gamma\norm{\phi}^2)^2\norm{\Wt}^2$. The
+matrix $I-\Gamma\phi\phi^T$ is symmetric with eigenvalue $1$ of multiplicity
+$l-1$ and eigenvalue $1-\Gamma\norm{\phi}^2$ of multiplicity one, so its induced
+$2$-norm is $\max\{1,\abs{1-\Gamma\norm{\phi}^2}\}$, which equals $1$ whenever
+$\Gamma\norm{\phi}^2\le1$. The factor used was strictly smaller than the true
+norm, so the step was not conservative but invalid. Substituting the correct
+value makes the coefficient of $\norm{\Wt_k}^2$ in the former Eq.~(23) equal to
+$2/\alpha+3\phi_{\max}^2>0$, and the argument cannot close in that form.
+
+\paragraph{B.1.2 Gain conditions (was Eqs.~26--27).}
+Substituting the choice $\alpha=1/(3\phi_{\max}^2)$ into the former Eq.~(26)
+gives
+\begin{equation}\label{eq:persq}
+\frac{2}{\alpha}-6\frac{\Gamma}{\alpha}\phi_{\max}^2
++3\frac{\Gamma^2}{\alpha}\phi_{\max}^4+3\phi_{\max}^2
+=9\phi_{\max}^2\bigl(1-\Gamma\phi_{\max}^2\bigr)^2\ \ge\ 0 ,
+\end{equation}
+a perfect square, whereas the condition required the expression to be
+nonpositive. The only admissible point is the boundary
+$\Gamma=1/\phi_{\max}^2$, at which the coefficient is zero rather than negative.
+The reported condition $\Gamma\le1/\phi_{\max}^2$ was therefore satisfied by no
+interior point and excluded small gains, which is the opposite of the correct
+behavior established in Theorem~\ref{thm:main} and Corollary~\ref{cor:theta1}.
+
+\paragraph{B.1.3 Weight bound (was Eq.~33).}
+The bound inherited the denominator
+$-9\phi_{\max}^2(1-\Gamma\phi_{\max}^2)^2\le0$ from \eqref{eq:persq} and was
+therefore either undefined or infinite. It is replaced by the honest statement
+of Theorem~\ref{thm:main}, which bounds $\Wt_k^T\phi_k$, together with
+Section~\ref{sec:weightbound}, which obtains boundedness of $\Wt_k$ from
+persistency of excitation or $\sigma$-modification.
+
+\paragraph{B.1.4 Matrix norm (was above Eq.~23).}
+Revision~7 used $\norm{A}\le\lmax(A)$. The induced $2$-norm is the largest
+singular value, and $\sigmax(A)\ge\rho(A)$ with equality only for normal $A$.
+For $A=F-\Km$ the inequality is generally strict and $\lmax(A)$ may be complex.
+See Remark~\ref{rem:nonnormal}.
+
+\paragraph{B.1.5 The matrix $Q$ (was after Eq.~28).}
+With $P=I$ in the discrete Lyapunov equation $A^TPA-P=-Q$, one has
+$Q=I-A^TA$ and $\lmin(Q)=1-\sigmax(A)^2$, so $Q$ is determined by $A$ and is not
+independently selectable. The former condition then reduces to
+$\sigmax(A)^2\le1/(3+9\Gamma^2\phi_{\max}^4)$, requiring
+$\sigmax(A)\lesssim0.29$ at $\Gamma\phi_{\max}^2=1$. The corrected condition is
+$\sigmax(A)<1$.
+
+\paragraph{B.1.6 Structural cause.}
+Applying Young's inequality to the first difference before evaluating the trace
+difference discards the cancellations established in
+Proposition~\ref{prop:exact}, which are precisely what the adaptation law was
+constructed to produce.
+
+\section{CHAPTER 6: THE EXTRA CONTROL DESIGN}
+
+\paragraph{B.2.1 Missing coupling term (was Eqs.~97 and 100).}
+The former Eq.~(97) was obtained by substituting $x_3=\bar x_3$ from the former
+Eq.~(93), and was then reused in Eq.~(100) in a setting where $x_3\ne\bar x_3$
+by construction. Carrying $x_3=\bar x_3+\bar e_3$ through leaves a term
+$+A_2\bar e_3$ in $\dot{\bar e}_2$ that did not appear in the error dynamics or
+in the Lyapunov derivative. In the present design this term is retained as
+$A_2z_3$ in \eqref{eq:z2dot} and cancelled by the $-A_2z_2$ term in
+\eqref{eq:alpha3}.
+
+\paragraph{B.2.2 Undamped error coordinates (was Eqs.~122 and 138--140).}
+In revision~7 the cross terms $\bar e_1^T\bar e_2$ and $\bar e_3^T\bar e_4$
+cancelled, removing $\bar e_1$ and $\bar e_3$ from the Lyapunov derivative
+entirely, and the stated conditions involved only $\norm{\bar e_2}$ and
+$\norm{\bar e_4}$. Uniform ultimate boundedness requires the derivative to be
+negative outside a compact set in the full error space, which cannot hold in a
+direction absent from the derivative. Since $\dot{\bar e}_1=\bar e_2$ is a pure
+integrator, a bounded but nonvanishing $\bar e_2$ permits $\bar e_1$ to ramp.
+The four-step design of Section~\ref{sec:cffb} assigns damping to all four
+coordinates.
+
+\paragraph{B.2.3 Circular approximation targets (was Eqs.~96 and 104).}
+The former $F_1$ contained $B_1u_e$, with $u_e$ a function of $\hat F_2$, while
+the former $F_2$ contained $-\dot{\bar x}_4$, which contains derivatives of
+$\hat F_1$ and hence of the weight estimates. Neither target was a fixed
+continuous function of its network input, so the universal approximation
+hypothesis did not apply. The targets \eqref{eq:F1} and \eqref{eq:F2} contain no
+control signal and no adaptive parameter; the command filters of
+Section~\ref{sec:cmdfilter} supply the required derivative signals as filter
+states and break the algebraic loop, as detailed in Remark~\ref{rem:order}.
+
+\paragraph{B.2.4 Unmatched first-layer weights (was Eqs.~122 and 134).}
+The hidden-layer activation error $\tilde\sigma_{i2}$ was bounded by a constant
+$W_{i2m}\sigma_{i2m}$, so the first-layer weight error never appeared in the
+Lyapunov derivative and the first-layer update law was unjustified by the
+analysis. Equation \eqref{eq:nnerr} uses the standard two-layer Taylor form in
+which both layers' weight errors appear linearly and are matched term by term by
+the update laws \eqref{eq:upd2}--\eqref{eq:upd1}.
+
+\paragraph{B.2.5 Sign convention (was Eqs.~111--114).}
+The two layers carried opposite overall signs in the update laws. Both laws in
+\eqref{eq:upd2}--\eqref{eq:upd1} now use the same convention.
+
+\paragraph{B.2.6 Riccati equation (was Eq.~83).}
+The trailing factor was written as $A$, a carryover from continuous-time
+notation. It is $F$, the discretized system matrix; see \eqref{eq:dare}.
+
+\section{FRAMING AND REPORTING}
+
+\paragraph{B.3.1 Observer or filter.}
+With $y_k=x_k$ the full state is measured. The method is a filter and
+uncertainty identifier rather than an observer in the unmeasured-state sense,
+and this is now stated explicitly.
+
+\paragraph{B.3.2 Kalman filter comparison.}
+Comparing against a Kalman filter that is given no mechanism to accommodate a
+deterministic modeling error establishes little. Three baselines are now used,
+including an augmented-state filter that estimates the uncertainty as a random
+walk, and improvement claims are stated against that one.
+
+\paragraph{B.3.3 Aggregated percentages.}
+An average percentage improvement taken over heterogeneous cases is not a
+meaningful statistic. Metrics are now reported per case.
+
+\paragraph{B.3.4 Complementary filter result.}
+The finding that the complementary filter outperforms both model-based
+estimators when those are fed raw accelerometer tilt is retained and explained:
+it is a statement about measurement construction, not about estimator quality.
+\rev{Re-examined on the hardware data in Section~\ref{sec:implresults}, it holds
+for the DMSO but not for a Kalman filter whose measurement variance reflects
+the actual accelerometer tilt error.}
+
+\section{MODEL AND RESULTS}
+
+\paragraph{B.4.1 Plant model.} \rev{Three corrections enter the simulations of
+Chapter~\ref{ch:results} (Section~\ref{sec:simmodel}): the back-EMF acts on the
+wheel rate relative to the body; $k_e=\SI{0.307}{V.s/rad}$ from the free-run
+data in place of \SI{0.00361}{V.s/rad}; and $I_p$ is taken about the center of
+gravity. The sensor model now includes the accelerometer kinematics and the
+relative encoder measurement.}
+
+\paragraph{B.4.2 Parameter perturbation.} \rev{The torque-constant error of the
+uncertainty cases is reduced from $\times2.5$ to $\times1.25$, and $l$ is left
+unperturbed, as in the revision~7 extra-control plant. With the corrected model,
+the revision~7 perturbation cannot be stabilized by the nominal LQR even with
+perfect state knowledge.}
+
+\paragraph{B.4.3 Command-filtered design.} \rev{The design of
+Section~\ref{sec:cffb} is not realizable for the TWIP in its present form; see
+Remark~\ref{rem:realizability} and Section~\ref{sec:cfinstab}. The applied
+control is also independent of $u_{\mathrm{nom}}$, which cancels in
+\eqref{eq:ue}.}
+
+\paragraph{B.4.4 Noise table.} \rev{The units of Table~\ref{tab:noise} are
+corrected to variances, the tilt white-noise variance is the value used in
+simulation ($4.0474\times10^{-6}$ rather than $4.0397\times10^{-6}$~rad$^2$),
+and the walking-bias entries are identified as steady-state variances.}

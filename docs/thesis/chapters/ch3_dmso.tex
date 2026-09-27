@@ -1,0 +1,438 @@
+\chapter{DISCRETE-TIME MODIFIED STATE OBSERVER}
+\label{ch:dmso}
+
+The Discrete-Time Modified State Observer (DMSO) is an extension of the Modified
+State Observer of Rajagopal et al.\ \cite{rajagopal2009mso} to discrete time.
+This chapter states the problem, gives the observer and its adaptation law, and
+establishes uniform ultimate boundedness of the state estimation error and the
+functional approximation error by Lyapunov analysis.
+
+\rev{The derivation evaluates the Lyapunov first difference exactly before any
+bounding is performed. This is not a stylistic preference. The adaptation law is
+constructed so that the cross terms coupling the weight error to the state
+estimation error and to the network reconstruction error cancel identically, and
+a term-by-term bound applied in advance destroys those cancellations. The
+consequences are recorded in Appendix~\ref{app:errata}.}
+
+\section{NOTATION}
+
+$\norm{\cdot}$ denotes the Euclidean norm on vectors and the induced $2$-norm on
+matrices; $\norm{\cdot}_F$ denotes the Frobenius norm, $\norm{M}_F^2=\Tr(M^TM)$.
+For square $M$, $\sigmax(M)$ is the largest singular value and $\rho(M)$ the
+spectral radius. Recall $\rho(M)\le\sigmax(M)=\norm{M}$, with equality only when
+$M$ is normal \cite{horn2013matrix}. $\lmin(\cdot)$ and $\lmax(\cdot)$ denote
+extreme eigenvalues of a symmetric matrix. Properties of semi-orthogonal
+matrices and of the Frobenius norm follow Abadir and Magnus
+\cite{abadir2005matrix}.
+
+\section{PROBLEM STATEMENT}
+\label{sec:problem}
+
+\begin{assumption}[Plant]\label{as:plant}
+The plant evolves as
+\begin{equation}\label{eq:plant}
+x_{k+1}=Fx_k+Gu_k+\Bm f(x_k),\qquad y_k=x_k,
+\end{equation}
+with $x_k\in\R^n$ the state, $u_k\in\R^m$ the control, $F\in\R^{n\times n}$ the
+discretized system matrix, $G\in\R^{n\times m}$ the discretized input matrix,
+and $f:\R^n\to\R^p$ an unknown smooth vector of uncertainties, $p$ being the
+number of states carrying uncertainty.
+\end{assumption}
+
+\begin{assumption}[Selection matrix]\label{as:B}
+$\Bm\in\R^{n\times p}$ contains exactly one unit entry per column, all other
+entries zero, with no two columns equal. Its columns are therefore distinct
+standard basis vectors of $\R^n$, so
+\begin{equation}\label{eq:Bprops}
+\Bm^T\Bm=I_p,\qquad \norm{\Bm}=1,\qquad \Bm\Bm^T=\Pi,
+\end{equation}
+where $\Pi$ is the orthogonal projector onto the uncertain coordinates. Only the
+left identity in \eqref{eq:Bprops} is used below; note that
+$\Bm\Bm^T\neq I_n$ whenever $p<n$.
+\end{assumption}
+
+\begin{assumption}[Functional approximation]\label{as:nn}
+On the compact operating set there exist ideal weights $W\in\R^{l\times p}$ and
+a basis $\phi:\R^n\to\R^l$ with
+\begin{equation}\label{eq:fla}
+f(x_k)=W^T\phi(x_k)+\epsilon_k,\qquad
+\norm{\epsilon_k}\le\epsilon_N,\qquad
+\norm{\phi(x_k)}\le\phi_{\max},
+\end{equation}
+$\epsilon_N$ and $\phi_{\max}$ known and finite. Write $\phi_k:=\phi(x_k)$. The
+universal approximation property of two-layer networks is due to Hornik et al.\
+\cite{hornik1989multilayer}; Sadegh \cite{sadegh1993nonlinear} extended it to the
+single-layer functional link form used here, in which one layer suffices provided
+$\phi$ is selected as a basis.
+\end{assumption}
+
+\begin{assumption}[Bounded ideal weights]\label{as:WM}
+$\norm{W}_F\le W_M<\infty$. Used only in Section~\ref{sec:sigmod}.
+\end{assumption}
+
+\section{OBSERVER AND ADAPTATION LAW}
+
+The observer is the modified Luenberger form
+\begin{equation}\label{eq:obs}
+\xhat_{k+1}=F\xhat_k+Gu_k+\Bm\fhat(x_k)+\Km\bigl(y_k-\xhat_k\bigr),
+\qquad
+\fhat(x_k)=\What_k^T\phi_k,
+\end{equation}
+with $\Km\in\R^{n\times n}$ a constant design gain and $\What_k\in\R^{l\times p}$
+the weight estimate. Define the error-injection matrix
+\begin{equation}\label{eq:A}
+A:=F-\Km .
+\end{equation}
+Because $y_k=x_k$, $\Km$ is entirely at the designer's disposal and $A$ may be
+assigned arbitrarily, including $A=0$; see Corollary~\ref{cor:deadbeat}.
+
+The adaptation law is
+\begin{equation}\label{eq:update}
+\What_{k+1}=\What_k+\Gamma\,\phi_k\,e_{k+1}^T\Bm,\qquad \Gamma>0,
+\end{equation}
+where $e_k:=x_k-\xhat_k$ and $\Wt_k:=W-\What_k$. The law is causal: $\What_{k+1}$
+is formed at step $k+1$, at which time $e_{k+1}$ is available.
+
+Three quantities recur and are named once:
+\begin{equation}\label{eq:shorthand}
+\psi_k:=\Wt_k^T\phi_k\in\R^p,\qquad
+\zeta_k:=\psi_k+\epsilon_k\in\R^p,\qquad
+a_k:=\Bm^TAe_k\in\R^p .
+\end{equation}
+Here $\psi_k$ is the \emph{functional} approximation error, the quantity the
+network must drive small, and $\zeta_k$ the total uncertainty reconstruction
+error. Since $\norm{\Bm}=1$, $\norm{a_k}\le\norm{Ae_k}$.
+
+\section{ERROR DYNAMICS}
+
+\begin{lemma}[State estimation error]\label{lem:err}
+Under Assumptions~\ref{as:plant}--\ref{as:nn},
+\begin{equation}\label{eq:errdyn}
+e_{k+1}=Ae_k+\Bm\zeta_k .
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Subtracting \eqref{eq:obs} from \eqref{eq:plant} with $y_k=x_k$,
+\[
+e_{k+1}=Fe_k-\Km e_k+\Bm\bigl(f(x_k)-\fhat(x_k)\bigr)
+       =Ae_k+\Bm\bigl(W^T\phi_k+\epsilon_k-\What_k^T\phi_k\bigr),
+\]
+and $W^T\phi_k-\What_k^T\phi_k=\Wt_k^T\phi_k=\psi_k$.
+\end{proof}
+
+\begin{lemma}[Weight error]\label{lem:werr}
+With $\xi_k:=a_k+\zeta_k$,
+\begin{equation}\label{eq:wdyn}
+\Wt_{k+1}=\Wt_k-\Gamma\phi_k\xi_k^T
+=\bigl(I-\Gamma\phi_k\phi_k^T\bigr)\Wt_k-\Gamma\phi_k\bigl(a_k+\epsilon_k\bigr)^T .
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+From \eqref{eq:update}, $\Wt_{k+1}=\Wt_k-\Gamma\phi_k e_{k+1}^T\Bm$. By
+Lemma~\ref{lem:err} and $\Bm^T\Bm=I$,
+\[
+e_{k+1}^T\Bm=\bigl(Ae_k+\Bm\zeta_k\bigr)^T\Bm
+=e_k^TA^T\Bm+\zeta_k^T=a_k^T+\zeta_k^T=\xi_k^T .
+\]
+The second equality follows from
+$\Gamma\phi_k\zeta_k^T=\Gamma\phi_k\phi_k^T\Wt_k+\Gamma\phi_k\epsilon_k^T$.
+\end{proof}
+
+\section{LYAPUNOV STABILITY PROOF}
+\label{sec:proof}
+
+Take the Lyapunov candidate
+\begin{equation}\label{eq:V}
+V_k=e_k^Te_k+\frac{1}{\Gamma}\Tr\bigl(\Wt_k^T\Wt_k\bigr)
+   =\norm{e_k}^2+\frac{1}{\Gamma}\norm{\Wt_k}_F^2\;\ge\;0 .
+\end{equation}
+\rev{The adaptation gain $\Gamma$ itself serves as the weighting. No independent
+Lyapunov constant is introduced; introducing one and then tying it to $\Gamma$
+by a later choice is what places the argument of revision~7 on the boundary of
+its own admissibility condition.}
+
+\subsection{The Exact First Difference}
+
+\begin{proposition}[Exact difference]\label{prop:exact}
+Let $\gamma_k:=\Gamma\norm{\phi_k}^2$. Then
+\begin{equation}\label{eq:exact}
+\Delta V_k=-\norm{e_k}^2
++\norm{Ae_k}^2+2a_k^T\epsilon_k+\norm{\epsilon_k}^2
+-\norm{\psi_k}^2
++\gamma_k\norm{a_k+\zeta_k}^2 .
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+\emph{Weight term.} From Lemma~\ref{lem:werr},
+\[
+\Tr\bigl(\Wt_{k+1}^T\Wt_{k+1}\bigr)
+=\Tr\bigl(\Wt_k^T\Wt_k\bigr)
+-2\Gamma\Tr\bigl(\Wt_k^T\phi_k\xi_k^T\bigr)
++\Gamma^2\Tr\bigl(\xi_k\phi_k^T\phi_k\xi_k^T\bigr).
+\]
+Since $\Tr(\Wt^T\phi\xi^T)=\xi^T\Wt^T\phi=\psi^T\xi$ and
+$\Tr(\xi\phi^T\phi\xi^T)=\norm{\phi}^2\norm{\xi}^2$,
+\begin{equation}\label{eq:wdiff}
+\frac{1}{\Gamma}\Bigl[\norm{\Wt_{k+1}}_F^2-\norm{\Wt_k}_F^2\Bigr]
+=-2\psi_k^T\xi_k+\gamma_k\norm{\xi_k}^2 .
+\end{equation}
+
+\emph{State term.} From Lemma~\ref{lem:err} and $\Bm^T\Bm=I$,
+\begin{equation}\label{eq:ediff}
+\norm{e_{k+1}}^2-\norm{e_k}^2
+=\norm{Ae_k}^2-\norm{e_k}^2+2a_k^T\zeta_k+\norm{\zeta_k}^2,
+\end{equation}
+using $2e_k^TA^T\Bm\zeta_k=2a_k^T\zeta_k$.
+
+\emph{Combine.} Adding \eqref{eq:wdiff} and \eqref{eq:ediff} with
+$\xi_k=a_k+\zeta_k$,
+\[
+\Delta V_k=\norm{Ae_k}^2-\norm{e_k}^2
++\underbrace{2a_k^T\zeta_k-2\psi_k^Ta_k}_{\text{(i)}}
++\underbrace{\norm{\zeta_k}^2-2\psi_k^T\zeta_k}_{\text{(ii)}}
++\gamma_k\norm{a_k+\zeta_k}^2 .
+\]
+For (i), $2a_k^T(\zeta_k-\psi_k)=2a_k^T\epsilon_k$. For (ii), with
+$\zeta_k=\psi_k+\epsilon_k$,
+\[
+\norm{\psi_k+\epsilon_k}^2-2\psi_k^T(\psi_k+\epsilon_k)
+=\norm{\psi_k}^2+2\psi_k^T\epsilon_k+\norm{\epsilon_k}^2
+-2\norm{\psi_k}^2-2\psi_k^T\epsilon_k
+=-\norm{\psi_k}^2+\norm{\epsilon_k}^2 .
+\]
+Substituting gives \eqref{eq:exact}.
+\end{proof}
+
+The mechanism is now visible. Every cross term between $\psi_k$ and
+$\epsilon_k$, and every cross term between $\psi_k$ and $a_k$, cancels exactly.
+The negative term $-\norm{\psi_k}^2$ is produced by the adaptation law and is
+not an artifact of any inequality. The only price paid for adaptation is the
+single term $\gamma_k\norm{a_k+\zeta_k}^2$, which is small when $\Gamma$ is
+small. Small adaptation gains must therefore be admissible on structural
+grounds, and a condition that excludes them indicates an error upstream.
+
+\subsection{Main Result}
+
+\begin{theorem}[Uniform ultimate boundedness]\label{thm:main}
+Let Assumptions~\ref{as:plant}--\ref{as:nn} hold. Set
+$\bar\sigma:=\sigmax(A)$ and $\bar\gamma:=\Gamma\phi_{\max}^2$. Fix $\theta>0$
+and define
+\begin{equation}\label{eq:cs}
+c_1:=1+\bar\gamma\Bigl(1+\tfrac{1}{\theta}\Bigr),\qquad
+c_2:=1-\bar\gamma\bigl(1+\theta\bigr),\qquad
+\rho:=\bar\sigma\sqrt{c_1}.
+\end{equation}
+If
+\begin{align}
+&\text{\rm(C1)}\quad c_2>0,
+&&\text{i.e.}\quad \Gamma\phi_{\max}^2<\frac{1}{1+\theta},
+\label{eq:C1}\\
+&\text{\rm(C2)}\quad \rho<1,
+&&\text{i.e.}\quad
+\sigmax(A)^2\Bigl[1+\Gamma\phi_{\max}^2\bigl(1+\tfrac{1}{\theta}\bigr)\Bigr]<1,
+\label{eq:C2}
+\end{align}
+then
+\begin{equation}\label{eq:master}
+\Delta V_k\;\le\;-\norm{e_k}^2
++c_1\bigl(\bar\sigma\norm{e_k}+\epsilon_N\bigr)^2
+-c_2\norm{\psi_k}^2,
+\end{equation}
+and $\Delta V_k<0$ whenever
+\begin{equation}\label{eq:bounds}
+\norm{e_k}>b_e:=\frac{\sqrt{c_1}\,\epsilon_N}{1-\rho}
+\qquad\text{or}\qquad
+\norm{\psi_k}>b_\psi:=\epsilon_N\sqrt{\frac{c_1}{c_2\bigl(1-\rho^2\bigr)}} .
+\end{equation}
+The state estimation error $e_k$ and the functional approximation error
+$\psi_k=\Wt_k^T\phi_k$ are uniformly ultimately bounded with ultimate bounds
+$b_e$ and $b_\psi$.
+\end{theorem}
+
+\begin{proof}
+Begin from \eqref{eq:exact}. Since $\norm{\Bm}=1$, $\norm{a_k}\le\norm{Ae_k}$, so
+\[
+\norm{Ae_k}^2+2a_k^T\epsilon_k+\norm{\epsilon_k}^2
+\le\bigl(\norm{Ae_k}+\epsilon_N\bigr)^2 .
+\]
+Write $s_k:=\norm{Ae_k}+\epsilon_N$ and $w_k:=\norm{\psi_k}$. Then
+$\norm{a_k+\zeta_k}\le\norm{Ae_k}+\norm{\psi_k}+\norm{\epsilon_k}\le s_k+w_k$,
+and $\gamma_k\le\bar\gamma$, so
+\[
+\Delta V_k\le-\norm{e_k}^2+s_k^2-w_k^2+\bar\gamma(s_k+w_k)^2 .
+\]
+Applying Young's inequality \cite{young1912classes} once, in the form
+$(s+w)^2\le(1+\tfrac{1}{\theta})s^2+(1+\theta)w^2$,
+\[
+\Delta V_k\le-\norm{e_k}^2+c_1s_k^2-c_2w_k^2 ,
+\]
+and $\norm{Ae_k}\le\bar\sigma\norm{e_k}$ gives \eqref{eq:master}.
+
+For the first branch of \eqref{eq:bounds}, $c_2>0$ by (C1), so it suffices that
+$c_1(\bar\sigma\norm{e_k}+\epsilon_N)^2<\norm{e_k}^2$, that is,
+$\sqrt{c_1}(\bar\sigma\norm{e_k}+\epsilon_N)<\norm{e_k}$, that is,
+$\norm{e_k}(1-\rho)>\sqrt{c_1}\epsilon_N$. This requires $\rho<1$, which is (C2).
+
+For the second branch, let
+$g(t):=c_1(\bar\sigma t+\epsilon_N)^2-t^2
+=(\rho^2-1)t^2+2c_1\bar\sigma\epsilon_N t+c_1\epsilon_N^2$
+for $t=\norm{e_k}\ge0$. By (C2) the leading coefficient is negative, so $g$ is
+maximized at $t^\star=c_1\bar\sigma\epsilon_N/(1-\rho^2)$ with
+\[
+g(t^\star)=c_1\epsilon_N^2+\frac{c_1^2\bar\sigma^2\epsilon_N^2}{1-\rho^2}
+=c_1\epsilon_N^2\Bigl[1+\frac{\rho^2}{1-\rho^2}\Bigr]
+=\frac{c_1\epsilon_N^2}{1-\rho^2}.
+\]
+Hence $\Delta V_k\le g(\norm{e_k})-c_2w_k^2<0$ whenever
+$c_2w_k^2>c_1\epsilon_N^2/(1-\rho^2)$, which is $\norm{\psi_k}>b_\psi$.
+
+Since $V_k\ge0$ and $\Delta V_k<0$ outside
+$\{\norm{e_k}\le b_e\}\cap\{\norm{\psi_k}\le b_\psi\}$, the standard Lyapunov
+extension theorem for discrete-time systems
+\cite{lewis1999neural,jagannathan2006neural} gives uniform ultimate
+boundedness; see also Khalil \cite{khalil2002nonlinear} for the continuous-time
+counterpart.
+\end{proof}
+
+\begin{corollary}[Simple sufficient conditions]\label{cor:theta1}
+Take $\theta=1$, so $c_1=1+2\bar\gamma$ and $c_2=1-2\bar\gamma$. Then
+Theorem~\ref{thm:main} applies provided
+\begin{equation}\label{eq:simple}
+\sigmax(A)<1
+\quad\text{and}\quad
+0<\Gamma<\frac{1}{\phi_{\max}^2}
+\min\left\{\frac{1}{2},\;
+\frac{1-\sigmax(A)^2}{2\,\sigmax(A)^2}\right\}.
+\end{equation}
+As $\Gamma\to0^+$ the ultimate bounds tend to
+\begin{equation}\label{eq:limbounds}
+b_e\to\frac{\epsilon_N}{1-\sigmax(A)},\qquad
+b_\psi\to\frac{\epsilon_N}{\sqrt{1-\sigmax(A)^2}} .
+\end{equation}
+\end{corollary}
+
+\begin{proof}
+With $\theta=1$, (C1) is $\bar\gamma<1/2$ and (C2) is
+$\bar\sigma^2(1+2\bar\gamma)<1$, i.e.\
+$\bar\gamma<(1-\bar\sigma^2)/(2\bar\sigma^2)$, feasible for some
+$\bar\gamma>0$ if and only if $\bar\sigma<1$. Substituting
+$\bar\gamma=\Gamma\phi_{\max}^2$ gives \eqref{eq:simple}; the limits follow by
+setting $c_1,c_2\to1$ and $\rho\to\bar\sigma$ in \eqref{eq:bounds}.
+\end{proof}
+
+\begin{corollary}[Deadbeat error injection]\label{cor:deadbeat}
+Since $y_k=x_k$, choosing $\Km=F$ gives $A=0$. Working directly from
+\eqref{eq:exact} with $a_k=0$,
+\[
+\Delta V_k=-\norm{e_k}^2-\bigl(1-\gamma_k\bigr)\norm{\psi_k}^2
++2\gamma_k\psi_k^T\epsilon_k+\bigl(1+\gamma_k\bigr)\norm{\epsilon_k}^2 ,
+\]
+so for any $\bar\gamma<1$, completing the square on the $\psi_k$ terms gives
+\[
+\Delta V_k\le-\norm{e_k}^2+\frac{\epsilon_N^2}{1-\bar\gamma},
+\]
+and $\norm{e_k}$ is ultimately bounded by $\epsilon_N/\sqrt{1-\bar\gamma}$. No
+condition on $A$ is required and the restriction on $\Gamma$ relaxes to
+$\bar\gamma<1$.
+\end{corollary}
+
+\begin{remark}[Interpretation]
+Condition (C2) requires the error-injection matrix to be a contraction in the
+$2$-norm; (C1) requires the adaptation gain to be small relative to the basis
+magnitude. Faster error injection buys tolerance for a larger learning rate, and
+a slower learning rate always helps. Both are what one would expect on physical
+grounds. In the limit $\Gamma\to0^+$ the conditions collapse to
+$\sigmax(A)<1$ and the bounds \eqref{eq:limbounds} reduce to the gain of the
+error dynamics applied to the network reconstruction floor $\epsilon_N$, which
+is the correct limiting answer.
+\end{remark}
+
+\begin{remark}[Non-normal $A$]\label{rem:nonnormal}
+If $A$ is Schur but $\sigmax(A)\ge1$, Theorem~\ref{thm:main} does not apply in
+the Euclidean norm. Since $\rho(A)<1$, for any $\delta>0$ there is a nonsingular
+$T$ with $\norm{TAT^{-1}}\le\rho(A)+\delta<1$. Repeating the derivation with
+$V_k=e_k^TT^TTe_k+\Gamma^{-1}\norm{\Wt_k}_F^2$ yields the same conclusions with
+$\bar\sigma$ replaced by $\norm{TAT^{-1}}$, at the cost of a factor $\kappa(T)$
+in the ultimate bounds. Since $\Km$ is fully free here, it is simpler in
+practice to place $A$ so that $\sigmax(A)$ is directly small. Note that
+$\lmax(A)$ is not an upper bound for $\norm{A}$ unless $A$ is normal, and may be
+complex.
+\end{remark}
+
+\section{BOUNDEDNESS OF THE WEIGHT ESTIMATES}
+\label{sec:weightbound}
+
+Theorem~\ref{thm:main} bounds $\psi_k=\Wt_k^T\phi_k$, not $\Wt_k$. This is the
+correct statement: the negative term in \eqref{eq:master} acts only along
+$\phi_k$, so components of $\Wt_k$ orthogonal to the regressor direction are
+unconstrained by \eqref{eq:master} and may drift. Two standard remedies apply.
+
+\subsection{Persistency of Excitation}
+
+\begin{lemma}[Sadegh \cite{sadegh1993nonlinear}]\label{lem:pe1}
+Let $\Phi(k_1,k_0)$ denote the state-transition matrix of
+$\Wt_{k+1}=M(k)\Wt_k$. If $\norm{\Phi(k_1,k_0)}<1$ for all
+$k_1>k_0\ge0$, the homogeneous system is stable.
+\end{lemma}
+
+\begin{definition}[Persistency of excitation]\label{def:pe}
+The sequence $\{\phi_k\}$ is persistently exciting if there exist $\beta>0$ and
+an integer $L\ge1$ such that
+\begin{equation}\label{eq:pe}
+\lmin\left(\sum_{j=k}^{k+L-1}\phi_j\phi_j^T\right)\ge\beta,\qquad
+\forall\,k\ge0 .
+\end{equation}
+\end{definition}
+
+\begin{lemma}\label{lem:pe2}
+If $M(k)=I-\Gamma\phi_k\phi_k^T$ with $0<\Gamma\norm{\phi_k}^2<2$ and
+\eqref{eq:pe} holds, then the homogeneous part of \eqref{eq:wdyn} is uniformly
+exponentially stable, and since the forcing term
+$-\Gamma\phi_k(a_k+\epsilon_k)^T$ is bounded whenever $e_k$ is bounded, $\Wt_k$
+is bounded.
+\end{lemma}
+
+\rev{The condition $0<\Gamma\norm{\phi_k}^2<2$ required here is exactly the
+condition $\gamma_k<2$ that renders the $\psi_k$ coefficient in \eqref{eq:wdiff}
+negative. In the present derivation it is not an independent assumption but a
+consequence of the same inequality that drives Theorem~\ref{thm:main}, and
+Corollary~\ref{cor:theta1} implies it.}
+
+\subsection{$\sigma$-Modification}
+\label{sec:sigmod}
+
+Persistency of excitation is not always available, particularly during
+regulation, where the regressor may be nearly constant. Replacing
+\eqref{eq:update} by
+\begin{equation}\label{eq:sigmod}
+\What_{k+1}=\bigl(1-\Gamma\kappa\bigr)\What_k+\Gamma\phi_ke_{k+1}^T\Bm,
+\qquad\kappa>0,
+\end{equation}
+gives $\Wt_{k+1}=\Wt_k-\Gamma\phi_k\xi_k^T+\Gamma\kappa\What_k$. The linear part
+of the trace difference acquires
+\begin{equation}\label{eq:sigmodterm}
+2\kappa\Tr\bigl(\Wt_k^TW\bigr)-2\kappa\norm{\Wt_k}_F^2
+\;\le\;-\kappa\norm{\Wt_k}_F^2+\kappa W_M^2 ,
+\end{equation}
+using Assumption~\ref{as:WM} and $2ab\le a^2+b^2$. This supplies negative
+definiteness in $\Wt_k$ directly. The quadratic contributions of
+$\Gamma\kappa\What_k$ are dominated for $\Gamma\kappa$ sufficiently small, and
+the cost is a bias of order $\kappa W_M^2$ in the ultimate bound.
+$\sigma$-modification \cite{ioannou1983adaptive,ioannou1984sigma} is the same
+device used for the controller networks in Chapter~\ref{ch:control}; applying it to the observer network as well makes the
+two stability arguments structurally consistent and is the recommended
+implementation.
+
+\section{OBSERVER OR FILTER}
+
+With $y_k=x_k$ the full state is measured, so \eqref{eq:obs} is properly a
+filter and uncertainty identifier rather than an observer in the
+unmeasured-state sense. Nothing in the proof depends on this, but it should be
+stated plainly, and it is the reason $\Km$ may be chosen freely in
+Corollary~\ref{cor:deadbeat}. Extension to $y_k=Cx_k$ with $\operatorname{rank}
+C<n$ requires $A=F-\Km C$ and a detectability assumption; the structure of
+Proposition~\ref{prop:exact} carries over unchanged with
+$a_k=\Bm^TAe_k$.

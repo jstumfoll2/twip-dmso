@@ -1,0 +1,339 @@
+\chapter{TWO WHEELED INVERTED PENDULUM IMPLEMENTATION}
+\label{ch:platform}
+
+\section{PHYSICAL DESIGN}
+
+The robot consists of two mounting plates separated by threaded rods, with two
+geared DC motors mounted on the lower plate and the electronics distributed
+between the plates. The center of gravity sits above the wheel axis, giving an
+inverted pendulum whose pivot is the wheel contact line. The physical parameters
+are summarized in Table~\ref{tab:phys}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.45\textwidth]{twip_robot}
+\caption{Two wheeled inverted pendulum robot.}
+\label{fig:robot}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{TWIP robot physical parameters}
+\label{tab:phys}
+\begin{tabular}{lcc}
+\toprule
+Parameter & Value & Units \\
+\midrule
+Pendulum moment of inertia about the wheel axis, $I_p$ & 0.025\,$^a$ & \si{kg.m^2} \\
+Wheel moment of inertia, $I_w$ & $1.441\times10^{-4}$ & \si{kg.m^2} \\
+Distance to CG from wheel axis, $l$ & 0.075 & \si{m} \\
+Mass of pendulum, $M_p$ & 1.432 & \si{kg} \\
+Mass of wheels, $M_w$ & 0.1168 & \si{kg} \\
+Wheel radius, $r$ & 0.045 & \si{m} \\
+\bottomrule
+\end{tabular}\\[2pt]
+{\footnotesize $^a$ Computed with parallel-axis terms, i.e.\ about the wheel axis.
+The equations of motion require the value about the center of gravity,
+\SI{0.0169}{kg.m^2}; see Section~\ref{sec:simmodel}.}
+\end{table}
+
+\rev{The moment of inertia and the CG offset are the two parameters least well
+known on a build of this kind. Both are computed from a lumped-mass
+idealization of the plates and components rather than measured, and the
+difference between the LQR gains computed from Table~\ref{tab:phys} and the
+gains that actually stabilized the hardware is direct evidence of that error.
+This is the motivation for the uncertainty estimation problem rather than an
+incidental nuisance; Appendix~\ref{app:validation} describes a pendulum-swing
+procedure for measuring $I_p$ and $l$ directly.}
+
+\section{ELECTRONIC DESIGN}
+
+Electronics are a major component of any robot, and the two wheeled inverted
+pendulum is no exception. The robot consists of a main computer, two motors,
+various sensors, and power and communication devices.
+
+\subsection{Computer}
+
+The robot is controlled using an Arduino Due microcontroller board based on the
+Atmel SAM3X8E ARM Cortex-M3, a 32-bit \SI{84}{MHz} CPU. The Due has
+\SI{96}{kB} of onboard SRAM and \SI{512}{kB} of flash available for
+programming. It provides 54 digital input/output channels, twelve of which can
+be configured for pulse width modulation output, twelve analog inputs, and two
+analog outputs, and supports serial communication over USB. The microcontroller
+is programmed in C through the Arduino interface. The Arduino is a widely used
+hobbyist platform and a broad range of integrated shields can be purchased to
+work directly with it.
+
+\rev{The Due is adequate for the control law but not generous. As documented in
+Section~\ref{sec:difficulties}, serial transmission for telemetry dominated the
+loop budget. Appendix~\ref{app:validation} recommends separating the
+deterministic control path from the telemetry path so that the achievable loop
+rate is set by the control computation rather than by the logging.}
+
+\subsection{Motors}
+
+Two Pololu \SI{12}{V} \SI{37}{mm} brushed DC motors drive the wheels. The
+motors have a 30:1 gearbox and 64 counts-per-revolution integrated Hall effect
+quadrature encoders measuring the position of the motor output shaft. The motors
+are characterized by their free-run speed and current and their stall torque and
+current; from these the torque constant $k_m$ and the back-EMF constant $k_e$
+are obtained. The nominal terminal resistance is measured directly across the
+output terminals at several shaft positions and averaged. The motor constants
+are summarized in Table~\ref{tab:motor}.
+
+Motor drive is provided by a Pololu Dual VNH5019 Motor Driver Arduino Shield.
+The VNH5019 chip allows DC motor operation between \SI{5.5}{V} and \SI{24}{V} at
+currents up to \SI{12}{A}, provides current sensing, and supports PWM operation
+at ultrasonic frequencies up to \SI{20}{kHz} for quieter operation. The shield
+is designed to work directly with the Arduino platform and a supplied library
+provides straightforward control of two independent motors.
+
+\begin{table}[htbp]
+\centering
+\caption{DC motor physical parameters}
+\label{tab:motor}
+\begin{tabular}{lcc}
+\toprule
+Parameter & Value & Units \\
+\midrule
+Free-run speed & 350 & RPM \\
+Free-run current & 300 & mA \\
+Stall torque & 110 & oz-in \\
+Stall current & 5000 & mA \\
+Torque motor constant, $k_m$ & 0.11541 & \si{N.m/A} \\
+Back-EMF constant, $k_e$ & 0.307\,$^b$ & \si{V.s/rad} \\
+Nominal resistance, $R$ & 2.5 & \si{\ohm} \\
+\bottomrule
+\end{tabular}\\[2pt]
+{\footnotesize $^b$ From the free-run data above. Revision~7 used
+\SI{0.00361}{V.s/rad}, which is inconsistent with those data by a factor of
+about 85; see Section~\ref{sec:simmodel}.}
+\end{table}
+
+\subsection{Sensors}
+
+Sensors are necessary in any robot in order to measure the state of the system,
+and the state must be known in order to properly control it. In this system the
+measurements are obtained from an integrated inertial measurement unit and from
+Hall effect digital encoders integrated on each motor.
+
+\subsubsection{Inertial measurement unit.}
+
+Integrated System in Package (SiP) microchips are widely used in consumer
+electronics owing to their small size and low production cost. The InvenSense
+MPU-9150 is a low cost, low power SiP motion tracking device marketed for
+equipment such as smartphones and tablets. It includes a three-axis gyroscope, a
+three-axis accelerometer, a three-axis magnetometer, and an onboard Digital
+Motion Processor (DMP) intended to offload algorithms from the main processor.
+The SparkFun MPU-9150 breakout board is used here, which places the surface
+mount device on a board with the communication pins available for direct
+soldering. The DMP and the magnetometer were not used; only the direct
+accelerometer and gyroscope readings are required to obtain the necessary
+states.
+
+The gyroscope has a 16-bit digital output with user-selectable ranges from
+\SI{\pm250}{\degree/s} to \SI{\pm2000}{\degree/s}. The lowest range is selected
+because it has the highest sensitivity, \SI{131}{LSB\per(\degree\per s)},
+corresponding to a resolution of $1/131$ or approximately
+\SI{0.00763}{\degree/s}. Noise is specified by two parameters: a total RMS noise
+of \SI{0.06}{\degree/s} at a \SI{92}{Hz} rate, and a noise spectral density of
+\SI{0.005}{\degree/s/\sqrt{Hz}} at \SI{10}{Hz}. These are characterized more
+carefully by direct test in Section~\ref{sec:noise}. The specifications are
+summarized in Table~\ref{tab:gyro}.
+
+The accelerometer also has a 16-bit digital output, reporting in multiples of
+gravity. Calibration was required to obtain a \SI{1}{g} reading at rest. At the
+minimum range of \SI{\pm2}{g} the sensitivity is \SI{16384}{LSB\per g}, an exact
+resolution of $1/16384$ or approximately \SI{59.4}{\micro g}. Noise is specified
+as \SI{4}{mg} RMS at a \SI{100}{Hz} rate and a power spectral density of
+\SI{400}{\micro g/\sqrt{Hz}} at \SI{10}{Hz}. The difference in the reference
+rates between the two sensors necessitates a direct analysis of the noise from
+the units actually used, so that the simulation is representative. The
+accelerometer specifications are summarized in Table~\ref{tab:accel}.
+
+\begin{table}[htbp]
+\centering
+\caption{Gyroscope specifications}
+\label{tab:gyro}
+\begin{tabular}{lcc}
+\toprule
+Parameter & Value & Units \\
+\midrule
+Range & $\pm250$ & \si{\degree/s} \\
+Sensitivity & 131 & LSB/(\si{\degree/s}) \\
+Resolution & 0.00763 & \si{\degree/s} \\
+Total RMS noise & 0.06 & \si{\degree/s} RMS \\
+Power spectral density & 0.005 & \si{\degree/s/\sqrt{Hz}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Accelerometer specifications}
+\label{tab:accel}
+\begin{tabular}{lcc}
+\toprule
+Parameter & Value & Units \\
+\midrule
+Range & $\pm2$ & \si{g} \\
+Sensitivity & 16384 & LSB/\si{g} \\
+Resolution & 59.4 & \si{\micro g} \\
+Total RMS noise & 4 & \si{mg} RMS \\
+Power spectral density & 400 & \si{\micro g/\sqrt{Hz}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Digital encoders.}
+
+Each Pololu metal DC motor has an integrated Hall effect quadrature encoder
+measuring the relative position of the motor output shaft. The shaft carries a
+magnetic disk with 16 magnetic divisions, and two Hall effect sensors detect the
+changing field as the shaft rotates. Counting both the rising and falling edges
+of both signals gives a total resolution of 64 counts per revolution of the
+motor output shaft, which is the origin of the term quadrature encoder. In
+combination with the 30:1 gearbox, the gearbox output has a measurable
+resolution of 1920 counts per revolution. With \SI{90}{mm} diameter wheels the
+encoder measures discrete steps of \SI{1.47e-4}{m}.
+
+\rev{The encoders are mounted on the motor shaft, ahead of the gearbox. Gear
+backlash is therefore invisible to the encoder: the measured shaft angle
+advances while the wheel does not. This is a structural measurement limitation,
+not a resolution limitation, and it cannot be removed by increasing the sample
+rate. Appendix~\ref{app:validation} discusses load-side encoding as the remedy.}
+
+\subsection{Miscellaneous Electronics}
+
+Four potentiometers are connected to the Arduino Due to allow easy adjustment of
+parameters, in this case the controller gains, and a switch is used to enable
+and disable the controller. Miscellaneous level-shifting electronics are
+included to permit communication with the Due, as is an HC-05 Bluetooth module
+for wireless transmission of serial output data. The robot is powered by a
+single high-discharge \SI{11.1}{V} 20C lithium polymer battery.
+
+\section{PROGRAMMING}
+
+On initialization the various pins and connections are configured, enabling
+communication between the sensors, switches, Bluetooth module, and the
+microcontroller. The motor controller is initialized and the IMU is enabled. On
+initialization of the IMU the constant bias is removed from the sensor
+measurements by averaging a run of samples taken with the robot stationary.
+
+\subsection{Measurements}
+\label{sec:measurements}
+
+The accelerometer measures the specific force vector, which at rest is the
+gravitational field vector expressed in body axes. Writing the measured vector
+as $\mathbf{G}_p=[a_x\ a_y\ a_z]^T$ and relating it to the gravitational field
+through a rotation sequence in roll $\varphi$ and pitch $\vartheta_p$
+\cite{kuipers1999quaternions},
+\begin{equation}\label{eq:gravvec}
+\frac{\mathbf{G}_p}{\norm{\mathbf{G}_p}}
+=\frac{1}{\sqrt{a_x^2+a_y^2+a_z^2}}
+\begin{bmatrix}a_x\\a_y\\a_z\end{bmatrix}
+=\begin{bmatrix}
+-\sin\vartheta_p\\
+\cos\vartheta_p\sin\varphi\\
+\cos\vartheta_p\cos\varphi
+\end{bmatrix},
+\end{equation}
+which can be solved for the roll and pitch angles,
+\begin{equation}\label{eq:rollpitch}
+\varphi=\tan^{-1}\!\left(\frac{a_y}{a_z}\right),
+\qquad
+\vartheta_p=\tan^{-1}\!\left(\frac{-a_x}{\sqrt{a_y^2+a_z^2}}\right).
+\end{equation}
+
+The relationship in \eqref{eq:rollpitch} is only one way to compute the pitch
+from the accelerometer. Rotation matrices do not commute, but as only the pitch
+angle is of concern a different rotation sequence may be used to obtain the same
+pitch measurement. Computation on the microcontroller must be minimized wherever
+possible, so by using the rotation sequence $R_{yxz}$ in the same manner an
+easier relationship for the tilt angle is obtained,
+\begin{equation}\label{eq:tiltaccel}
+\theta_a=\tan^{-1}\!\left(\frac{a_x}{a_z}\right).
+\end{equation}
+
+This calculation assumes two things: that the initial orientation of the
+accelerometer is aligned with the gravitational field vector along the $z$ axis,
+and that there are no external accelerations. The second clearly fails when the
+robot is moving, so filtering of this measurement is necessary. A complementary
+filter \cite{higgins1975comparison} is used. The same task could be performed
+by a Kalman filter, but the computational limitations of the microcontroller
+make the complementary filter the appropriate choice. The filter combines the
+accelerometer and gyroscope measurements to obtain a more accurate angle
+estimate using a simplified high-pass and low-pass pair. The form implemented on
+the robot is
+\begin{equation}\label{eq:compfilter}
+\theta_{k+1}=\lambda_c\bigl(\theta_k+g_y\Delta t\bigr)+\bigl(1-\lambda_c\bigr)\theta_a ,
+\end{equation}
+where $\lambda_c$ is a design parameter set to $0.99$, $g_y$ is the $y$-axis
+gyroscope reading, $\theta_a$ is the accelerometer tilt angle from
+\eqref{eq:tiltaccel}, and $\theta_k$ is the filter angle estimate. The
+complementary filter is simple to implement and well suited to an
+implementation where computation is limited.
+
+The tilt angle is the only measurement that must be pre-filtered before the
+DMSO or the Kalman filter are used to estimate the full state. The gyroscope
+measurements are used directly for the tilt rate. The motor encoder outputs are
+processed using hardware interrupts: each time a Hall effect sensor signal
+changes state the interrupt fires and increments or decrements the encoder
+position. Velocity is obtained by differencing the position readings.
+
+\rev{\begin{remark}[The pre-filter is part of the measurement model]
+Equation \eqref{eq:compfilter} is a dynamic element placed between the sensors
+and the estimator, so the quantity presented to the DMSO as $y_k$ is not a raw
+measurement but a filtered one with its own lag and its own error
+characteristics. Two consequences follow. First, the measurement noise
+covariance used by the Kalman filter baseline must describe the complementary
+filter output, not the accelerometer. Second, the comparison reported in
+Section~\ref{sec:implresults}, in which the complementary filter outperforms
+both model-based estimators fed raw accelerometer tilt, is a statement about
+this pre-filtering step rather than about the estimators.
+\end{remark}}
+
+\section{DIFFICULTIES}
+\label{sec:difficulties}
+
+During assembly and programming many difficulties were encountered. Initially
+the motors were a substantial problem and were eventually replaced. The original
+motors were \SI{6}{V} DC units with lower torque output and an enormous deadzone
+nonlinearity, giving a correspondingly small range of controllable output.
+Simulation studies showed that the best achievable behavior with those motors
+was a large stable oscillation, and sensor noise made even that unachievable.
+It was during this period that the potentiometers were added, so that controller
+gains could be adjusted quickly without reprogramming the microcontroller.
+
+The motors were replaced with larger \SI{12}{V} units that do not have the same
+large deadzone and allow a wider output range for control. This created a
+problem with the plastic mounting plates, which twisted under the additional
+weight until stiffening rods were added to the underside. It also exposed an
+initial design flaw: plastic rods were used to separate the two mounting plates,
+and the resulting flexure allowed vibrations to contaminate the sensor
+measurements. Steel threaded rods were substituted and stiffened the structure
+satisfactorily.
+
+The robot is limited in available computation, so computations were minimized
+wherever possible. Serial output proved to be one of the largest consumers of
+computational effort. Serial data is essential for evaluating performance, so
+its content had to be selected carefully and limited in order to keep the loop
+time acceptable. The minimum loop execution time obtained was \SI{0.01}{s}.
+
+The LQR gains had to be modified from the values computed from the measured
+parameters of the robot, which is indicative of inaccurately measured
+parameters. The model is also not entirely accurate to the true system: the
+pendulum is modeled as a point mass attached by a thin beam to the motor axis,
+whereas the mounting plates create more complex interactions than this. Once
+tuned properly, stability was obtained.
+
+\rev{\begin{remark}[These are the case for the work]
+Three of the observations above are the empirical case for
+Chapters~\ref{ch:dmso} and~\ref{ch:control} rather than incidental setbacks. The
+parameters are uncertain, which motivates online uncertainty estimation. The
+actuator is nonlinear in a way the linear model does not capture, which
+motivates the unmatched uncertainty formulation. The available computation
+constrains the achievable sample rate, which is an implementation constraint
+treated as a design variable in Appendix~\ref{app:validation} rather than as a
+fixed property of the platform.
+\end{remark}}

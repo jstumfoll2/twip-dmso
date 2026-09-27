@@ -1,0 +1,394 @@
+\chapter{THE BALANCING ROBOT MODEL}
+\label{ch:model}
+
+\section{MODEL OF A DIRECT CURRENT MOTOR}
+\label{sec:motor}
+
+The armature circuit of a brushed DC motor with terminal voltage $V_a$,
+resistance $R$, inductance $L$, and back-EMF constant $k_e$ obeys Kirchhoff's
+voltage law \cite{desilva2004mechatronics},
+\begin{equation}\label{eq:circuit}
+L\frac{\dd i}{\dd t}+Ri+k_e\omega=V_a ,
+\end{equation}
+where $i$ is the armature current and $\omega=\dot\vartheta$ the shaft rate.
+Rearranging,
+\begin{equation}\label{eq:circuit2}
+\frac{\dd i}{\dd t}=\frac{V_a}{L}-\frac{R}{L}i-\frac{k_e}{L}\omega .
+\end{equation}
+The electromagnetic torque developed is proportional to the current,
+\begin{equation}\label{eq:torque}
+\tau_m=k_mi ,
+\end{equation}
+and the viscous friction torque is proportional to the shaft rate,
+\begin{equation}\label{eq:friction}
+\tau_f=k_f\omega .
+\end{equation}
+Applying Newton's second law and summing moments about the motor output shaft
+against an applied load torque $\tau_a$ and load inertia $I_m$,
+\begin{equation}\label{eq:shaft}
+I_m\dot\omega=\tau_m-\tau_f-\tau_a .
+\end{equation}
+Substituting \eqref{eq:torque} and \eqref{eq:friction} into \eqref{eq:shaft} and
+rearranging gives the second equation of motion,
+\begin{equation}\label{eq:shaft2}
+\frac{\dd\omega}{\dd t}=\frac{k_m}{I_m}i-\frac{k_f}{I_m}\omega-\frac{\tau_a}{I_m} .
+\end{equation}
+
+Equations \eqref{eq:circuit2} and \eqref{eq:shaft2} describe the fundamental
+behavior of a DC motor as a pair of first-order differential equations relating
+circuit current, motor speed, and applied torque. For a balancing robot a
+simplified model provides acceptable performance. Assuming the motor inductance
+$L$ and the friction coefficient $k_f$ are negligible,
+\begin{equation}\label{eq:isimple}
+i=\frac{V_a}{R}-\frac{k_e}{R}\omega ,
+\end{equation}
+and
+\begin{equation}\label{eq:wsimple}
+\frac{\dd\omega}{\dd t}=\frac{k_m}{I_m}i-\frac{\tau_a}{I_m} .
+\end{equation}
+Substituting \eqref{eq:isimple} into \eqref{eq:wsimple} gives a model that does
+not include the circuit current,
+\begin{equation}\label{eq:motor}
+\frac{\dd\omega}{\dd t}
+=-\frac{k_mk_e}{I_mR}\omega+\frac{k_m}{I_mR}V_a-\frac{\tau_a}{I_m} .
+\end{equation}
+This elimination is desirable: the current is not directly commandable on the
+physical system and would add a state with no observable benefit. Neglecting the
+inductance amounts to assuming the current reaches steady state immediately
+relative to the motor speed, which is justified because the electrical time
+constant $L/R$ is orders of magnitude shorter than the mechanical one. In
+state-space form,
+\begin{equation}\label{eq:motorss}
+\frac{\dd}{\dd t}
+\begin{bmatrix}\vartheta\\\omega\end{bmatrix}
+=\begin{bmatrix}
+0 & 1\\[4pt]
+0 & -\dfrac{k_mk_e}{I_mR}
+\end{bmatrix}
+\begin{bmatrix}\vartheta\\\omega\end{bmatrix}
++\begin{bmatrix}
+0 & 0\\[4pt]
+\dfrac{k_m}{I_mR} & -\dfrac{1}{I_m}
+\end{bmatrix}
+\begin{bmatrix}V_a\\\tau_a\end{bmatrix}.
+\end{equation}
+
+\section{TWO WHEELED INVERTED PENDULUM DYNAMIC MODEL}
+\label{sec:twipmodel}
+
+The TWIP shares many similarities with the pendulum-on-a-cart problem. The
+motion is comparable but the dynamics are more involved. The analysis begins
+with the two wheels, the pendulum is analyzed separately, and the two sets of
+equations are combined by eliminating the interface reactions, yielding two
+dynamic equations describing the motion of the system.
+
+\subsection{Wheel Dynamics}
+
+The free-body diagram of the left wheel is shown in Figure~\ref{fig:fbdwheel}.
+The reaction forces between the wheel and the pendulum are $P_L$ and $H_L$, the
+torque applied to the wheel by the DC motor is $C_L$, and the friction force
+between the ground and the wheel is $H_{fL}$. The equations for the left and
+right wheels are completely analogous, so only the left wheel is analyzed. The
+wheels are assumed to remain in ground contact at all times with no slip.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.45\textwidth]{fbd_wheel}
+\caption{Left wheel free body diagram.}
+\label{fig:fbdwheel}
+\end{figure}
+
+Summing forces in the $x$ direction,
+\begin{equation}\label{eq:wheelx}
+M_w\ddot x=H_{fL}-H_L .
+\end{equation}
+Summing moments about the center of the wheel,
+\begin{equation}\label{eq:wheelm}
+I_w\ddot\theta_w=C_L-H_{fL}r ,
+\end{equation}
+where $I_w$ is the wheel moment of inertia and $\ddot\theta_w$ the wheel angular
+acceleration. Starting from the motor shaft equation \eqref{eq:shaft} and
+substituting \eqref{eq:isimple}, the motor torque delivered to either wheel is
+\begin{equation}\label{eq:CL}
+C_L=C_R=\tau_m=-\frac{k_mk_e}{R}\dot\theta_w+\frac{k_m}{R}V_a .
+\end{equation}
+\rev{In \eqref{eq:CL}, $\dot\theta_w$ must be read as the wheel rate relative to
+the motor stator, which is fixed to the pendulum body. The development below
+follows revision~7 in substituting the absolute rate $\dot x/r$, which drops a
+tilt-rate term; the correction used for the results is given in
+Section~\ref{sec:simmodel}.}
+Using \eqref{eq:CL} in \eqref{eq:wheelm} and rearranging gives the friction
+reaction force,
+\begin{equation}\label{eq:HfL}
+H_{fL}=-\frac{k_mk_e}{Rr}\dot\theta_w+\frac{k_m}{Rr}V_a
+-\frac{I_w}{r}\ddot\theta_w .
+\end{equation}
+Substituting \eqref{eq:HfL} into \eqref{eq:wheelx} gives the equation of motion
+for the left wheel,
+\begin{equation}\label{eq:wheelL}
+M_w\ddot x=-\frac{k_mk_e}{Rr}\dot\theta_w+\frac{k_m}{Rr}V
+-\frac{I_w}{r}\ddot\theta_w-H_L ,
+\end{equation}
+and an identical development for the right wheel gives
+\begin{equation}\label{eq:wheelR}
+M_w\ddot x=-\frac{k_mk_e}{Rr}\dot\theta_w+\frac{k_m}{Rr}V
+-\frac{I_w}{r}\ddot\theta_w-H_R .
+\end{equation}
+
+The no-slip assumption provides the transformation between rotational and
+linear motion,
+\begin{equation}\label{eq:noslip}
+\ddot\theta_w=\frac{\ddot x}{r},\qquad \dot\theta_w=\frac{\dot x}{r} .
+\end{equation}
+Applying \eqref{eq:noslip} to \eqref{eq:wheelL} and \eqref{eq:wheelR},
+\begin{align}
+M_w\ddot x&=-\frac{k_mk_e}{Rr^2}\dot x+\frac{k_m}{Rr}V
+-\frac{I_w}{r^2}\ddot x-H_L ,\label{eq:wheelL2}\\[4pt]
+M_w\ddot x&=-\frac{k_mk_e}{Rr^2}\dot x+\frac{k_m}{Rr}V
+-\frac{I_w}{r^2}\ddot x-H_R .\label{eq:wheelR2}
+\end{align}
+Adding \eqref{eq:wheelL2} and \eqref{eq:wheelR2} gives the equation of motion
+for the combined wheel system,
+\begin{equation}\label{eq:wheelcomb}
+2\left(M_w+\frac{I_w}{r^2}\right)\ddot x
+=-\frac{2k_mk_e}{Rr^2}\dot x+\frac{2k_m}{Rr}V-\bigl(H_L+H_R\bigr).
+\end{equation}
+
+\subsection{Pendulum Dynamics}
+
+Figure~\ref{fig:fbdpend} shows the free-body diagram of the inverted pendulum.
+Two reference frames are used: an inertial frame attached to the base of the
+pendulum, and a translating frame at the center of gravity. Here $l$ is the
+distance from the base to the center of gravity; $\alpha_p$, $\omega_p$, and
+$\theta$ are the angular acceleration, angular velocity, and angular position of
+the pendulum; $x,\dot x,\ddot x$ are the position, velocity, and acceleration of
+the pendulum base; and $x_p,\dot x_p,\ddot x_p$ those of the center of gravity.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.45\textwidth]{fbd_pendulum}
+\caption{Inverted pendulum free body diagram.}
+\label{fig:fbdpend}
+\end{figure}
+
+Summing forces in the $x_p$ direction,
+\begin{equation}\label{eq:pendx}
+\sum F_{xp}=H_L+H_R=M_p\ddot x_p ,
+\end{equation}
+and in the $y_p$ direction,
+\begin{equation}\label{eq:pendy}
+\sum F_{yp}=P_L+P_R-M_pg=M_p\ddot y_p .
+\end{equation}
+
+The acceleration of a point in a translating frame follows from relative motion
+analysis \cite{hibbeler2010dynamics}. The acceleration of the pendulum center of
+gravity, denoted $\mathbf{a}_B$, is
+\begin{equation}\label{eq:relmotion}
+\mathbf{a}_B=\mathbf{a}_A
++\bm{\alpha}_p\times\mathbf{r}_{B/A}
++\bm{\omega}_p\times\bigl(\bm{\omega}_p\times\mathbf{r}_{B/A}\bigr),
+\end{equation}
+with
+\begin{align}
+\mathbf{a}_B&=\ddot x_p\hat\imath+\ddot y_p\hat\jmath ,\label{eq:aB}\\
+\mathbf{r}_{B/A}&=l\sin\theta\,\hat\imath-l\cos\theta\,\hat\jmath ,\label{eq:rBA}\\
+\bm{\omega}_p&=\dot\theta\,\hat k ,\label{eq:omegap}\\
+\bm{\alpha}_p&=\ddot\theta\,\hat k ,\label{eq:alphap}\\
+\mathbf{a}_A&=\ddot x\,\hat\imath .\label{eq:aA}
+\end{align}
+Using \eqref{eq:rBA}--\eqref{eq:aA} in \eqref{eq:relmotion},
+\begin{equation}\label{eq:aBfull}
+\mathbf{a}_B=\Bigl(\ddot x+\ddot\theta l\cos\theta-\dot\theta^2l\sin\theta\Bigr)\hat\imath
++\Bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\Bigr)\hat\jmath .
+\end{equation}
+Substituting \eqref{eq:aBfull} into \eqref{eq:pendx} and \eqref{eq:pendy},
+\begin{align}
+H_L+H_R&=M_p\Bigl(\ddot x+\ddot\theta l\cos\theta-\dot\theta^2l\sin\theta\Bigr),
+\label{eq:Hsum}\\[4pt]
+P_L+P_R&=M_pg+M_p\Bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\Bigr).
+\label{eq:Psum}
+\end{align}
+
+Summing moments about the pendulum center of gravity, with the clockwise
+direction taken as positive,
+\begin{equation}\label{eq:pendm}
+\sum M=-\bigl(C_L+C_R\bigr)-\bigl(H_L+H_R\bigr)l\cos\theta
+-\bigl(P_L+P_R\bigr)l\sin\theta=I_p\ddot\theta .
+\end{equation}
+
+\subsection{Combined Equations of Motion}
+
+Combining \eqref{eq:CL}, \eqref{eq:Hsum}, \eqref{eq:Psum}, and \eqref{eq:pendm},
+\begin{equation}\label{eq:combined}
+\begin{aligned}
+-\left(-\frac{2k_mk_e}{R}\dot\theta_w+\frac{2k_m}{R}V_a\right)
+&-\Bigl(M_p\bigl(\ddot x+\ddot\theta l\cos\theta-\dot\theta^2l\sin\theta\bigr)\Bigr)l\cos\theta\\
+&-\Bigl(M_pg+M_p\bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\bigr)\Bigr)l\sin\theta
+=I_p\ddot\theta .
+\end{aligned}
+\end{equation}
+Cancelling terms, rearranging, and applying the identity
+$\sin^2\theta+\cos^2\theta=1$ gives the first nonlinear equation of motion,
+\begin{equation}\label{eq:nl1}
+\bigl(I_p+M_pl^2\bigr)\ddot\theta
+-\frac{2k_mk_e}{Rr}\dot x
++\frac{2k_m}{R}V
++M_pgl\sin\theta
+=-M_pl\ddot x\cos\theta .
+\end{equation}
+Using \eqref{eq:Hsum} to remove the body forces from \eqref{eq:wheelcomb} gives
+the second nonlinear equation of motion,
+\begin{equation}\label{eq:nl2}
+\frac{2k_m}{Rr}V=\left(2M_w+\frac{2I_w}{r^2}+M_p\right)\ddot x
++\frac{2k_mk_e}{Rr^2}\dot x
++M_pl\ddot\theta\cos\theta
+-M_pl\dot\theta^2\sin\theta .
+\end{equation}
+
+Equations \eqref{eq:nl1} and \eqref{eq:nl2} describe the full nonlinear motion
+of the two-wheeled inverted pendulum.
+
+\subsection{Linearization}
+
+In the convention of Figure~\ref{fig:fbdpend}, $\theta=\pi$ is the upright
+vertical configuration. A set of linearized equations is obtained by writing
+$\theta=\pi+\phi$, where $\phi$ is a small angle from the vertical. The
+small-angle assumptions are
+\begin{equation}\label{eq:smallangle}
+\cos\theta=-1,\qquad \sin\theta=-\phi,
+\end{equation}
+together with the assumption that the squared angular rate is small,
+\begin{equation}\label{eq:smallrate}
+\dot\theta^2=0 .
+\end{equation}
+Applying \eqref{eq:smallangle} and \eqref{eq:smallrate} to \eqref{eq:nl1} and
+\eqref{eq:nl2} yields the linearized equations of motion,
+\begin{align}
+\bigl(I_p+M_pl^2\bigr)\ddot\phi-\frac{2k_mk_e}{Rr}\dot x
++\frac{2k_m}{R}V-M_pgl\phi&=M_pl\ddot x ,\label{eq:lin1}\\[4pt]
+\frac{2k_m}{Rr}V=\left(2M_w+\frac{2I_w}{r^2}+M_p\right)\ddot x
++\frac{2k_mk_e}{Rr^2}\dot x-M_pl\ddot\phi&. \label{eq:lin2}
+\end{align}
+
+\rev{\begin{remark}[Sign of the gravity term]\label{rem:gravsign}
+Rearranging \eqref{eq:lin1} gives
+$\bigl(I_p+M_pl^2\bigr)\ddot\phi=M_pgl\phi+\cdots$, so the gravitational term
+enters with positive sign and is destabilizing. This is the expected signature
+of an upright linearization and confirms the convention: $\phi$ is the
+displacement from the \emph{unstable} equilibrium, not from the hanging one. It
+is also consistent with \eqref{eq:linss}, whose $(2,3)$ and $(4,3)$ entries are
+both positive. The description of $\theta=\pi$ in revision~7 as the
+``statically stable vertical point'' is a mislabeling; the corrected reading is
+given in Section~\ref{sec:modelsim}.
+\end{remark}}
+
+Rearranging \eqref{eq:lin1} and \eqref{eq:lin2} into state-space form
+$\dot{\mathbf{x}}=\mathcal{A}\mathbf{x}+\mathcal{B}V$ with
+$\mathbf{x}=\begin{bmatrix}x&\dot x&\phi&\dot\phi\end{bmatrix}^T$ gives
+\begin{equation}\label{eq:linss}
+\mathcal{A}=
+\begin{bmatrix}
+0 & 1 & 0 & 0\\[4pt]
+0 & \dfrac{2k_mk_e\bigl(M_plr-I_p-M_pl^2\bigr)}{Rr^2\alpha}
+  & \dfrac{M_p^2gl^2}{\alpha} & 0\\[8pt]
+0 & 0 & 0 & 1\\[4pt]
+0 & \dfrac{2k_mk_e\bigl(r\beta-M_pl\bigr)}{Rr^2\alpha}
+  & \dfrac{M_pgl\beta}{\alpha} & 0
+\end{bmatrix},
+\qquad
+\mathcal{B}=
+\begin{bmatrix}
+0\\[4pt]
+\dfrac{2k_m\bigl(I_p+M_pl^2-M_plr\bigr)}{Rr\alpha}\\[8pt]
+0\\[4pt]
+\dfrac{2k_m\bigl(M_pl-r\beta\bigr)}{Rr\alpha}
+\end{bmatrix},
+\end{equation}
+where
+\begin{equation}\label{eq:beta}
+\beta:=2M_w+\frac{2I_w}{r^2}+M_p
+\end{equation}
+and
+\begin{equation}\label{eq:alphadef}
+\alpha:=I_p\beta+2M_pl^2\left(M_w+\frac{I_w}{r^2}\right).
+\end{equation}
+
+For the development in Chapter~\ref{ch:control} it is convenient to name the
+entries of \eqref{eq:linss} directly. Writing $x_1=x$, $x_2=\dot x$, $x_3=\phi$,
+$x_4=\dot\phi$, $u=V$, and appending the unmodeled and parametric uncertainty as
+$d_1$ and $d_2$,
+\begin{equation}\label{eq:plantform}
+\begin{aligned}
+\dot x_1&=x_2,\\
+\dot x_2&=A_1x_2+A_2x_3+B_1u+d_1(\mathbf{x}),\\
+\dot x_3&=x_4,\\
+\dot x_4&=A_3x_2+A_4x_3+B_2u+d_2(\mathbf{x}),
+\end{aligned}
+\end{equation}
+with $A_1,\dots,A_4,B_1,B_2$ read off from \eqref{eq:linss}. Note that
+$A_4=0$ in the nominal model, since the tilt rate does not appear in the tilt
+acceleration once friction is neglected; it is retained symbolically because the
+uncertainty $d_2$ generally reintroduces such a dependence.
+
+\rev{\begin{remark}[Structural consequences]
+Two features of \eqref{eq:plantform} drive everything that follows. First,
+$B_1$ and $B_2$ are both nonzero and the input is scalar, so the system is
+underactuated and no choice of $u$ cancels both $d_1$ and $d_2$: the uncertainty
+is unmatched. Second, $A_2\neq0$, so the tilt state enters the translational
+acceleration directly. This is what makes $x_3$ usable as a virtual control for
+the position subsystem, and it is also the term that couples the two error
+subsystems in the backstepping design. It must be retained; see
+Section~\ref{sec:cffb}.
+\end{remark}}
+
+\section{MODEL SIMULATION STUDY}
+\label{sec:modelsim}
+
+The model should be checked for accuracy and for the expected motion of an
+inverted pendulum. This is done by examining the uncontrolled motion of the
+nonlinear equations \eqref{eq:nl1}--\eqref{eq:nl2}; any consistent set of
+parameter values may be used.
+
+\rev{Two equilibria exist. In the convention of \eqref{eq:smallangle},
+$\theta=\pi$ is the upright configuration and $\theta=0$ the hanging one. The
+hanging point is statically stable; the upright point is an equilibrium but is
+unstable, as Remark~\ref{rem:gravsign} establishes, so a trajectory started
+exactly there with zero rate remains there while any perturbation grows.
+Revision~7 described the two in the opposite sense. The numerical tests below
+are unchanged; only their interpretation is corrected.}
+
+Starting from $\theta=\SI{180}{\degree}$ with zero initial rate, the system
+remains at that point, as shown in Figure~\ref{fig:stab180}. \rev{This confirms
+that $\theta=\pi$ is an equilibrium of the implemented equations. It is not
+evidence of stability, and a small perturbation about this point diverges, which
+is the behavior required of an inverted pendulum and the reason active control
+is needed at all.}
+
+Starting from $\theta=\SI{10}{\degree}$, the system is expected to oscillate
+about the hanging equilibrium $\theta=0$. With no friction modeled, the motor
+back-EMF term supplies a damping-like effect and the oscillations decay.
+Examining the free-body diagram in Figure~\ref{fig:fbdpend}, a small positive
+angle should cause the body to move initially in the positive direction as the
+tilt returns toward zero. Figure~\ref{fig:stab10} shows this behavior.
+\rev{With the corrected back-EMF constant of Section~\ref{sec:simmodel}, the
+damping is strong and the oscillation decays within about five periods. The
+translational position does not return to zero; after the initial positive
+excursion the base settles about \SI{8}{mm} behind its starting point, the
+net effect of the asymmetric damping over the swings. The figures show the
+corrected model used for the results of Chapter~\ref{ch:results}.} These checks
+establish that the nonlinear equations of motion behave as expected and can be
+relied upon.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{stability_180}
+\caption{Uncontrolled response from $\theta=\SI{180}{\degree}$.}
+\label{fig:stab180}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{stability_10}
+\caption{Uncontrolled response from $\theta=\SI{10}{\degree}$.}
+\label{fig:stab10}
+\end{figure}
