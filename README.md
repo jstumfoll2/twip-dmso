@@ -41,6 +41,12 @@ uv run python scripts/run_baseline.py
 uv run python scripts/run_baseline.py --scale ke=0.5 --tilt 2
 ```
 
+Thesis revision 8 (`docs/thesis`): regenerate every Chapter 8 figure and table:
+
+```bash
+uv run python scripts/thesis_rev8.py
+```
+
 Thesis reproductions and data replays:
 
 ```bash
@@ -73,6 +79,9 @@ All scripts take `--out DIR` to save PNGs instead of opening windows.
 | `twip.sensors` | accelerometer kinematics, gyro, relative encoders, noise from the Allan analysis |
 | `twip.actuators` | firmware voltage path (`Actuator`), saturation, deadzone, play-operator backlash |
 | `twip.baseline` | `design_lqr`, `KalmanEstimator`, `ComplementaryEstimator`, `simulate`, metrics |
+| `twip.observers` | thesis revision 8: corrected DMSO (Ch. 3), the three Kalman baselines (Ch. 7), revision-7 DMSO adapter |
+| `twip.controllers` | thesis revision 8: LQR tracking, revision-7 two-step extra control, command-filtered backstepping (Ch. 6) |
+| `twip.experiments` | the Chapter 8 test matrix (observer cases O1-O4, control cases C1-C4) |
 | `twip.estimators` | linear Kalman, tilt/gyro-bias Kalman, complementary filter |
 | `twip.control` | `c2d`, `lqr`, `dlqr`, `lqrd` (Control System Toolbox replacements) |
 | `twip.integrators` | fixed-step RK4 (`RK4.m`) |

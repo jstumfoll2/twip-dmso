@@ -12,3 +12,7 @@ wheels/
 # figure output
 *.png
 figs/
+
+# local thesis preview builds
+docs/thesis_rev8_results_preview.pdf
+!docs/thesis/figures/*.png
