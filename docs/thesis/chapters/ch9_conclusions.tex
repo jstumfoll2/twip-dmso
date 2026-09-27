@@ -27,21 +27,26 @@ the two-wheeled inverted pendulum, an underactuated system with unmatched
 uncertainty. The design assigns damping to every error coordinate, retains and
 explicitly cancels the coupling between the position and attitude error
 subsystems, and uses command filtering so that each network approximates a
-function of measured state and reference alone. Its boundedness result is
-conditional on the command-filter error assumption. For the TWIP that
-assumption does not hold: tracking the non-minimum-phase position output
-places a closed-loop pole at the right-half-plane zero of $x_1(s)/u(s)$, and the
-design could not be stabilized. The revision~7 two-step extra control does
-balance the robot in every case, with mixed effect on tracking accuracy.}
+function of measured state and reference alone. As first formulated, with the
+position $x_1$ as the tracked output, the design inverts the right-half-plane
+zero of $x_1(s)/u(s)$ and cannot be stabilized for any gains. Recast on the flat
+output $y=x_1-b\,x_3$, with the attitude coordinates weighted by $a_2^2$ in the
+Lyapunov function, the same construction is realizable, and the control enters
+only at the last step. In simulation it balanced in every run and reduced the
+RMS position tracking error relative to the LQR by factors of 5 to 17, at up to
+43\% more control effort. Most of that gain comes from the corrected structure.
+The networks contribute measurably only under deadzone and backlash, because the
+dominant parameter error acts on the input gain, which the networks are not
+given the information to learn.}
 
 Four directions follow naturally from this work.
 
-\paragraph{A realizable backstepping output.} \rev{Repeating the four-step
-construction on the flat output $y=Cx$, $CB=CAB=CA^2B=0$, which has no zero
-dynamics, or restructuring it as a cascade with a position loop slower than the
-zero, would retain the damping and command-filtering ideas of
-Chapter~\ref{ch:control} while removing the obstruction identified in
-Section~\ref{sec:cfinstab}.}
+\paragraph{Input-gain uncertainty.} \rev{A parameter error in the motor
+constants changes $B_2$, so part of the residual the networks must absorb is
+proportional to the control. Giving the second network the previous control as
+an input, or estimating $B_2$ directly as in adaptive feedback linearization,
+would bring that error within the approximation hypothesis. At present,
+robustness to it comes only from low position-loop gains.}
 
 \paragraph{Output feedback.} The present development assumes full state
 measurement, so the DMSO is properly a filter and uncertainty identifier. The

@@ -150,9 +150,14 @@ the revision~7 perturbation cannot be stabilized by the nominal LQR even with
 perfect state knowledge.}
 
 \paragraph{B.4.3 Command-filtered design.} \rev{The design of
-Section~\ref{sec:cffb} is not realizable for the TWIP in its present form; see
-Remark~\ref{rem:realizability} and Section~\ref{sec:cfinstab}. The applied
-control is also independent of $u_{\mathrm{nom}}$, which cancels in
+Section~\ref{sec:cffb} is not realizable for the TWIP as written; see
+Remark~\ref{rem:realizability} and Section~\ref{sec:cfinstab}. It is corrected in
+Section~\ref{sec:flatcf} by three changes: tracking the flat output
+$y=x_1-b\,x_3$; using $\eta=x_2-b\,x_4$, whose derivative contains no control, as
+the second coordinate, so that $\alpha_2$ no longer contains $B_1u$ and the
+virtual-control gain is $a_2=A_2-bA_4$ rather than $A_2$; and weighting the
+attitude coordinates by $w=a_2^2$ in the Lyapunov function. The applied
+control is independent of $u_{\mathrm{nom}}$ in both forms, since it cancels in
 \eqref{eq:ue}.}
 
 \paragraph{B.4.4 Noise table.} \rev{The units of Table~\ref{tab:noise} are

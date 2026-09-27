@@ -82,6 +82,8 @@ two-step, command-filtered backstepping) and `twip.experiments` (cases).
 
 Key findings recorded in the text: the rev-8 DMSO beats the augmented-state
 KF by ~11x on uncertainty identification without noise, but not with noise;
-the command-filtered controller (Ch. 6) is unstable for all gains because it
-inverts the right-half-plane zero of x1/u (Section 8.3.1 and the
-"Realizability" remark in Chapter 6).
+the command-filtered controller as first written (Ch. 6) is unstable for all
+gains because it inverts the right-half-plane zero of x1/u (Section 8.3.1).
+Section 6.7 corrects it (flat output y = x1 - b x3, eta = x2 - b x4, attitude
+weight a2^2). The corrected design balances in every run and tracks 5-17x better
+than LQR, at up to 43% more control effort.

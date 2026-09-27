@@ -279,12 +279,13 @@ correspondingly, $\What_{k+1}=\What_k+\Gamma\phi_ke_{k+1}^TT^TT\Bm$, and if
 $\Bm^TT^TT\Bm=I$. Those conditions should be imposed explicitly.}
 
 \section{CONTROL RESULTS}
+\label{sec:ctrlresults}
 
 \subsection{Realizability of the command-filtered design}
 \label{sec:cfinstab}
 
-\rev{The command-filtered design of Section~\ref{sec:cffb} could not be
-stabilized, and the reason is structural. Stage~3 of
+\rev{The command-filtered design as written in Section~\ref{sec:cffb} could not
+be stabilized, and the reason is structural. Stage~3 of
 Appendix~\ref{app:validation} was followed: the backstepping structure was run
 first with both networks disabled, on the nominal linear model, with perfect
 state knowledge and no saturation. The closed loop diverged within seven samples.
@@ -294,7 +295,7 @@ networks disabled) gives a real eigenvalue near $+7$~rad/s for every gain set
 tried: 720 combinations of $c_1,\dots,c_4$ and $\varpi_1,\varpi_2,\varpi_3$, including
 all combinations satisfying \eqref{eq:gaincond}. The smallest value found for
 the largest real part was $+6.35$~rad/s. As the filter bandwidths are raised,
-that eigenvalue converges to $+7.23$~rad/s (Figure~\ref{fig:chi}), which is the
+that eigenvalue converges to $+7.23$~rad/s (Figure~\ref{fig:chi}a), which is the
 right-half-plane transmission zero of the position-to-voltage transfer function
 $x_1(s)/u(s)$. On the revision~7 parameters the zero is at $+6.11$~rad/s, so the
 difficulty does not come from the model corrections.
@@ -308,63 +309,81 @@ $\alpha_2$ contains $B_1u$, the control depends on the filter state
 $\dot x_4^c$, and $\alpha_3$ contains $\dot x_3^c$. So $\alpha_2$ and its
 derivatives depend on the filter errors themselves, and the premise that
 $\alpha_i$ and $\dot\alpha_i$ are bounded, which yields
-$\chi_i=O(1/\varpi_i)$, does not follow from the construction. Raising the
-bandwidth moves the unstable eigenvalue toward the zero rather than into the
-left half-plane.
+$\chi_i=O(1/\varpi_i)$, does not follow from the construction.
 
-Two remedies preserve the intent of Section~\ref{sec:cffb}. The first is to
-track a minimum-phase output. For a controllable single-input linearization, the
-flat output $y=Cx$ with $CB=CAB=CA^2B=0$ has relative degree four and no zero
-dynamics, and a four-step recursion on it is well posed. The second is a
-cascade: a position loop slower than the zero that commands tilt, and a
-backstepping tilt loop with the network compensation. The control table below
-therefore reports the command-filtered design as unrealizable in its present
-form.}
+The corrected design of Section~\ref{sec:flatcf} tracks the flat output
+$y=x_1-b\,x_3$ instead and weights the attitude coordinates by $w=a_2^2$. Its
+linearized closed loop is stable at every bandwidth in Figure~\ref{fig:chi}a.
+In closed-loop simulation of case C2 its filter errors decrease as the bandwidth
+is raised (Figure~\ref{fig:chi}b), as Assumption~\ref{as:filt} requires. The
+workable range is bounded at both ends. Below $\varpi_2\approx\SI{30}{rad/s}$ the
+filters are too slow to follow the virtual controls, and at
+$\varpi_2\ge\SI{80}{rad/s}$ the fastest filter ($\varpi_3=1.5\varpi_2$) reaches
+the one-fifth-of-sample-rate limit of Appendix~\ref{app:validation} and the
+robot falls. The results below use $\varpi=(20,40,60)$~rad/s and
+$c=(0.8,1.5,10,12)$, chosen by a sweep over the perturbed cases C2 and C4 with the
+networks disabled. Of 54 gain sets with $c_1\le0.8$ and $c_2\le1.5$, 46 balanced
+in both cases. Larger position-loop gains fail under the input-gain error
+discussed at the end of Section~\ref{sec:flatcf}.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.8\textwidth]{cfb_eigenvalues}
-\caption{Largest real part of the closed-loop eigenvalues of the command-filtered
-design (networks disabled, nominal linear model) against the command-filter
-bandwidth, for three sets of damping gains. The dashed line is the
-right-half-plane zero of $x_1(s)/u(s)$. Assumption~\ref{as:filt} requires the
-filter errors $\chi_i$ to shrink as $\varpi_i$ grows; instead the unstable
-eigenvalue converges to the zero.}
+\includegraphics[width=\textwidth]{cfb_bandwidth}
+\caption{Command-filter bandwidth. (a) Largest real part of the closed-loop
+eigenvalues (networks disabled, nominal linear model) for the design as written
+in Section~\ref{sec:cffb} and for the flat-output design of
+Section~\ref{sec:flatcf}. The dashed line is the right-half-plane zero of
+$x_1(s)/u(s)$. (b) RMS command-filter errors $\chi_i$ of the flat-output design
+in case C2 against the bandwidth; dotted red lines mark bandwidths at which the
+robot fell, and the dashed line is the sample-rate limit of
+Appendix~\ref{app:validation} applied to $\varpi_3$.}
 \label{fig:chi}
 \end{figure}
 
-\subsection{LQR and the two-step extra control}
+\subsection{Tracking performance}
 
-\rev{Table~\ref{tab:ctrleff} and Figures~\ref{fig:C2}--\ref{fig:C4} compare
-the LQR alone with the revision~7 two-step extra control. The two-step design
-is the \texttt{ExtraControl\_v5.m} law with $k_{e0}=0$, the setting that
-reproduces the revision~7 figures.
+\rev{Table~\ref{tab:ctrleff} and Figures~\ref{fig:C2}--\ref{fig:C4} compare the
+LQR alone, the revision~7 two-step extra control (the
+\texttt{ExtraControl\_v5.m} law with $k_{e0}=0$, the setting that reproduces the
+revision~7 figures), and the flat-output command-filtered design with the
+networks off and on (learning rates $\gamma_{i1}=0.05$, $\gamma_{i2}=0.2$,
+leakage $\kappa_{ij}=0.01$). Each entry is the mean over five noise seeds. All
+four controllers balanced in all twenty runs of every case.
 
-The two-step extra control reduces the RMS position tracking error by 17\% in
-the nominal case C1 and by 30\% under deadzone and backlash (C4). It increases
-it by 4\% with parameter uncertainty alone (C2) and by 22\% with the deadzone
-(C3). It uses between 1\% and 29\% more RMS control. Both controllers balance in
-every case. In both, the position error is dominated by the slow position
-mode of the LQR (the thesis weights place a closed-loop pole at
-$|\lambda|=0.9995$ at \SI{10}{ms}). Under the deadzone it is also dominated by a
-steady velocity deficit that neither design removes, visible as the ramp in
-Figure~\ref{fig:C4}.
+The flat-output design reduces the RMS position tracking error relative to the
+LQR by a factor of 4.9 in the nominal case C1, 5.4 with parameter uncertainty
+(C2), 13 with the deadzone (C3), and 17 with deadzone and backlash (C4). The
+price is control effort: its RMS voltage is higher than the LQR's by 7\%, 16\%,
+26\%, and 43\% in the four cases, and it saturates during the initial recovery
+as the others do.
 
-A slow position ramp, the behavior Remark~\ref{rem:twostep} predicts for the
-two-step design, appears in cases C2--C4. It appears equally for the LQR alone,
-with slopes of 0.02 to \SI{0.06}{m/s} for both controllers over the last
-\SI{10}{s}. So it is not a property of the two-step design. It is the
-velocity error left by an incorrect steady-state feedforward under parameter
-error, integrated by a position loop too weak to remove it. Test T3 of
-Appendix~\ref{app:validation} therefore neither confirms nor refutes
-Remark~\ref{rem:twostep}. The LQR term supplies whatever position damping
-there is in both designs.}
+Most of the improvement comes from the structure, not the adaptation. With the
+networks disabled the errors are the same in C1--C3, and the networks reduce the
+error by 18\% only in C4. That is consistent with Section~\ref{sec:flatcf}: the
+dominant uncertainty in these cases is the input-gain error, which the networks
+are not given the information to learn. Backlash and deadzone, which do enter as
+functions of the state, are where the networks help. A persistent
+small-amplitude oscillation remains in C4 (Figure~\ref{fig:C4}), the signature
+of the nonsmooth input nonlinearity described in Remark~\ref{rem:backlash}.
+
+The two-step extra control changes the error relative to the LQR by $-16\%$,
+$-3\%$, $+8\%$, and $-36\%$ in C1--C4, with 2\% to 28\% more RMS control. Both it
+and the LQR show a slow position ramp in C2--C4 (0.02 to \SI{0.06}{m/s} over the
+last \SI{10}{s}). That is the velocity error left by an incorrect
+steady-state feedforward under parameter error, integrated by the weak position
+loop of the LQR (the thesis weights place a closed-loop pole at
+$\abs{\lambda}=0.9995$ at \SI{10}{ms}). Because it appears equally without the
+extra control, test T3 of Appendix~\ref{app:validation} neither confirms nor
+refutes Remark~\ref{rem:twostep}. The flat-output design, which damps $z_1$
+explicitly, drifts an order of magnitude more slowly, at 0.002 to
+\SI{0.004}{m/s}.}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{C2}
-\caption{Case C2: position and velocity tracking errors, tilt, and tilt rate
-with and without the two-step extra control.}
+\caption{Case C2 (parameter uncertainty): position and velocity tracking errors,
+tilt, and tilt rate for the LQR, the two-step extra control, and the flat-output
+command-filtered design with networks.}
 \label{fig:C2}
 \end{figure}
 
@@ -377,11 +396,12 @@ with and without the two-step extra control.}
 
 \begin{table}[htbp]
 \centering
-\caption{Control effectiveness by case: RMS position tracking error (\si{m})
-after \SI{5}{s} / RMS voltage (\si{V}) / peak voltage (\si{V}).}
+\caption{Control effectiveness by case, mean over five noise seeds: RMS position
+tracking error (\si{m}) after \SI{5}{s} / RMS voltage (\si{V}) / peak voltage
+(\si{V}).}
 \label{tab:ctrleff}
-\footnotesize
-\setlength{\tabcolsep}{4pt}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{lcccc}
 \toprule
 Controller & C1 & C2 & C3 & C4 \\

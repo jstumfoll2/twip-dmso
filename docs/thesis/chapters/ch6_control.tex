@@ -386,7 +386,7 @@ therefore depend on the filter errors that the assumption requires to be small.
 With $x_1$ as the tracked output, the recursion inverts the plant from $u$ to
 $x_1$, which has a right-half-plane zero. Section~\ref{sec:cfinstab} shows that
 the implemented closed loop has an unstable eigenvalue at that zero for every
-gain set tested, and discusses two remedies.
+gain set tested. Section~\ref{sec:flatcf} gives the corrected design.
 \end{remark}}
 
 \rev{\begin{remark}[Relation to the two-step design]\label{rem:twostep}
@@ -399,3 +399,109 @@ loop is held by the LQR term, but because $u_{\mathrm{nom}}$ is absorbed into
 the approximation targets in that formulation, the analysis does not credit it.
 The design above makes the position damping explicit.
 \end{remark}}
+
+\rev{\section{CORRECTED DESIGN: FLAT-OUTPUT COORDINATES}
+\label{sec:flatcf}
+
+Remark~\ref{rem:realizability} traces the failure of Section~\ref{sec:cffb} to
+the choice of $x_1$ as the tracked output and to the control appearing in
+$\dot x_2$. Both are removed by a change of coordinates that leaves the rest of
+the construction intact. The same four steps, command filters, damping
+assignment, and two networks are used.
+
+\subsection{Coordinates}
+
+Let $b:=B_1/B_2$ and define
+\begin{equation}\label{eq:flatcoords}
+y:=x_1-b\,x_3,\qquad \eta:=\dot y=x_2-b\,x_4 .
+\end{equation}
+From \eqref{eq:plantform},
+\begin{equation}\label{eq:etadot}
+\dot\eta=(A_1-bA_3)\,x_2+(A_2-bA_4)\,x_3+D_1(\mathbf{x}),
+\qquad D_1:=d_1-b\,d_2 ,
+\end{equation}
+which contains no control. For the TWIP the coefficient of $x_2$ vanishes
+identically, as do the tilt-rate terms of the corrected model
+(Section~\ref{sec:simmodel}). The back-EMF and friction act through the same
+generalized-force direction as the voltage, so they cancel together with the
+input. Hence
+\begin{equation}\label{eq:etadot2}
+\dot\eta=a_2x_3+D_1(\mathbf{x}),\qquad a_2:=A_2-bA_4 .
+\end{equation}
+The output $y$ has relative degree four and no zero dynamics; it is the flat
+output of the linearization. Because $b$ is a ratio of input gains, the motor
+constants cancel from both $b$ and $a_2$, which depend only on the masses,
+geometry, and inertia. For the parameters of Chapter~\ref{ch:platform},
+$b=0.741$ and $a_2=-38.7~\mathrm{s^{-2}}$. The design requires $a_2\neq0$.
+
+Note the sign. With the tilt held, $\dot x_4=0$ requires $B_2u=-A_4x_3$, and the
+translational acceleration is then $a_2x_3$, not $A_2x_3$. The quasi-static
+effect of tilt on acceleration is opposite in sign to $A_2$ and about eleven
+times larger.
+The design of Section~\ref{sec:cffb} uses $A_2$ as the virtual-control gain and
+relies on the $B_1u$ term in $\alpha_2$ to make up the difference
+instantaneously. That is where the plant inversion occurs.
+
+\subsection{Steps}
+
+With the command filters of Section~\ref{sec:cmdfilter}, and $y_d$ the reference
+for $y$ (for a constant velocity command $y_d=x_{1d}-b\,x_3^{ss}$),
+\begin{align}
+z_1&:=y-y_d, & \alpha_1&:=\dot y_d-c_1z_1,\label{eq:fz1}\\
+z_2&:=\eta-\eta^c, & \alpha_2&:=a_2^{-1}\bigl[-\hat F_1-c_2z_2-z_1\bigr],\label{eq:fz2}\\
+z_3&:=x_3-x_3^c, & \alpha_3&:=\dot x_3^c-c_3z_3-\tfrac{a_2}{w}\,z_2,\label{eq:fz3}\\
+z_4&:=x_4-x_4^c, & u&:=B_2^{-1}\bigl[-\hat F_2-c_4z_4-z_3\bigr],\label{eq:fz4}
+\end{align}
+with $F_1:=D_1-\dot\eta^c$ and $F_2$ as in \eqref{eq:F2}. The control now enters
+only at the last step, so $\alpha_2$ contains no control and the ordering of
+Remark~\ref{rem:order} has no algebraic dependence at all. As before,
+$u_{\mathrm{nom}}$ cancels if $u$ is written as $u_{\mathrm{nom}}+u_e$.
+
+\subsection{Weighted Lyapunov function}
+
+The constant $w>0$ in \eqref{eq:fz3} weights the attitude coordinates in
+\begin{equation}\label{eq:Vflat}
+\mathcal{V}_w=\tfrac12z_1^2+\tfrac12z_2^2+\tfrac{w}{2}\bigl(z_3^2+z_4^2\bigr)
++\text{(network terms)} .
+\end{equation}
+Substituting \eqref{eq:fz1}--\eqref{eq:fz4},
+\[
+\begin{aligned}
+\dot z_1&=z_2+\chi_1-c_1z_1, &
+\dot z_2&=(F_1-\hat F_1)+a_2z_3+a_2\chi_2-c_2z_2-z_1,\\
+\dot z_3&=z_4+\chi_3-c_3z_3-\tfrac{a_2}{w}z_2, &
+\dot z_4&=(F_2-\hat F_2)-c_4z_4-z_3,
+\end{aligned}
+\]
+and the cross terms $z_1z_2$, $a_2z_2z_3$, and $w\,z_3z_4$ cancel pairwise in
+$\dot{\mathcal{V}}_w$ exactly as in the proof of Theorem~\ref{thm:control}. The
+network update laws \eqref{eq:upd2}--\eqref{eq:upd1} apply with $\varrho_1=z_2$
+and $\varrho_2=w\,z_4$, the second network's learning rates being divided by $w$
+so that its adaptation speed is independent of the weighting. The bound
+\eqref{eq:Vdotfinal} follows with $A_2$ replaced by $a_2$ and the $z_3$, $z_4$
+terms multiplied by $w$, under the same gain conditions \eqref{eq:gaincond}.
+
+The weight matters in practice. With $w=1$, the skew coupling between $z_2$
+and $z_3$ oscillates at about $\abs{a_2}\approx\SI{39}{rad/s}$. That is too
+fast for command filters limited to roughly one fifth of the \SI{628}{rad/s}
+sample rate, and the closed loop is unstable for every gain set tested. With
+$w=a_2^2$ the coupling term becomes $z_2/a_2$ and the coupling frequency drops to
+about \SI{1}{rad/s}. The linearized closed loop (networks off) is then stable
+for 691 of the 720 gain and bandwidth combinations examined in
+Section~\ref{sec:cfinstab}.
+
+\subsection{What the coordinates change about the assumptions}
+
+The filter-error assumption, Assumption~\ref{as:filt}, is now consistent with
+the construction. The virtual controls depend on the state, the filter states,
+and the network outputs, but not on the control, and the tracked output has no
+zero dynamics. So bounded tracking errors imply bounded virtual controls and
+bounded derivatives. Figure~\ref{fig:chi} confirms that the filter errors shrink
+as the bandwidth is raised, up to the sample-rate limit.
+
+One modeling limitation remains. A parameter error in $k_m$ or $R$ changes the
+true $B_2$, so the residual $F_2-\hat F_2$ contains $(B_2^{\mathrm{true}}-B_2)u$.
+That residual depends on the control, and neither network is given the control
+as an input. The approximation hypothesis therefore does not cover input-gain
+error; robustness to it comes from the gains. Low position-loop gains $c_1,c_2$
+were found to be essential (Section~\ref{sec:ctrlresults}).}
