@@ -46,10 +46,11 @@ class LinearKalman:
 class AngleBiasKalman:
     """Tilt angle + gyro bias Kalman filter (``kalmanFilter.m`` / ``filters.ino``).
 
-    Works in degrees.  The covariance update is a literal port of the
+    Works in degrees.  With ``literal=True`` the covariance update is a literal port of the
     in-place C code.  ``P[1][0]`` and ``P[1][1]`` are updated using the
     *already updated* ``P[0][0]`` and ``P[0][1]``, which differs from the
-    textbook ``(I - K H) P``.  Keep ``literal=True`` to match the robot logs.
+    textbook ``(I - K H) P``.  The default is the textbook update; use ``literal=True``
+    to reproduce the robot logs.
     """
 
     def __init__(
@@ -57,7 +58,7 @@ class AngleBiasKalman:
         Q_angle: float = 0.001,
         Q_gyro_bias: float = 0.003,
         R_angle: float = 0.005,
-        literal: bool = True,
+        literal: bool = False,
     ):
         self.Q_angle, self.Q_gyro_bias, self.R_angle = Q_angle, Q_gyro_bias, R_angle
         self.literal = literal

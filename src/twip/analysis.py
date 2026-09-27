@@ -29,7 +29,7 @@ def replay_filters(d: dict[str, np.ndarray], alpha: float = 0.98, firmware_bug: 
     logged by ``twip_v4`` (see :class:`twip.estimators.DMSO2`).
     """
     n = len(d["dt"])
-    kf = AngleBiasKalman()
+    kf = AngleBiasKalman(literal=True)  # what the robot ran
     mso = DMSO2(firmware_bug=firmware_bug)
     out = {k: np.zeros(n) for k in ("thetac", "thetak", "bias", "mso", "msodot", "fhat1", "fhat2")}
     pc = 0.0
@@ -64,17 +64,17 @@ class ImplementationReplay:
 def replay_implementation(
     log: dict[str, np.ndarray],
     params: RobotParams | None = None,
-    reproduce_R_bug: bool = True,
+    reproduce_R_bug: bool = False,
 ) -> ImplementationReplay:
     """Offline 4-state Kalman + DMSO on a hardware LQR run (``lqrkalmantest1v2.m``).
 
-    ``reproduce_R_bug``: in the MATLAB script, ``R = .1`` for an unused
-    2-state filter overwrites the 4x4 Kalman ``R`` before the loop.  The
-    4-state Kalman then adds 0.1 to every element of ``H P H'``.  Set False to
-    use the intended diagonal R.
+    By default the intended diagonal R is used.  ``reproduce_R_bug=True`` reproduces the
+    thesis figures: in the MATLAB script, ``R = .1`` for an unused 2-state filter
+    overwrites the 4x4 Kalman ``R`` before the loop, so the 4-state Kalman adds 0.1
+    to every element of ``H P H'``.
 
-    The script also sets ``km = .1154`` and ``ke = .0036`` (rounded values),
-    which is the default here.
+    This replays the thesis *analysis*, so it keeps the thesis model: ``km = .1154``,
+    ``ke = .0036`` (the script's rounded values) and the ``xdot``-only back-EMF.
     """
     p = params or RobotParams(km=0.1154, ke=0.0036)
     dt = log["dt"]

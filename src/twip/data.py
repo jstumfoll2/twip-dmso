@@ -67,5 +67,14 @@ def load_log(path: str | Path, columns: tuple[str, ...]) -> dict[str, np.ndarray
     return {name: arr[:, i] for i, name in enumerate(columns)}
 
 
+def fix_v8_gyhat(log: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """Undo v8's logging typo: while balancing (LQR-gain columns all zero) it printed
+    ``thetahatdot * 59.2958`` instead of ``* 57.2958``.  Returns a corrected copy."""
+    out = dict(log)
+    balancing = (log["lqr1"] == 0) & (log["lqr2"] == 0) & (log["lqr3"] == 0) & (log["lqr4"] == 0)
+    out["gyhat"] = np.where(balancing, log["gyhat"] * 57.2958 / 59.2958, log["gyhat"])
+    return out
+
+
 def thesis_path(*parts: str) -> Path:
     return THESIS_ROOT.joinpath(*parts)

@@ -47,7 +47,7 @@ def filters(args) -> list[plt.Figure]:
 def implementation(args) -> list[plt.Figure]:
     path = args.file or thesis_path("Thesis", "Thesis Programs", "Implementation", "implementationtest5.txt")
     log = load_log(path, IMPLEMENTATION_COLUMNS)
-    r = replay_implementation(log, reproduce_R_bug=not args.fix_r_bug)
+    r = replay_implementation(log, reproduce_R_bug=args.thesis_r_bug)
     s = 310  # starttime in the MATLAB script
     n = len(r.accpitch)
     t = r.t[s:n]
@@ -111,7 +111,7 @@ def main() -> None:
     ap.add_argument("which", choices=["filters", "implementation", "firmware", "allan"])
     ap.add_argument("--file", type=Path, help="data file (defaults to the one the thesis used)")
     ap.add_argument("--fix-firmware-bug", action="store_true", help="filters: use the corrected DMSO F matrix")
-    ap.add_argument("--fix-r-bug", action="store_true", help="implementation: use the intended 4x4 Kalman R")
+    ap.add_argument("--thesis-r-bug", action="store_true", help="implementation: reproduce the thesis R overwrite")
     ap.add_argument("--out", type=Path, help="save PNGs here instead of showing windows")
     args = ap.parse_args()
 

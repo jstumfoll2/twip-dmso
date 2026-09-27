@@ -1,12 +1,19 @@
 # twip-dmso
 
-A Python port of the MATLAB and Arduino code from a master's thesis on a **two-wheeled
-inverted pendulum (TWIP) robot** and a **discrete modified state observer (DMSO)**.
-The DMSO estimates the robot's state and its model uncertainty. The thesis compares it
-with Kalman and complementary filters, and adds neural-network "extra control" on top of
-LQR. The port uses numpy, scipy and matplotlib; MATLAB is not needed.
+Python code for a **two-wheeled inverted pendulum (TWIP) robot** and a **discrete
+modified state observer (DMSO)**, starting from a 2015 master's thesis (MATLAB +
+Arduino). Uses numpy, scipy and matplotlib; MATLAB is not needed.
 
-- What the original folder contains, and the bugs found in it: [`docs/CODE_INVENTORY.md`](docs/CODE_INVENTORY.md)
+The package has two tiers:
+
+- **Corrected baseline** (top-level `twip`): plant, sensor, actuator and LQR baseline
+  models with the thesis's modeling errors fixed. This is the reference for new
+  controller and observer designs. See [`docs/BASELINE.md`](docs/BASELINE.md).
+- **Legacy** (`twip.legacy`): faithful reproductions of the thesis simulations,
+  observers and extra control, quirks included, so thesis results stay reproducible.
+
+Background on the original code and every issue found in it:
+[`docs/CODE_INVENTORY.md`](docs/CODE_INVENTORY.md).
 
 ## Setup
 
@@ -24,55 +31,71 @@ Without the data, those tests are skipped and the rest still run.
 
 ## Running
 
+Corrected baseline (LQR + Kalman on the corrected plant):
+
 ```bash
-uv run python scripts/run_dmso_sim.py noise_with_uncertainty
+uv run python scripts/run_baseline.py
 ```
 
 ```bash
-uv run python scripts/run_extra_control.py unmodeled_dynamics
+uv run python scripts/run_baseline.py --scale ke=0.5 --tilt 2
+```
+
+Thesis reproductions and data replays:
+
+```bash
+uv run python scripts/legacy/run_dmso_sim.py noise_with_uncertainty
+```
+
+```bash
+uv run python scripts/legacy/run_extra_control.py unmodeled_dynamics
 ```
 
 ```bash
 uv run python scripts/run_data_replays.py firmware
 ```
 
-| Script | Presets / commands |
+| Script | Options |
 |---|---|
-| `run_dmso_sim.py` | `no_noise_no_uncertainty`, `no_noise_with_uncertainty`, `noise_with_uncertainty`, `noise_with_uncertainty_perturbed` |
-| `run_extra_control.py` | `as_saved`, `unmodeled_dynamics`, `parameter_uncertainty`, `deadzone`, `deadzone_and_backlash` |
-| `run_data_replays.py` | `filters`, `implementation`, `firmware`, `allan` |
+| `run_baseline.py` | `--estimator kalman/complementary`, `--gains lqr/hardware`, `--tilt`, `--scale PARAM=FACTOR`, `--delay`, `--no-noise` |
+| `legacy/run_dmso_sim.py` | `no_noise_no_uncertainty`, `no_noise_with_uncertainty`, `noise_with_uncertainty`, `noise_with_uncertainty_perturbed` |
+| `legacy/run_extra_control.py` | `as_saved`, `unmodeled_dynamics`, `parameter_uncertainty`, `deadzone`, `deadzone_and_backlash` |
+| `run_data_replays.py` | `filters`, `implementation` (`--thesis-r-bug`), `firmware`, `allan` |
 
 All scripts take `--out DIR` to save PNGs instead of opening windows.
 
 ## Layout
 
-| Module | Ports |
+| Module | Contents |
 |---|---|
-| `twip.params` | the parameter block copy-pasted into every script; `with_thesis_uncertainty()` |
-| `twip.dynamics` | `twipnonlinear.m` (both angle conventions, optional unmodeled terms), linearized A/B |
+| `twip.params` | `CORRECTED` and `THESIS` parameter sets, motor-constant derivations, `scaled()` |
+| `twip.dynamics` | corrected nonlinear EOM (mass-matrix form) and linearization |
+| `twip.sensors` | accelerometer kinematics, gyro, relative encoders, noise from the Allan analysis |
+| `twip.actuators` | firmware voltage path (`Actuator`), saturation, deadzone, play-operator backlash |
+| `twip.baseline` | `design_lqr`, `KalmanEstimator`, `ComplementaryEstimator`, `simulate`, metrics |
+| `twip.estimators` | linear Kalman, tilt/gyro-bias Kalman, complementary filter |
 | `twip.control` | `c2d`, `lqr`, `dlqr`, `lqrd` (Control System Toolbox replacements) |
-| `twip.integrators` | `RK4.m` |
-| `twip.estimators` | 4-state DMSO, 2-state DMSO (`DMSO.m` / v4 `MSO.ino`), v9 on-board DMSO (`FirmwareDMSO`), linear Kalman, tilt/bias Kalman, complementary filter |
-| `twip.actuators` | saturation, deadzone, backlash |
-| `twip.sensors` | encoder quantization, white noise + Gauss-Markov bias IMU model |
-| `twip.sim_dmso` | `main_bala_discrete.m`, one preset per thesis folder |
-| `twip.extra_control` | `ExtraControl_v5.m` + `NN1v3.m` |
-| `twip.analysis` | `filteringtest.m`, `lqrkalmantest1v2.m`, v9 firmware replay, `allan.m` / `allanprocess.m` |
-| `twip.data` | `.mat` and serial-log loaders (replaces the `*import*.m` scripts) |
-| `twip.plots` | the thesis figures |
+| `twip.integrators` | fixed-step RK4 (`RK4.m`) |
+| `twip.analysis` | replays of logged robot data: filter comparison, hardware LQR runs, v9 firmware DMSO, Allan variance |
+| `twip.data` | `.mat` and serial-log loaders |
+| `twip.legacy.dynamics` / `.sensors` | the thesis EOM and sensor model |
+| `twip.legacy.observers` | thesis DMSO (4-state, 2-state) and the v9 on-board DMSO |
+| `twip.legacy.sim_dmso` | `main_bala_discrete.m`, one preset per thesis folder |
+| `twip.legacy.extra_control` | `ExtraControl_v5.m` + `NN1v3.m` |
+| `twip.legacy.plots` | the thesis figures |
 
-## Translation policy
+## Legacy quirks and their switches
 
-The port is **faithful by default**. It reproduces what the MATLAB and firmware
-actually did, quirks included, so results can be compared with the thesis. Each
-known quirk is documented where it lives and has a switch:
+The legacy tier reproduces what the MATLAB and firmware actually did. Where a quirk
+lives outside `twip.legacy` (the data replays), the default is now the corrected
+behaviour and a switch reproduces the thesis:
 
 | Quirk | Default | Switch |
 |---|---|---|
-| Backlash in the DMSO sim is a no-op | reproduced (`backlash_legacy`) | use `actuators.Backlash` |
-| v4 firmware MSO `F[1][0]` bug | reproduced in `replay_filters` | `firmware_bug=False` |
-| In-place Kalman covariance update | reproduced | `AngleBiasKalman(literal=False)` |
-| Scalar `R = .1` overwrite in the hardware replay | reproduced | `reproduce_R_bug=False` |
+| Backlash in the DMSO sim is a no-op | reproduced in `legacy.sim_dmso` | `actuators.Backlash` is the correct form |
+| v4 firmware MSO `F[1][0]` bug | reproduced in `replay_filters` (it's what the robot ran) | `firmware_bug=False` |
+| In-place Kalman covariance update | textbook | `AngleBiasKalman(literal=True)` (used by `replay_filters`) |
+| Scalar `R = .1` overwrite in the hardware replay | intended R | `reproduce_R_bug=True` |
 | DMSO weight-update innovation index | per preset | `DMSOSimConfig.weight_innovation` |
 | Extra control `ke0 = 1` (diverges) | `as_saved` preset only | figure presets use `ke0 = 0` |
 | NN2 trained on `e4` instead of `ebar4` | reproduced | `ExtraControlConfig.nn2_error` |
@@ -85,25 +108,32 @@ Unavoidable differences from MATLAB:
 
 ## Verification
 
-With no MATLAB available, the port is checked against **saved outputs of the original code**:
+Legacy code is checked against **saved outputs of the original code**:
 
 | Check | Reference | Agreement |
 |---|---|---|
 | Complementary + tilt/bias Kalman filters | robot log `filteringtest12.mat` (v4 firmware) | < 0.02 deg (log printed to 3 dp) |
 | 2-state DMSO with the F bug | same log (`pitchmso`, `fhat1/2`) | < 0.005 deg |
-| v9 on-board 4-state DMSO | robot logs `implementationtest4/5.txt` (`pitchm`, `xhat`, `xhatdot`, `gyhat`) | < 0.002 (print precision) |
+| v9 on-board 4-state DMSO | robot logs `implementationtest4/5.txt` | < 0.002 (print precision) |
 | Allan deviation | MATLAB `avar` stored in `allandata.mat` | 2e-11 relative |
-| Linear model | Jacobian of the nonlinear EOM | 1e-6 relative |
 | Extra control (nominal, LQR-only, extra) | saved figures in `Extra control/Deadzone*`, `Unmodeled Dynamics` | peak values within a few % |
 | DMSO simulation | saved thesis figure (`Noise with uncertainty/figure2.jpg`) | qualitative (the figure predates the final gains) |
 
-The extra-control and DMSO-figure checks are values read off saved JPEGs, so they are approximate.
+The corrected baseline is checked against physics:
+- The corrected EOM reduce to the thesis EOM exactly when the back-EMF simplification is
+  switched back on.
+- The linear model is the Jacobian of the nonlinear one.
+- The motors are dissipative, and the accelerometer and encoder models behave as expected.
+
+It is **not** validated against hardware data: the closed-loop logs cannot discriminate
+between parameter sets. See [`docs/BASELINE.md`](docs/BASELINE.md) for the evidence and
+suggested bench tests.
 
 ## Not ported
 
 - `animation.m` (3-D robot animation).
 - `Tests/LQR Tests` (~25 near-duplicate tuning scripts). `replay_implementation` covers the final version.
 - DMSO gain tuning (`maintuning.m`, `fminsearchbnd`); `scipy.optimize.minimize(..., bounds=...)` would replace it.
-- Motor tests / motor constant identification (`Tests/Motor Tests`).
+- Motor tests / motor constant identification (`Tests/Motor Tests`); they used the earlier 6 V motors.
 - Sliding-mode control (root `slidingmode*.m`, firmware v5-v9). It was explored but is not a thesis result.
 - The Simulink models in `Model/` (earliest iteration, superseded).

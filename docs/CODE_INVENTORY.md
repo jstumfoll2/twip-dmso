@@ -130,6 +130,38 @@ real robot logs.
 11. **Two angle conventions:** `EOM Test`, `Extra control` and `Tests/LQR Tests` use upright = pi.
     The DMSO sims use upright = 0 (`cos(-pi/2-theta)` for sin).
 
+Found while building the corrected baseline (details in [`BASELINE.md`](BASELINE.md)):
+
+12. **Back-EMF uses `xdot` only.** The motor turns at `xdot/r - thetadot` relative to the body.
+13. **`ke` is ~85x too small** for the thesis's own Table 4.2 motor data (0.00361 vs. 0.307 V s/rad).
+14. **`Ip` is about the axle**, but the EOM need it about the CG.
+15. **Accelerometer modeled as tilt + noise.** A real accelerometer reads tilt relative to apparent
+    gravity, off by about `xddot/g` while the robot accelerates.
+16. **Encoders measure `x - r*theta`**, not `x`, because they count rotation relative to the body.
+17. **The thesis's discrete backlash engages one step late** (it tests the previous input).
+18. **The firmware's compiled-in LQR gains were overridden by potentiometers** on the robot, so no
+    gain set is recorded as having balanced it.
+
+### Status
+
+| # | Issue | Corrected baseline | Legacy (thesis reproduction) |
+|---|---|---|---|
+| 1 | no-op backlash | `actuators.Backlash` (play operator) | `legacy.actuators.backlash_legacy` |
+| 2 | v4 firmware F bug | n/a (hardware history) | `replay_filters(firmware_bug=True)` |
+| 3 | in-place Kalman covariance | `AngleBiasKalman()` textbook by default | `literal=True` (used by `replay_filters`) |
+| 4 | R overwrite | `replay_implementation()` intended R by default | `reproduce_R_bug=True` |
+| 5 | firmware DMSO differs | n/a (observer is being redesigned) | `legacy.observers.FirmwareDMSO` |
+| 6 | mixed log formats | `data.V8_COLUMNS`, `data.fix_v8_gyhat` | |
+| 7 | extra control diverges | n/a (controller is being redesigned) | `legacy.extra_control` presets |
+| 8 | uncertainty one sample off | `SimResult.model_residual()` aligned to the step out of k | `legacy.sim_dmso` |
+| 9 | gyro bias units | `sensors.SensorConfig` in deg/s throughout | `legacy.sensors` |
+| 10 | input timing | `SimConfig.delay_steps`, v9 loop order | per legacy sim |
+| 11 | angle conventions | upright = 0 only | `legacy.dynamics(convention=...)` |
+| 12-14 | back-EMF, `ke`, `Ip` | `dynamics`, `params.CORRECTED` | `params.THESIS`, `back_emf="xdot"` |
+| 15-16 | accelerometer, encoders | `sensors.SensorSuite`, `baseline.KalmanEstimator` | `legacy.sensors` |
+| 17 | backlash timing | `actuators.Backlash` | `legacy.actuators.Backlash` |
+| 18 | hardware gains | `baseline.HARDWARE_DEFAULT_GAINS`, documented as unverified | |
+
 ## 4. Still missing
 - Firmware producing `implementationtest3.txt` (15 columns).
 - The intermediate `ExtraControl` version that produced the 26 May figures (reconstructed; see above).

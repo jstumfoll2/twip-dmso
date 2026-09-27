@@ -113,3 +113,17 @@ def test_v8_log_format():
     log = load_log(path, V8_COLUMNS)
     assert len(log["dt"]) > 1000
     assert np.all(np.abs(log["dt"]) < 0.1)
+
+
+def test_v8_gyhat_typo_fix():
+    from twip.data import V8_COLUMNS, fix_v8_gyhat, load_log, thesis_path
+
+    path = thesis_path("Thesis", "Thesis Programs", "Implementation", "implementationtest1.txt")
+    if not path.exists():
+        pytest.skip("data not found")
+    log = load_log(path, V8_COLUMNS)
+    fixed = fix_v8_gyhat(log)
+    balancing = log["lqr3"] == 0
+    assert balancing.any() and (~balancing).any()
+    np.testing.assert_allclose(fixed["gyhat"][balancing], log["gyhat"][balancing] * 57.2958 / 59.2958)
+    np.testing.assert_array_equal(fixed["gyhat"][~balancing], log["gyhat"][~balancing])
