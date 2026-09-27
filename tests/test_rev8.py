@@ -125,3 +125,75 @@ def test_lqr_and_two_step_track_the_velocity_command():
         r = simulate(c, KalmanEstimator(sensors=cfg.sensors), cfg)
         assert not r.fell
         assert np.mean(r.x[1, -300:]) == pytest.approx(0.1, abs=0.03)
+
+
+# --- corrected (flat-output) command-filtered design ------------------------
+
+
+def test_flat_coordinates_remove_the_control_and_motor_constants():
+    from twip.params import CORRECTED
+
+    for p in (CORRECTED, CORRECTED.scaled(km=0.7, ke=2.0, R=1.3)):
+        Ap, Bp = linear_model(p)
+        b = Bp[1, 0] / Bp[3, 0]
+        assert Ap[1, 1] - b * Ap[3, 1] == pytest.approx(0, abs=1e-9)  # a1 = 0
+        assert Ap[1, 3] - b * Ap[3, 3] == pytest.approx(0, abs=1e-9)  # a4 = 0
+        assert Ap[1, 2] - b * Ap[3, 2] == pytest.approx(-38.746, abs=1e-3)  # a2 independent of motor constants
+        # y = x1 - b x3 has no finite transmission zeros (it is the flat output)
+        C = np.array([[1.0, 0, -b, 0]])
+        from scipy.linalg import eigvals
+
+        M = np.block([[Ap, Bp], [C, np.zeros((1, 1))]])
+        N = np.block([[np.eye(4), np.zeros((4, 1))], [np.zeros((1, 5))]])
+        z = eigvals(M, N)
+        assert np.all(np.abs(z[np.isfinite(z)]) > 1e6)
+
+
+def _load_script():
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location("thesis_rev8", Path(__file__).parents[1] / "scripts" / "thesis_rev8.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_flat_design_closed_loop_is_stable_across_bandwidths():
+    from twip.controllers import FLAT_GAINS
+
+    mod = _load_script()
+    for s in (0.5, 1.0, 3.0, 10.0):
+        g = CFBGains(c=FLAT_GAINS.c, wn=tuple(s * w for w in FLAT_GAINS.wn))
+        assert np.linalg.eigvals(mod._cfb_jacobian(g, flat=True)).real.max() < 0
+    # the design as written in Section 6.4 is not
+    assert np.linalg.eigvals(mod._cfb_jacobian(CFBGains(c=FLAT_GAINS.c, wn=FLAT_GAINS.wn), flat=False)).real.max() > 0
+
+
+@pytest.mark.parametrize("case", ["C2", "C4"])
+def test_flat_design_balances_and_beats_lqr(case):
+    from twip.baseline import KalmanEstimator, simulate
+    from twip.controllers import FLAT_GAINS
+    from twip.experiments import CONTROL_CASES, control_sim_config
+
+    m = TrackingModel.build()
+    cfg = control_sim_config(CONTROL_CASES[case])
+    errs = {}
+    for name, c in (
+        ("lqr", LQRTracking(design_lqr(), m)),
+        ("flat", CommandFilteredBackstepping(design_lqr(), m, np.array(cfg.x0), gains=FLAT_GAINS, output="flat")),
+    ):
+        r = simulate(c, KalmanEstimator(sensors=cfg.sensors), cfg)
+        assert not r.fell
+        xd = np.array([m.x_des(k) for k in range(len(r.time))]).T
+        errs[name] = np.sqrt(np.mean((r.x[0, 500:] - xd[0, 500:]) ** 2))
+    assert errs["flat"] < errs["lqr"] / 3
+
+
+def test_flat_design_control_does_not_depend_on_lqr_gain():
+    m = TrackingModel.build()
+    x0 = np.array([0.0, 0.0, 0.05, 0.0])
+    xhat = np.array([0.01, 0.02, 0.03, 0.1])
+    u1 = CommandFilteredBackstepping(design_lqr(), m, x0, networks=False, output="flat")(xhat, 3)
+    u2 = CommandFilteredBackstepping(10 * design_lqr() + 1, m, x0, networks=False, output="flat")(xhat, 3)
+    assert u1 == pytest.approx(u2, abs=1e-9)

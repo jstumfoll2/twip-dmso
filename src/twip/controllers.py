@@ -224,27 +224,61 @@ class CFBGains:
     hidden: tuple[int, int] = (8, 8)
 
 
+# Gains for the corrected (flat-output) design.  Chosen from a sweep over the
+# perturbed cases C2 and C4 with the networks off (46 of 54 gain sets balanced);
+# low position-loop gains c1, c2 are what give robustness to input-gain error.
+# Balances in all 20 runs of C1-C4 x 5 noise seeds.
+FLAT_GAINS = CFBGains(c=(0.8, 1.5, 10.0, 12.0), wn=(20.0, 40.0, 60.0), gamma=(0.05, 0.2), kappa=(0.01, 0.01))
+
+
 class CommandFilteredBackstepping(LQRTracking):
     """Revision-8 extra control, executed in the order of Remark 6.1.
 
     ``Fhat_i`` = known part of ``F_i`` from the nominal model + network estimate of
-    the unknown part (``d_i``), so each network only has to learn the uncertainty.
-    ``u = u_nom + u_e`` exactly as eq. (ue).  Substituting (ue) shows that ``u_nom``
-    cancels: ``B2 u = -Fhat2 - c4 z4 - z3``.  The LQR gain therefore has no effect
-    on the applied control (see ``tests/test_controllers.py``).
+    the unknown part, so each network only has to learn the uncertainty.
+    ``u = u_nom + u_e`` exactly as eq. (ue); substituting (ue) shows that ``u_nom``
+    cancels (``B2 u = -Fhat2 - c4 z4 - z3``), so the LQR gain does not affect ``u``.
+
+    ``output="position"`` is the design as written in Chapter 6: it tracks ``x1``,
+    whose transfer function from ``u`` has a right-half-plane zero, and it is
+    unstable for every gain set (see ``position_zeros``).
+
+    ``output="flat"`` is the corrected design.  With ``b = B1/B2`` it backsteps on
+    ``y = x1 - b x3`` and ``eta = x2 - b x4``.  ``y`` is the flat output
+    (relative degree 4, no zero dynamics), and ``eta_dot = a2 x3 + (d1 - b d2)``
+    with ``a2 = A2 - b A4`` contains no control, so ``u`` enters only at step 4 and
+    no ``B1 u`` term is needed in ``alpha2``.  Network 1 learns ``d1 - b d2``.  The
+    tilt coordinates are weighted by ``w`` in the Lyapunov function,
+    ``V = (z1^2 + z2^2 + w z3^2 + w z4^2)/2``.  The cross term in ``alpha3`` becomes
+    ``-(a2/w) z2`` and network 2 is driven by ``w z4``.  ``w = a2^2`` (the default)
+    brings the z2-z3 coupling frequency from ``|a2|`` (~39 rad/s) to 1 rad/s, well
+    inside the command-filter bandwidths available at a 10 ms loop.
     """
 
     def __init__(self, K, model: TrackingModel, x0: np.ndarray, gains: CFBGains | None = None,
-                 networks: bool = True, seed: int = 0, u_limit: float = 10.0):
+                 networks: bool = True, seed: int = 0, u_limit: float = 10.0,
+                 output: str = "position", weight: float | None = None):
         super().__init__(K, model, u_limit)
         g = gains or CFBGains()
         self.g = g
+        self.output = output
         dt = model.dt
+        m = model
+        self.b = m.B1 / m.B2
+        self.a1 = m.A1 - self.b * m.A3
+        self.a2 = m.A2 - self.b * m.A4
+        self.a4 = m.A[1, 3] - self.b * m.A[3, 3]
+        self.w = (self.a2**2 if weight is None else weight) if output == "flat" else 1.0
+        x0 = np.asarray(x0, float)
+        q0 = (x0[1] - self.b * x0[3], x0[2], x0[3]) if output == "flat" else (x0[1], x0[2], x0[3])
         rng = np.random.default_rng(seed)
-        self.f = [CommandFilter(g.wn[i], g.zeta[i], dt, q0=float(x0[i + 1])) for i in range(3)]
+        self.f = [CommandFilter(g.wn[i], g.zeta[i], dt, q0=float(q0[i])) for i in range(3)]
+        # Network 2 is driven by w*z4; its learning rates are divided by w so that the
+        # effective adaptation speed does not depend on the Lyapunov weighting.
+        s2 = 1.0 / self.w
         self.nn = [
             TwoLayerNet(4, 10, g.hidden[0], rng, g.gamma[0], g.gamma[1], g.kappa[0], g.kappa[1]),
-            TwoLayerNet(5, 10, g.hidden[1], rng, g.gamma[0], g.gamma[1], g.kappa[0], g.kappa[1]),
+            TwoLayerNet(5, 10, g.hidden[1], rng, g.gamma[0] * s2, g.gamma[1] * s2, g.kappa[0], g.kappa[1]),
         ]
         for n in self.nn:
             n.enabled = networks
@@ -253,34 +287,50 @@ class CommandFilteredBackstepping(LQRTracking):
     def __call__(self, xhat: np.ndarray, k: int) -> float:
         m, g, dt = self.m, self.g, self.m.dt
         x1, x2, x3, x4 = xhat
+        flat = self.output == "flat"
+        th_ss = m.steady_state()[0]
         x1d, x1d_dot = m.v_des * k * dt, m.v_des
         # (1)-(2) error coordinates from state and filter states
-        x2c, x2c_dot = self.f[0].value, self.f[0].rate
+        q1, q1_dot = self.f[0].value, self.f[0].rate
         x3c, x3c_dot = self.f[1].value, self.f[1].rate
         x4c, x4c_dot = self.f[2].value, self.f[2].rate
-        z = np.array([x1 - x1d, x2 - x2c, x3 - x3c, x4 - x4c])
-        # (3) approximations: known model part + network estimate of d_i
-        n1 = self.nn[0].forward(np.array([x2, x3, x2c_dot, 1.0]))
+        if flat:
+            y, yd = x1 - self.b * x3, x1d - self.b * th_ss
+            eta = x2 - self.b * x4
+            z = np.array([y - yd, eta - q1, x3 - x3c, x4 - x4c])
+        else:
+            z = np.array([x1 - x1d, x2 - q1, x3 - x3c, x4 - x4c])
+        # (3) approximations: known model part + network estimate of the uncertainty
+        n1 = self.nn[0].forward(np.array([x2, x3, q1_dot, 1.0]))
         n2 = self.nn[1].forward(np.array([x2, x3, x4, x4c_dot, 1.0]))
-        F1 = m.A1 * x2 + m.A[1, 3] * x4 - x2c_dot + n1
+        if flat:
+            F1 = self.a1 * x2 + self.a4 * x4 - q1_dot + n1
+            gain2 = self.a2
+        else:
+            F1 = m.A1 * x2 + m.A[1, 3] * x4 - q1_dot + n1
+            gain2 = m.A2
         F2 = m.A3 * x2 + m.A4 * x3 + m.A[3, 3] * x4 - x4c_dot + n2
         # (4) control
         u_nom = self.nominal(xhat, k)
         u_e = (-F2 - m.B2 * u_nom - g.c[3] * z[3] - z[2]) / m.B2
         u = u_nom + u_e
         u_applied = float(np.clip(u, -self.u_limit, self.u_limit))
-        # (5) virtual controls, alpha_2 using the control just computed
+        # (5) virtual controls
         a1 = x1d_dot - g.c[0] * z[0]
-        a2 = (-F1 - m.B1 * u_applied - g.c[1] * z[1] - z[0]) / m.A2
-        a3 = x3c_dot - g.c[2] * z[2] - m.A2 * z[1]
+        if flat:
+            a2 = (-F1 - g.c[1] * z[1] - z[0]) / gain2
+            a3 = x3c_dot - g.c[2] * z[2] - (gain2 / self.w) * z[1]
+        else:
+            a2 = (-F1 - m.B1 * u_applied - g.c[1] * z[1] - z[0]) / gain2
+            a3 = x3c_dot - g.c[2] * z[2] - gain2 * z[1]
         # (6) propagate filters and networks
         for filt, a in zip(self.f, (a1, a2, a3)):
             filt.step(a)
         self.nn[0].update(z[1], dt)
-        self.nn[1].update(z[3], dt)
+        self.nn[1].update(self.w * z[3], dt)
         L = self.log
         L["z"].append(z)
-        L["chi"].append(np.array([x2c - a1, x3c - a2, x4c - a3]))
+        L["chi"].append(np.array([q1 - a1, x3c - a2, x4c - a3]))
         L["alpha"].append(np.array([a1, a2, a3]))
         L["Fnn1"].append(n1)
         L["Fnn2"].append(n2)

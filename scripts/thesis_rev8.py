@@ -24,7 +24,15 @@ import numpy as np
 
 from twip.analysis import allan
 from twip.baseline import KalmanEstimator, simulate
-from twip.controllers import CFBGains, LQRTracking, TrackingModel, TwoStepExtraControl
+from twip.controllers import (
+    FLAT_GAINS,
+    CFBGains,
+    CommandFilteredBackstepping,
+    LQRTracking,
+    TrackingModel,
+    TwoStepExtraControl,
+    position_zeros,
+)
 from twip.data import IMPLEMENTATION_COLUMNS, load_log, thesis_path
 from twip.dynamics import derivative, linear_model
 from twip.control import c2d_zoh
@@ -331,39 +339,71 @@ def observer_study():
 # control study
 
 
+CONTROLLERS = ("LQR", "Two-step", "CF (flat), no NN", "CF (flat) + NN")
+CTRL_TEX = {
+    "LQR": "LQR alone",
+    "Two-step": "LQR + two-step (rev.~7)",
+    "CF (flat), no NN": "Command-filtered, flat output, networks off",
+    "CF (flat) + NN": "Command-filtered, flat output, networks on",
+}
+SEEDS = range(5)
+
+
+def _make_controller(name, K, m, x0):
+    if name == "LQR":
+        return LQRTracking(K, m)
+    if name == "Two-step":
+        return TwoStepExtraControl(K, m)
+    return CommandFilteredBackstepping(K, m, x0, gains=FLAT_GAINS, networks=name.endswith("+ NN"), output="flat")
+
+
 def control_study():
+    from dataclasses import replace
+
     m = TrackingModel.build()
     K = design_lqr()
     ctrl = {}
     runs = {}
     for name, case in CONTROL_CASES.items():
-        cfg = control_sim_config(case)
         runs[name] = {}
-        for cn, c in (("LQR", LQRTracking(K, m)), ("Two-step", TwoStepExtraControl(K, m))):
-            r = simulate(c, KalmanEstimator(sensors=cfg.sensors), cfg)
-            xd = np.array([m.x_des(k) for k in range(len(r.time))]).T
-            e = r.x - xd
-            s = SETTLE
-            runs[name][cn] = (r, xd, c)
+        for cn in CONTROLLERS:
+            stats = []
+            for sd in SEEDS:
+                cfg = control_sim_config(replace(case, seed=sd))
+                c = _make_controller(cn, K, m, np.array(cfg.x0))
+                r = simulate(c, KalmanEstimator(sensors=cfg.sensors), cfg)
+                xd = np.array([m.x_des(k) for k in range(len(r.time))]).T
+                if sd == 0:
+                    runs[name][cn] = (r, xd, c)
+                if r.fell:
+                    stats.append(None)
+                    continue
+                e = r.x - xd
+                stats.append((np.sqrt(np.mean(e[0, SETTLE:] ** 2)), np.sqrt(np.mean(r.v_applied**2)), np.max(np.abs(r.v_applied))))
+            ok = [s for s in stats if s is not None]
             ctrl.setdefault(name, {})[cn] = {
-                "fell": r.fell,
-                "rms_pos_err": float(np.sqrt(np.mean(e[0, s:] ** 2))),
-                "rms_vel_err": float(np.sqrt(np.mean(e[1, s:] ** 2))),
-                "rms_tilt_deg": float(np.sqrt(np.mean(r.x[2, s:] ** 2)) * R2D),
-                "rms_u": float(np.sqrt(np.mean(r.v_applied**2))),
-                "peak_u": float(np.max(np.abs(r.v_applied))),
+                "fell_runs": len(stats) - len(ok),
+                "runs": len(stats),
+                "rms_pos_err": float(np.mean([s[0] for s in ok])) if ok else None,
+                "rms_u": float(np.mean([s[1] for s in ok])) if ok else None,
+                "peak_u": float(np.max([s[2] for s in ok])) if ok else None,
             }
     results["control"] = ctrl
 
     lines = []
-    for cn, tex in (("LQR", "LQR alone"), ("Two-step", "LQR + two-step")):
-        row = [tex]
+    for cn in CONTROLLERS:
+        row = [CTRL_TEX[cn]]
         for name in CONTROL_CASES:
             d = ctrl[name][cn]
-            row.append("fell" if d["fell"] else f"{d['rms_pos_err']:.3f} / {d['rms_u']:.2f} / {d['peak_u']:.1f}")
+            cell = "fell" if d["rms_pos_err"] is None else f"{d['rms_pos_err']:.3f} / {d['rms_u']:.2f} / {d['peak_u']:.1f}"
+            if d["fell_runs"] and d["rms_pos_err"] is not None:
+                cell += f" ({d['fell_runs']} fell)"
+            row.append(cell)
         lines.append(" & ".join(row) + r" \\")
-    lines.append(r"LQR + command-filtered & \multicolumn{4}{c}{unstable for all gains tested (Section~\ref{sec:cfinstab})} \\")
+    lines.append(r"Command-filtered, as in Section~\ref{sec:cffb} & \multicolumn{4}{c}{unstable for all gains tested (Section~\ref{sec:cfinstab})} \\")
     write_table("tab_ctrleff", lines)
+
+    styles = {"LQR": "-", "Two-step": "--", "CF (flat) + NN": "-"}
 
     def tracking_fig(name, fname, with_u=False):
         fig, axs = plt.subplots(2, 2, figsize=(6.5, 4.8), sharex=True)
@@ -371,13 +411,15 @@ def control_study():
         if with_u:
             labels[3] = ("Applied voltage", "V", None, 1.0)
         for ax, (lab, unit, i, s) in zip(axs.flat, labels):
-            for cn, st in (("LQR", "-"), ("Two-step", "--")):
+            for cn, st in styles.items():
                 r, xd, _ = runs[name][cn]
+                lw = 1.1 if cn.startswith("CF") else 0.8
+                label = "Command-filtered (flat)" if cn.startswith("CF") else cn
                 if i is None:
-                    ax.plot(r.time[:-1], r.v_applied, st, lw=0.8, label=cn)
+                    ax.plot(r.time[:-1], r.v_applied, st, lw=lw, label=label)
                 else:
-                    y = (r.x[i] - xd[i]) if i < 2 else r.x[i]
-                    ax.plot(r.time, y * s, st, lw=0.9, label=cn)
+                    yv = (r.x[i] - xd[i]) if i < 2 else r.x[i]
+                    ax.plot(r.time, yv * s, st, lw=lw, label=label)
             ax.set(title=lab, ylabel=unit)
         axs[0, 0].legend(fontsize=7)
         for ax in axs[1]:
@@ -388,41 +430,86 @@ def control_study():
     tracking_fig("C2", "C2")
     tracking_fig("C4", "C4", with_u=True)
 
-    # instability of the command-filtered design: closed-loop eigenvalues vs filter bandwidth
-    from twip.controllers import position_zeros
-
+    # Figure 8.5: (a) eigenvalues against bandwidth, both designs; (b) filter errors of the corrected design
     A, B = linear_model()
     zrhp = float(np.max(position_zeros(A, B).real))
     scales = np.logspace(-0.7, 1.0, 25)
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
-    gain_sets = {"$c=(1,2,6,12)$": (1, 2, 6, 12), "$c=(0.6,1.1,2,2)$": (0.6, 1.1, 2, 2), "$c=(2,4,12,25)$": (2, 4, 12, 25)}
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(7.0, 3.4))
     worst = []
-    for lab, c in gain_sets.items():
+    for lab, c in {"as written, $c=(1,2,6,12)$": (1, 2, 6, 12), "as written, $c=(2,4,12,25)$": (2, 4, 12, 25)}.items():
         mx = [np.linalg.eigvals(_cfb_jacobian(CFBGains(c=c, wn=tuple(s * w for w in (20, 40, 60))))).real.max() for s in scales]
         worst.append(min(mx))
-        ax.semilogx(scales * 40, mx, marker=".", label=lab)
-    ax.axhline(zrhp, color="k", ls="--", lw=1)
-    ax.annotate(f"RHP zero of $x_1/u$: +{zrhp:.2f} rad/s", (scales[0] * 40, zrhp * 1.15), fontsize=8)
+        ax.semilogx(scales * 40, mx, marker=".", ms=3, label=lab)
+    mx = [np.linalg.eigvals(_cfb_jacobian(CFBGains(c=FLAT_GAINS.c, wn=tuple(s * w for w in (20, 40, 60))), flat=True)).real.max() for s in scales]
+    best_flat = mx
+    ax.semilogx(scales * 40, mx, "k", marker=".", ms=3, label="flat output (corrected)")
+    ax.axhline(zrhp, color="k", ls="--", lw=0.8)
+    ax.annotate(f"RHP zero +{zrhp:.2f}", (scales[0] * 40, zrhp + 1.0), fontsize=7)
     ax.axhline(0, color="0.5", lw=0.8)
-    ax.set(xlabel=r"Filter bandwidth $\varpi_2$ (rad/s), with $\varpi_1:\varpi_2:\varpi_3=1:2:3$",
-           ylabel=r"max Re$\lambda$ (rad/s)", yscale="symlog")
-    ax.legend(fontsize=7)
-    save(fig, "cfb_eigenvalues")
-    results["cfb"] = {"rhp_zero": zrhp, "min_max_real_eig": float(min(worst))}
+    ax.set(xlabel=r"$\varpi_2$ (rad/s)", ylabel=r"max Re$\lambda$ (rad/s)", title="(a) closed-loop eigenvalues")
+    ax.legend(fontsize=6)
+
+    chi_rms, wn2 = [], []
+    for s in (0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0):
+        g = replace(FLAT_GAINS, wn=tuple(s * w for w in FLAT_GAINS.wn))
+        cfg = control_sim_config(CONTROL_CASES["C2"])
+        c = CommandFilteredBackstepping(K, m, np.array(cfg.x0), gains=g, networks=False, output="flat")
+        r = simulate(c, KalmanEstimator(sensors=cfg.sensors), cfg)
+        wn2.append(g.wn[1])
+        chi_rms.append(None if r.fell else np.sqrt(np.mean(np.array(c.log["chi"])[100:] ** 2, axis=0)))
+    ok = [i for i, v in enumerate(chi_rms) if v is not None]
+    for j, lab in enumerate((r"$\chi_1$", r"$\chi_2$", r"$\chi_3$")):
+        bx.loglog([wn2[i] for i in ok], [chi_rms[i][j] for i in ok], marker="o", ms=3, label=lab)
+    for i, v in enumerate(chi_rms):
+        if v is None:
+            bx.axvline(wn2[i], color="r", lw=0.8, ls=":")
+    # Appendix A: filter bandwidth at most 1/5 of the sample rate (2 pi / 0.01 s), applied to the
+    # fastest filter varpi_3 = 1.5 varpi_2
+    wn2_limit = 0.2 * (2 * math.pi / 0.01) / 1.5
+    bx.axvline(wn2_limit, color="0.4", lw=0.8, ls="--")
+    bx.annotate("App. A limit", (wn2_limit * 1.03, bx.get_ylim()[0] * 1.5), fontsize=7, rotation=90)
+    bx.set(xlabel=r"$\varpi_2$ (rad/s), $\varpi_1:\varpi_2:\varpi_3=1:2:3$", ylabel="RMS filter error", title="(b) corrected design, case C2")
+    ticks = [20, 30, 40, 60, 80, 120]
+    bx.set_xticks(ticks)
+    bx.set_xticklabels([str(t) for t in ticks])
+    bx.minorticks_off()
+    bx.legend(fontsize=7)
+    fig.tight_layout()
+    save(fig, "cfb_bandwidth")
+    results["cfb"] = {
+        "rhp_zero": zrhp,
+        "min_max_real_eig_as_written": float(min(worst)),
+        "flat_max_real_eig_at_design_bandwidth": float(best_flat[int(np.argmin(np.abs(scales - 1.0)))]),
+        "flat_chi_rms": {str(w): (None if v is None else v.tolist()) for w, v in zip(wn2, chi_rms)},
+        "flat_weight_w": float(CommandFilteredBackstepping(K, m, np.zeros(4), output="flat").w),
+        "flat_a2": float(CommandFilteredBackstepping(K, m, np.zeros(4), output="flat").a2),
+        "flat_b": float(CommandFilteredBackstepping(K, m, np.zeros(4), output="flat").b),
+    }
 
 
-def _cfb_jacobian(g: CFBGains) -> np.ndarray:
+def _cfb_jacobian(g: CFBGains, flat: bool = False) -> np.ndarray:
+    """Continuous-time closed loop (plant + command filters, networks off, nominal linear model)."""
     m = TrackingModel.build()
     A, B = m.A, m.B
+    b = m.B1 / m.B2
+    a2 = m.A2 - b * m.A4
+    W = a2**2
 
     def f(s):
         x = s[:4]
         q = s[4:].reshape(3, 2)
-        z = np.array([x[0], x[1] - q[0, 0], x[2] - q[1, 0], x[3] - q[2, 0]])
-        F1 = m.A1 * x[1] + A[1, 3] * x[3] - q[0, 1]
+        if flat:
+            z = np.array([x[0] - b * x[2], x[1] - b * x[3] - q[0, 0], x[2] - q[1, 0], x[3] - q[2, 0]])
+            F1 = (m.A1 - b * m.A3) * x[1] + (A[1, 3] - b * A[3, 3]) * x[3] - q[0, 1]
+        else:
+            z = np.array([x[0], x[1] - q[0, 0], x[2] - q[1, 0], x[3] - q[2, 0]])
+            F1 = m.A1 * x[1] + A[1, 3] * x[3] - q[0, 1]
         F2 = m.A3 * x[1] + m.A4 * x[2] + A[3, 3] * x[3] - q[2, 1]
         u = (-F2 - g.c[3] * z[3] - z[2]) / m.B2
-        a = (-g.c[0] * z[0], (-F1 - m.B1 * u - g.c[1] * z[1] - z[0]) / m.A2, q[1, 1] - g.c[2] * z[2] - m.A2 * z[1])
+        if flat:
+            a = (-g.c[0] * z[0], (-F1 - g.c[1] * z[1] - z[0]) / a2, q[1, 1] - g.c[2] * z[2] - (a2 / W) * z[1])
+        else:
+            a = (-g.c[0] * z[0], (-F1 - m.B1 * u - g.c[1] * z[1] - z[0]) / m.A2, q[1, 1] - g.c[2] * z[2] - m.A2 * z[1])
         dq = []
         for i in range(3):
             w, zt = g.wn[i], g.zeta[i]
