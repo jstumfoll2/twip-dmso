@@ -23,7 +23,8 @@ from typing import Callable, Literal
 
 import numpy as np
 
-from ..actuators import Backlash, deadzone, saturate
+from ..actuators import deadzone, saturate
+from .actuators import Backlash
 from ..control import c2d_zoh, lqrd
 from .dynamics import linear_model, twip_nonlinear, uncert_extra_terms
 from .observers import DMSO, tansig

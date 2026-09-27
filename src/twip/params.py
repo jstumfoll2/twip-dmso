@@ -1,12 +1,23 @@
 """Physical parameters of the two-wheeled inverted pendulum (TWIP) robot.
 
-Ported from the parameter block that is copy-pasted at the top of every
-MATLAB script (e.g. ``Thesis/Thesis Programs/*/main_bala_discrete.m`` and
-``twipnonlinear.m``).
+Two parameter sets:
+
+* :data:`THESIS` - the values copy-pasted at the top of every thesis MATLAB script.
+* :data:`CORRECTED` - the baseline for new work.  Two values change, both derived
+  from the thesis's own data (see ``docs/BASELINE.md``):
+
+  - ``ke``: the thesis value (0.00361 V s/rad) is ~85x smaller than its own Table
+    4.2 free-run data implies.  Recomputed with :func:`ke_from_free_run`.
+  - ``Ip``: the thesis formula gives inertia about the *axle* (it includes
+    parallel-axis terms), but the equations of motion need inertia about the
+    body *CG*.  Corrected by subtracting ``Mp * l**2``.
+
+  ``km`` stays at the thesis value.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, replace
 
 
@@ -25,7 +36,7 @@ class RobotParams:
     Mp: float = 1.432  # kg, measured mass of body
     Mw: float = 0.1168  # kg, measured mass of each wheel (motor 1 115.3 g, motor 2 118.3 g)
     r: float = 0.045  # m, wheel radius (90 mm wheel)
-    Ip: float = _pendulum_inertia()  # kg m^2, body inertia about the axle (pitch)
+    Ip: float = _pendulum_inertia()  # kg m^2, body pitch inertia. The EOM treat it as about the CG; the thesis value is about the axle
     Iz: float = _yaw_inertia()  # kg m^2, body inertia about the vertical axis (unused in planar model)
     Iw: float | None = None  # kg m^2, wheel inertia; None -> solid disk Mw*r^2/2
     g: float = 9.81  # m/s^2
@@ -61,4 +72,44 @@ class RobotParams:
         )
 
 
+    def scaled(self, **factors: float) -> RobotParams:
+        """Multiply named parameters, e.g. ``p.scaled(Mp=1.1, km=0.9)``.
+
+        ``Iw`` follows ``Mw`` (solid disk) unless ``Iw`` itself is scaled.
+        """
+        values = {k: getattr(self, k) * f for k, f in factors.items()}
+        if "Mw" in factors and "Iw" not in factors:
+            values["Iw"] = values["Mw"] * self.r**2 / 2
+        return replace(self, **values)
+
+
+# Thesis Table 4.2: Pololu 12 V 37D motor with 30:1 gearbox.
+MOTOR_RATED_VOLTAGE = 12.0  # V
+MOTOR_FREE_RUN_SPEED_RPM = 350.0
+MOTOR_FREE_RUN_CURRENT = 0.300  # A
+MOTOR_STALL_TORQUE = 110 * 0.00706155  # oz-in -> N m
+MOTOR_STALL_CURRENT = 5.0  # A
+
+
+def ke_from_free_run(
+    V: float = MOTOR_RATED_VOLTAGE,
+    I_free: float = MOTOR_FREE_RUN_CURRENT,
+    rpm_free: float = MOTOR_FREE_RUN_SPEED_RPM,
+    R: float = 2.5,
+) -> float:
+    """Back-EMF constant from free-run data: ``V = R*I + ke*omega`` at steady state."""
+    return (V - R * I_free) / (rpm_free * 2 * math.pi / 60)
+
+
+def km_from_stall(tau_stall: float = MOTOR_STALL_TORQUE, I_stall: float = MOTOR_STALL_CURRENT) -> float:
+    """Torque constant from stall data (~0.155 N m/A for Table 4.2).  Not used by
+    :data:`CORRECTED`; it is kept here so the discrepancy with 0.11541 is visible."""
+    return tau_stall / I_stall
+
+
 THESIS = RobotParams()  # parameter values as used throughout the thesis
+
+CORRECTED = RobotParams(
+    ke=ke_from_free_run(),  # ~0.307 V s/rad
+    Ip=THESIS.Ip - THESIS.Mp * THESIS.l**2,  # ~0.0169 kg m^2, about the body CG
+)

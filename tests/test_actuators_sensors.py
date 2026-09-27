@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from twip.actuators import Backlash, deadzone, saturate
-from twip.legacy.actuators import backlash_legacy
+from twip.actuators import deadzone, saturate
+from twip.legacy.actuators import Backlash, backlash_legacy
 from twip.legacy.sensors import ENCODER_POS_RES, SensorModel, quantize
 
 DEG = np.pi / 180
