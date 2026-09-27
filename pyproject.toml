@@ -1,0 +1,23 @@
+[project]
+name = "twip"
+version = "0.1.0"
+description = "Python port of the two-wheeled inverted pendulum DMSO thesis code"
+authors = [
+    { name = "jstumfoll2", email = "100043919+jstumfoll2@users.noreply.github.com" }
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.3",
+    "scipy>=1.18.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
