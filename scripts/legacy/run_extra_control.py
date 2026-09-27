@@ -1,7 +1,7 @@
-"""Reproduce the DMSO vs. Kalman simulation figures (``main_bala_discrete.m``).
+"""Run the neural-network extra-control simulation (``ExtraControl_v5.m``).
 
-    uv run python scripts/run_dmso_sim.py noise_with_uncertainty
-    uv run python scripts/run_dmso_sim.py no_noise_with_uncertainty --steps 5000 --out figs/
+    uv run python scripts/legacy/run_extra_control.py unmodeled_dynamics
+    uv run python scripts/legacy/run_extra_control.py deadzone_and_backlash --out figs/
 """
 
 from __future__ import annotations
@@ -12,17 +12,17 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from twip import plots
-from twip.sim_dmso import preset, run
+from twip.legacy import plots
+from twip.legacy.extra_control import preset, run
 
-PRESETS = ["no_noise_no_uncertainty", "no_noise_with_uncertainty", "noise_with_uncertainty", "noise_with_uncertainty_perturbed"]
+PRESETS = ["as_saved", "unmodeled_dynamics", "parameter_uncertainty", "deadzone", "deadzone_and_backlash"]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("preset", choices=PRESETS)
     ap.add_argument("--steps", type=int, help="override number of time steps")
-    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--seed", type=int, default=0, help="seed for the random NN input layers (and noise)")
     ap.add_argument("--out", type=Path, help="save PNGs here instead of showing windows")
     args = ap.parse_args()
 
@@ -30,19 +30,17 @@ def main() -> None:
     if args.steps:
         cfg = replace(cfg, steps=args.steps)
     r = run(cfg)
-    print(f"Klqr = {r.Klqr}")
+    print(f"LQR error {r.error_lqr:.1f} | extra control error {r.error_extra:.1f} | nominal error {r.error_nom:.1f}")
 
     figs = {
-        "control": plots.control(r),
-        "uncertainty": plots.dmso_uncertainty(r),
-        "states": plots.dmso_states(r),
-        "errors": plots.dmso_states(r, errors=True),
-        "errors_log": plots.dmso_states(r, errors=True, log=True),
+        "states": plots.extra_control_states(r),
+        "control": plots.extra_control_inputs(r),
+        "uncertainty": plots.extra_control_uncertainty(r),
     }
     if args.out:
         args.out.mkdir(parents=True, exist_ok=True)
         for name, fig in figs.items():
-            fig.savefig(args.out / f"{args.preset}_{name}.png", dpi=120)
+            fig.savefig(args.out / f"extra_{args.preset}_{name}.png", dpi=120)
         print(f"saved {len(figs)} figures to {args.out}")
     else:
         plt.show()

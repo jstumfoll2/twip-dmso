@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from twip.analysis import allan, gauss_markov_bias_variance, replay_implementation
-from twip.sim_dmso import preset, run
+from twip.legacy.sim_dmso import preset, run
 
 DEG = np.pi / 180
 

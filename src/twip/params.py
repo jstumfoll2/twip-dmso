@@ -61,4 +61,4 @@ class RobotParams:
         )
 
 
-NOMINAL = RobotParams()
+THESIS = RobotParams()  # parameter values as used throughout the thesis

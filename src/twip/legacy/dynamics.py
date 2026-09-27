@@ -1,4 +1,7 @@
-"""Nonlinear and linearized equations of motion of the TWIP.
+"""The thesis equations of motion, exactly as derived there (symbolic-toolbox form).
+
+Kept for reproducing thesis results.  The back-EMF uses ``xdot`` only, not the
+motor speed relative to the body; see :mod:`twip.dynamics` for the corrected model.
 
 State vector used throughout: ``[x, xdot, theta, thetadot]`` with the motor
 voltage ``v`` as input.
@@ -26,7 +29,7 @@ from typing import Callable, Literal
 
 import numpy as np
 
-from .params import NOMINAL, RobotParams
+from ..params import THESIS, RobotParams
 
 Convention = Literal["up", "down"]
 
@@ -34,7 +37,7 @@ Convention = Literal["up", "down"]
 def twip_nonlinear(
     X: np.ndarray,
     v: float,
-    p: RobotParams = NOMINAL,
+    p: RobotParams = THESIS,
     convention: Convention = "up",
     extra: Callable[[np.ndarray], tuple[float, float]] | None = None,
 ) -> np.ndarray:
@@ -102,7 +105,7 @@ def uncert_extra_terms(X: np.ndarray) -> tuple[float, float]:
     return 0.5 * np.sin(X[0]) * X[1], 0.25 * X[1] ** 2
 
 
-def linear_model(p: RobotParams = NOMINAL) -> tuple[np.ndarray, np.ndarray]:
+def linear_model(p: RobotParams = THESIS) -> tuple[np.ndarray, np.ndarray]:
     """Continuous-time model ``xdot = A x + B v`` linearized about upright.
 
     Port of the ``% Nonlinear dc motors, linearized EOM variables`` block.

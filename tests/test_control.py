@@ -4,7 +4,7 @@ from scipy.linalg import expm
 from scipy.signal import cont2discrete
 
 from twip.control import c2d_zoh, dlqr, lqr, lqrd
-from twip.dynamics import linear_model
+from twip.legacy.dynamics import linear_model
 from twip.integrators import rk4
 
 A, B = linear_model()

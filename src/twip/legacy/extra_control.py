@@ -23,12 +23,12 @@ from typing import Callable, Literal
 
 import numpy as np
 
-from .actuators import Backlash, deadzone, saturate
-from .control import c2d_zoh, lqrd
+from ..actuators import Backlash, deadzone, saturate
+from ..control import c2d_zoh, lqrd
 from .dynamics import linear_model, twip_nonlinear, uncert_extra_terms
-from .estimators import DMSO, tansig
-from .integrators import rk4
-from .params import NOMINAL, RobotParams
+from .observers import DMSO, tansig
+from ..integrators import rk4
+from ..params import THESIS, RobotParams
 from .sensors import SensorModel, SensorNoise
 
 DEG = np.pi / 180
@@ -36,7 +36,7 @@ PI_E3 = np.array([0.0, 0.0, np.pi, 0.0])
 
 # The "true" plant in ExtraControl_v5.m is twipnonlinear_uncert.m: perturbed
 # parameters (l not scaled) plus two unmodeled terms.
-UNCERT_PLANT = NOMINAL.with_thesis_uncertainty(l_scale=1.0)
+UNCERT_PLANT = THESIS.with_thesis_uncertainty(l_scale=1.0)
 
 
 def constant_velocity(v: float = 0.1) -> Callable[[int, float], tuple[float, float]]:
@@ -165,7 +165,7 @@ def preset(name: str) -> ExtraControlConfig:
         return ExtraControlConfig(**fig)
     if name == "parameter_uncertainty":
         return ExtraControlConfig(plant_extra_terms=False, **fig)
-    nominal_plant = dict(plant=NOMINAL, plant_extra_terms=False)
+    nominal_plant = dict(plant=THESIS, plant_extra_terms=False)
     if name == "deadzone":
         return ExtraControlConfig(deadzone=0.5, **nominal_plant, **fig)
     if name == "deadzone_and_backlash":
@@ -203,7 +203,7 @@ def run(cfg: ExtraControlConfig) -> ExtraControlResult:
     time = np.arange(N + 1) * dt
     rng = np.random.default_rng(cfg.seed)
 
-    p_model = NOMINAL.with_thesis_uncertainty() if cfg.model_parameter_uncertainty else NOMINAL
+    p_model = THESIS.with_thesis_uncertainty() if cfg.model_parameter_uncertainty else THESIS
     A, B = linear_model(p_model)
     F, G = c2d_zoh(A, B, dt)
     g = G.ravel()

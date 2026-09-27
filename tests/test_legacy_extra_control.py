@@ -3,7 +3,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from twip.extra_control import _nn_update, preset, run
+from twip.legacy.extra_control import _nn_update, preset, run
 from twip.integrators import rk4
 
 DEG = np.pi / 180
@@ -50,7 +50,7 @@ def test_deadzone_matches_saved_thesis_figure():
 
 
 def test_desired_tilt_holds_desired_velocity_in_linear_model():
-    from twip.dynamics import linear_model
+    from twip.legacy.dynamics import linear_model
 
     r = run(replace(preset("unmodeled_dynamics"), steps=5))
     A, B = linear_model()

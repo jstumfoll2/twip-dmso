@@ -16,12 +16,14 @@ from typing import Literal
 
 import numpy as np
 
-from .actuators import backlash_legacy, deadzone, saturate
-from .control import c2d_zoh, lqrd
+from ..actuators import deadzone, saturate
+from .actuators import backlash_legacy
+from ..control import c2d_zoh, lqrd
 from .dynamics import linear_model, twip_nonlinear
-from .estimators import DMSO, LinearKalman
-from .integrators import rk4
-from .params import NOMINAL, RobotParams
+from ..estimators import LinearKalman
+from .observers import DMSO
+from ..integrators import rk4
+from ..params import THESIS, RobotParams
 from .sensors import SensorModel, SensorNoise
 
 DEG = np.pi / 180
@@ -34,8 +36,8 @@ class DMSOSimConfig:
     x_init: tuple[float, float, float, float] = (1.0, 0.3, 10 * DEG, 1 * DEG)
     x_des: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
 
-    # plant ("truth"); the controller and observers always use NOMINAL
-    plant: RobotParams = NOMINAL
+    # plant ("truth"); the controller and observers always use THESIS
+    plant: RobotParams = THESIS
     rk4_substeps: int = 5
 
     # measurement noise
@@ -116,12 +118,12 @@ def preset(name: str) -> DMSOSimConfig:
             Qlqr=no_noise_Q,
             gamma=0.5,
             weight_innovation="next",
-            plant=NOMINAL.with_thesis_uncertainty(),
+            plant=THESIS.with_thesis_uncertainty(),
         )
     if name == "noise_with_uncertainty":
         return DMSOSimConfig(dt=0.01, steps=1000, noise=True, backlash=True)
     if name == "noise_with_uncertainty_perturbed":
-        return DMSOSimConfig(dt=0.001, steps=1000, noise=True, plant=NOMINAL.with_thesis_uncertainty())
+        return DMSOSimConfig(dt=0.001, steps=1000, noise=True, plant=THESIS.with_thesis_uncertainty())
     raise ValueError(f"unknown preset {name!r}")
 
 
@@ -129,7 +131,7 @@ def run(cfg: DMSOSimConfig) -> DMSOSimResult:
     dt, N = cfg.dt, cfg.steps
     time = np.arange(N + 1) * dt
 
-    A, B = linear_model(NOMINAL)  # controller/observer model is always nominal
+    A, B = linear_model(THESIS)  # controller/observer model is always nominal
     F, G = c2d_zoh(A, B, dt)
     g = G.ravel()
     Klqr = lqrd(A, B, cfg.Qlqr, cfg.Rlqr, dt).ravel()

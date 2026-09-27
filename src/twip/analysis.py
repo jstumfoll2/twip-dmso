@@ -14,8 +14,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from .control import c2d_zoh
-from .dynamics import linear_model
-from .estimators import DMSO, AngleBiasKalman, DMSO2, FirmwareDMSO, LinearKalman, complementary_filter
+from .legacy.dynamics import linear_model
+from .estimators import AngleBiasKalman, LinearKalman, complementary_filter
+from .legacy.observers import DMSO, DMSO2, FirmwareDMSO
 from .params import RobotParams
 
 DEG = np.pi / 180

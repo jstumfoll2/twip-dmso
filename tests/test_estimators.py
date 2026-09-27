@@ -4,8 +4,9 @@ from scipy.linalg import solve_discrete_are
 
 from twip.analysis import replay_filters
 from twip.control import c2d_zoh, lqrd
-from twip.dynamics import linear_model
-from twip.estimators import DMSO, LinearKalman, tansig
+from twip.legacy.dynamics import linear_model
+from twip.estimators import LinearKalman
+from twip.legacy.observers import DMSO, tansig
 
 A, B = linear_model()
 DT = 0.01

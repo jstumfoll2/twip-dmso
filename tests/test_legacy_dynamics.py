@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from twip.dynamics import linear_model, twip_nonlinear, uncert_extra_terms
-from twip.params import NOMINAL, RobotParams
+from twip.legacy.dynamics import linear_model, twip_nonlinear, uncert_extra_terms
+from twip.params import THESIS, RobotParams
 
 
-def jacobian(p=NOMINAL, h=1e-6):
+def jacobian(p=THESIS, h=1e-6):
     x0 = np.zeros(4)
     J = np.column_stack(
         [(twip_nonlinear(x0 + h * e, 0.0, p) - twip_nonlinear(x0 - h * e, 0.0, p)) / (2 * h) for e in np.eye(4)]
@@ -14,7 +14,7 @@ def jacobian(p=NOMINAL, h=1e-6):
     return J, Jb
 
 
-@pytest.mark.parametrize("p", [NOMINAL, NOMINAL.with_thesis_uncertainty()])
+@pytest.mark.parametrize("p", [THESIS, THESIS.with_thesis_uncertainty()])
 def test_hand_linearization_matches_nonlinear_jacobian(p):
     A, B = linear_model(p)
     J, Jb = jacobian(p)
