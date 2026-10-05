@@ -659,11 +659,17 @@ def hardware():
     Gw = np.array([[dt**2 / 2, 0], [dt, 0], [0, dt**2 / 2], [0, dt]])
     Q = Gw @ np.diag([1.0, 5.0**2]) @ Gw.T + 1e-10 * np.eye(4)
 
-    # The encoders count wheel rotation relative to the body, x / r + theta (twip.sensors),
-    # so the logged position is compensated by subtracting r * tilt.  This assumes the
-    # firmware's tilt has the sign of theta; check both signs on the robot (Appendix A).
+    # The encoders count wheel rotation relative to the body, x / r + theta (twip.sensors).
+    # The firmware's tilt has the sign of theta, but its position is mirrored:
+    # pos = -(x + r theta) (scripts/validate_plant.py, frame_evidence and the input-free
+    # tests).  So x = -pos - r * tilt in the model frame the estimators use.
+    pos_sign = -1.0
+
+    def to_model(pos, vel, tilt, rate):
+        return pos_sign * pos - r * tilt, pos_sign * vel - r * rate
+
     def run(est, tilt):
-        y = np.vstack([L["x"] - r * tilt, L["xdot"] - r * w, tilt, w])
+        y = np.vstack([*to_model(L["x"], L["xdot"], tilt, w), tilt, w])
         est.initialize(y[:, 0])
         xp = np.zeros_like(y)
         fh = np.full((2, y.shape[1]), np.nan)
@@ -686,8 +692,8 @@ def hardware():
     tt = t[s0:] - t[s0]
 
     fig, axs = plt.subplots(2, 2, figsize=(6.5, 4.8), sharex=True)
-    meas = [L["x"] - r * th, L["xdot"] - r * w, th, w]
-    onboard = [L["xhat"], L["xhatdot"], L["pitchm"] * DEG, L["gyhat"] * DEG]
+    meas = [*to_model(L["x"], L["xdot"], th, w), th, w]
+    onboard = [*to_model(L["xhat"], L["xhatdot"], L["pitchm"] * DEG, L["gyhat"] * DEG), L["pitchm"] * DEG, L["gyhat"] * DEG]
     for ax, i in zip(axs.flat, range(4)):
         lab, unit, sc = STATE[i]
         ax.plot(tt, meas[i][s0:] * sc, color="0.6", lw=0.8, label="measured")

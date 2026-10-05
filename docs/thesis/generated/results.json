@@ -710,14 +710,14 @@
  "hardware_gyro_consistency_dps": {
   "Accelerometer tilt": 476.081481642394,
   "Complementary filter": 9.87167336297364,
-  "KF on accelerometer tilt": 4.248133886468123,
-  "DMSO on accelerometer tilt": 294.5725557715706,
-  "KF on complementary tilt": 3.3087555667740665,
-  "DMSO on complementary tilt": 7.32299383480098
+  "KF on accelerometer tilt": 4.130078225302615,
+  "DMSO on accelerometer tilt": 294.2317761405922,
+  "KF on complementary tilt": 2.894537447396501,
+  "DMSO on complementary tilt": 5.909886230415073
  },
  "hardware_fhat_rms": [
-  0.004760769798404564,
-  0.013859140805284251
+  0.0024657511956138875,
+  0.017722995191918264
  ],
  "cfb_sweeps": {
   "as_written": {
