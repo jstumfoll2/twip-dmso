@@ -50,7 +50,7 @@ def test_xdot_back_emf_reproduces_thesis_eom():
         np.testing.assert_allclose(derivative(X, v, THESIS, "xdot"), twip_nonlinear(X, v, THESIS), atol=1e-12)
 
 
-@pytest.mark.parametrize("back_emf", ["relative", "xdot"])
+@pytest.mark.parametrize("back_emf", ["relative", "xdot", "rev8"])
 @pytest.mark.parametrize("p", [CORRECTED, THESIS, CORRECTED.scaled(Mp=1.2, l=0.8, ke=0.5)])
 def test_linear_model_is_the_jacobian(p, back_emf):
     A, B = linear_model(p, back_emf)
@@ -67,9 +67,31 @@ def test_relative_back_emf_adds_thetadot_coupling():
     A, _ = linear_model(CORRECTED)
     A0, _ = linear_model(CORRECTED, "xdot")
     assert A0[1, 3] == 0 and A0[3, 3] == 0
-    # with b = 0, the thetadot terms are -r times the xdot terms
-    assert A[1, 3] == pytest.approx(-CORRECTED.r * A[1, 1])
-    assert A[3, 3] == pytest.approx(-CORRECTED.r * A[3, 1])
+    # the motor sees xdot / r + thetadot, so with no viscous term the thetadot
+    # coefficients are r times the xdot coefficients
+    assert A[1, 3] == pytest.approx(CORRECTED.r * A[1, 1])
+    assert A[3, 3] == pytest.approx(CORRECTED.r * A[3, 1])
+
+
+def test_motor_torque_is_internal_to_the_robot():
+    """The motor torque acts between body and wheels, so it cannot change the robot's
+    angular momentum about the wheel contact point: at rest and upright the voltage
+    produces accelerations with zero net moment about that point."""
+    for p in (CORRECTED, CORRECTED.scaled(Mp=1.3, l=0.8, km=1.7)):
+        beta = 2 * p.Mw + 2 * p.Iw / p.r**2 + p.Mp
+        xdd, thdd = accelerations(np.zeros(4), 5.0, p)
+        # d/dt of angular momentum about the contact point (CW positive), upright, at rest
+        dH = (beta * p.r + p.Mp * p.l) * xdd - (p.Ip + p.Mp * p.l**2 + p.Mp * p.l * p.r) * thdd
+        assert abs(xdd) > 1e-3 and dH == pytest.approx(0.0, abs=1e-9)
+        # the input direction therefore fixes b = B2 / B4 from the inertias alone
+        A, B = linear_model(p)
+        assert B[1, 0] / B[3, 0] == pytest.approx((p.Ip + p.Mp * p.l**2 + p.Mp * p.l * p.r) / (p.Mp * p.l + p.r * beta))
+
+
+def test_positive_voltage_drives_forward_and_tilts_back():
+    """A forward wheel torque pushes the base forward and reacts on the body, tilting it back (CCW)."""
+    xdd, thdd = accelerations(np.zeros(4), 5.0, CORRECTED)
+    assert xdd > 0 and thdd > 0
 
 
 def test_back_emf_is_dissipative():
@@ -108,8 +130,13 @@ def test_accelerometer_reads_apparent_vertical_when_accelerating():
 
 def test_encoders_measure_rotation_relative_to_body():
     s = SensorSuite(SensorConfig(noise=False, quantize=False), CORRECTED)
+    # rotating the body counterclockwise (theta > 0) over a wheel fixed on the ground
+    # turns the wheel clockwise relative to the body, the same sense as rolling forward
     m = s.measure(np.array([0.0, 0.0, 0.1, 0.0]), 0.0, 0.0, 0.01)
-    assert m.pos == pytest.approx(-CORRECTED.r * 0.1)
+    assert m.pos == pytest.approx(CORRECTED.r * 0.1)
+    # rolling forward turns the wheel clockwise relative to an upright body
+    m = s.measure(np.array([0.02, 0.0, 0.0, 0.0]), 0.0, 0.0, 0.01)
+    assert m.pos == pytest.approx(0.02)
 
 
 def test_encoder_quantization_and_differenced_velocity():
@@ -174,17 +201,20 @@ def test_baseline_balances_with_kalman(noise):
     assert m["est_rms_tilt_deg"] < 0.05
 
 
-def test_firmware_style_complementary_estimator_drifts_and_falls():
-    """Documented finding: accelerometer tilt shifts by ~xddot/g, and the complementary
-    filter + this LQR runs away.  The thesis sensor model (tilt = truth + noise) hid this."""
+def test_firmware_style_complementary_estimator_balances():
+    """The accelerometer tilt shifts by ~xddot/g, but with the corrected motor-torque
+    sign the complementary filter and this LQR balance.  (The first corrected baseline
+    found a runaway here; it was an artifact of the sign error.)"""
     r = simulate(LQRController(design_lqr()), ComplementaryEstimator(), SimConfig(duration=10.0))
-    assert r.fell
+    assert not r.fell
+    assert r.metrics(settle_from=5.0)["est_rms_tilt_deg"] < 0.1
 
 
-def test_thesis_initial_condition_is_not_recoverable_within_10V():
+def test_thesis_initial_condition_is_recoverable_within_10V():
     cfg = SimConfig(x0=(1.0, 0.3, 10 * DEG, 1 * DEG), duration=5.0)
     r = simulate(LQRController(design_lqr()), KalmanEstimator(), cfg)
-    assert r.fell
+    assert not r.fell
+    assert np.max(np.abs(r.v_applied)) < 10.0
 
 
 def test_one_step_delay_is_tolerated():

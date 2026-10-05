@@ -22,15 +22,24 @@ uv run python scripts/run_baseline.py
 ## 1. Plant
 
 **Structure.** Planar TWIP, both wheels lumped, derived by Lagrange's equations
-(mass-matrix form in `twip.dynamics`). With the thesis's back-EMF simplification
-switched on (`back_emf="xdot"`), it reproduces the thesis EOM to 1e-12, so the
-rigid-body mechanics of the thesis are confirmed correct.
+(mass-matrix form in `twip.dynamics`). `theta` is counterclockwise-positive with
+the CG at `(x - l sin(theta), l cos(theta))`; rolling forward turns the wheels
+clockwise at `xdot/r`. With `back_emf="xdot"` it reproduces the thesis EOM to
+1e-12, sign error included (below).
+
+**Correction 0: motor reaction sign.** The motor torque `T` turns the wheels
+clockwise and reacts on the body counterclockwise, so the generalized forces are
+`(T/r, +T)`. The thesis pendulum moment balance had `-(C_L + C_R)`,
+i.e. `(T/r, -T)`. Check: the torque is internal, so it cannot change the angular
+momentum about the wheel contact point; at rest and upright that requires
+`B2/B4 = (Ip + Mp l^2 + Mp l r) / (r beta + Mp l)`, which the corrected model
+satisfies and the thesis model does not (`test_motor_torque_is_internal_to_the_robot`).
 
 **Correction 1: back-EMF kinematics.** The motors are fixed to the body, so their
-speed is `w_rel = xdot/r - thetadot`. The thesis input terms (B1, B2) already imply
-this, but its back-EMF used `xdot/r` only, which drops the A24/A44 coupling. The
-corrected form is also the one that makes the motors strictly dissipative at zero
-voltage (tested).
+speed is `w_rel = xdot/r + thetadot`. The input terms already imply this (virtual
+work of `T` through `x/r + theta`), but the thesis back-EMF used `xdot/r` only,
+which drops the A24/A44 coupling. The corrected form is also the one that makes
+the motors strictly dissipative at zero voltage (tested).
 
 **Correction 2: `ke`.** Thesis Table 4.2 lists the 12 V 37D 30:1 motor as 350 rpm and
 0.3 A free-run, and 110 oz-in and 5 A stall, with R = 2.5 ohm. Free-run steady state
@@ -50,10 +59,15 @@ Effect on the linearized model (dt = 0.01):
 
 | | thesis | corrected |
 |---|---|---|
-| A22, A24 | -0.098, 0 | -8.55, 0.385 |
-| A42, A43, A44 | -0.095, 39.7, 0 | -11.5, 57.0, 0.519 |
-| B1, B2 | 1.22, 1.18 | 1.25, 1.69 |
-| unstable pole | 6.30 rad/s | 7.50 rad/s |
+| A22, A24 | -0.098, 0 | -12.65, -0.569 |
+| A42, A43, A44 | -0.095, 39.7, 0 | -79.6, 57.0, -3.58 |
+| B1, B2 | 1.22, 1.18 | 1.86, 11.67 |
+| unstable pole | 6.30 rad/s | 5.95 rad/s |
+| RHP zero of x/u | 6.11 rad/s | 5.95 rad/s |
+
+In the corrected model the unstable mode barely moves the base: at zero voltage
+the back-EMF torque on a falling body is close to the torque that holds the base
+still, so the pole and the zero of `x/u` nearly coincide (5.953 vs 5.946).
 
 ### What the plant is (and isn't) validated against
 
@@ -88,7 +102,7 @@ Models what firmware v9 read each 10 ms loop:
 |---|---|---|
 | Accelerometer | specific force at the IMU, **2 cm above the axle**, in the firmware's axes; firmware tilt = `atan2(-ax, az)`; white noise + Gauss-Markov bias per axis; 1/16384 g LSB | tilt = truth + noise |
 | Gyroscope | tilt rate + white noise + Gauss-Markov bias (deg/s throughout); 1/131 deg/s LSB | bias variance in deg/s added to rad/s |
-| Encoders | counts of wheel rotation **relative to the body** (1920/rev); `pos = counts * 0.000147` (= `x - r*theta`); velocity = backward difference | `x` quantized; velocity quantized at 0.0113 m/s (13 ms) |
+| Encoders | counts of wheel rotation **relative to the body** (1920/rev); `pos = counts * 0.000147` (= `x + r*theta`); velocity = backward difference | `x` quantized; velocity quantized at 0.0113 m/s (13 ms) |
 
 Noise levels are the thesis Allan-variance results (reproduced in `twip.analysis`).
 Biases start from their stationary distribution; set `bias_init="zero"` to start at zero.
@@ -96,10 +110,11 @@ Biases start from their stationary distribution; set `bias_init="zero"` to start
 **The accelerometer correction matters most.** An accelerometer measures tilt
 relative to *apparent* gravity. While the robot accelerates at `a`, its accelerometer
 tilt is off by about `a/g` (0.1 rad at 1 m/s^2). In closed loop this biases any
-estimator that treats it as `theta + noise`, and the controller then accelerates
-further. That is positive feedback. The firmware's complementary-filter pipeline, and a Kalman
-filter without the measurement model, both fall within 1-3 s in simulation. The
-thesis's idealized sensor model could not show this.
+estimator that treats it as `theta + noise`. The thesis's idealized sensor model
+could not show this. (An earlier version of this baseline found that the
+firmware's complementary-filter pipeline runs away within 1-3 s; that was an
+artifact of the motor-torque sign error. On the corrected plant it balances,
+with a tilt-estimate error of about 0.02 deg after recovery.)
 
 ## 3. Actuator (`twip.actuators.Actuator`)
 
@@ -116,14 +131,15 @@ the DMSO sim's version was a no-op. No measured deadzone or backlash exists for 
 the final thesis weights `Q = diag(100, 50, 1e-4, 1e-4)`, `R = 1000`, dt = 10 ms.
 Keeping the weights means differences from the thesis come from the plant correction.
 
-`K = [-0.293, -13.27, 133.6, 18.40]` (thesis plant: `[-0.296, -0.904, 74.9, 11.9]`).
-The velocity and tilt gains grow to overcome back-EMF damping and the faster
-unstable pole. The position loop stays slow (a ~20 s closed-loop mode), so position
-creeps slowly after recovery.
+`K = [-0.298, -13.39, 22.13, 3.121]` (thesis plant: `[-0.296, -0.904, 74.9, 11.9]`).
+The velocity gain grows to work against the back-EMF damping, and the tilt gains
+shrink because the corrected tilt input gain B4 is ten times larger. The position
+loop stays slow (a ~22 s closed-loop mode, |lambda| = 0.9995), so position creeps
+slowly after recovery.
 
 **Estimator: `KalmanEstimator`**, a textbook 4-state Kalman filter (Joseph form) on the
 corrected model:
-- The encoder rows include the `-r*theta` terms.
+- The encoder rows include the `+r*theta` terms.
 - The accelerometer row is `theta + (xddot - h*thetaddot)/g`. Both accelerations are
   linear in state and voltage, so this is a linear measurement with feedthrough.
 - `R` comes from the sensor model; `tilt_std = 0.1 rad` of extra accelerometer
@@ -131,8 +147,8 @@ corrected model:
 
 **Second baseline: `HARDWARE_DEFAULT_GAINS = [-1.5811, -2.3951, 93.13, 14.9217]`**, the
 gains compiled into firmware v7-v9. They are *not* a working baseline:
-- They don't stabilize the corrected model, and are marginal (spectral radius 0.990)
-  on the thesis model.
+- They don't stabilize the corrected model (spectral radius 1.001), and are
+  marginal (0.990) on the thesis model.
 - On the robot, potentiometers overrode them. The v8 logs show the gains actually
   used, e.g. `[-0.22, -0.381, 72.5, 2.62]`, with runs of 2-3 s; the v9 runs behind the
   thesis results didn't log their gains.
@@ -147,25 +163,24 @@ The accelerometer sees the acceleration produced by the voltage currently on the
 
 | Case | Result |
 |---|---|
-| 5 deg from rest, nominal | recovers; peak 0.77 m/s; RMS tilt after 5 s 0.003 deg; estimate error 0.05 deg |
+| 5 deg from rest, nominal | recovers; peak 0.12 m/s, 1.9 V; RMS tilt after 5 s 0.005 deg; estimate error 0.02 deg |
 | + 1 sample delay | recovers |
-| + actuator gain 0.93 / 0.5 V deadzone | recovers (deadzone: 0.09 deg RMS limit-cycle) |
+| + actuator gain 0.93 / 0.5 V deadzone | recovers (deadzone: 0.26 deg RMS limit-cycle) |
 | IMU on the top plate (0.24 m) | recovers |
-| Thesis initial condition (1 m, 0.3 m/s, 10 deg, 1 deg/s) | **falls**: needs more than 10 V on the corrected plant |
-| Complementary estimator (firmware style) | **falls** (accelerometer-acceleration feedback, above) |
+| Thesis initial condition (1 m, 0.3 m/s, 10 deg, 1 deg/s) | recovers; peak 2.7 V |
+| Complementary estimator (firmware style) | recovers; estimate error 0.02 deg |
 
 Robustness to plant error (true plant perturbed, estimator and controller nominal;
-starts of 2 deg and 5 deg): survives `Mp x1.1 km x0.9 l x0.9`, `l x0.9`, `l x1.1`, `Ip x1.3`
-and `km x1.2`, but **falls for `ke` x0.5 and x2** (12 of 16 runs). With perfect state
-feedback the LQR survives `ke x0.5`, and survives `ke x2` only from small tilts (fails
-from 3 deg or more). So the `ke` sensitivity is mostly in model-based tilt estimation:
-the accelerometer row depends on the modeled `xddot`. That is where an
-uncertainty-estimating observer should help, and it matters because `ke` is the least
-certain parameter.
+starts of 2 deg and 5 deg, seeds 0-3, 8 runs each): survives `Mp x1.1 km x0.9 l x0.9`,
+`l x0.9`, `l x1.1`, `Ip x1.3`, `km x1.2` and the thesis's `km x2.5`, all with a
+tilt-estimate error of about 0.05 deg. `ke` is the weak point: `ke x0.5` survives with a
+1.4 deg tilt-estimate error, and `ke x2` falls in 4 of 8 runs. The `ke` sensitivity is in
+model-based tilt estimation: the accelerometer row depends on the modeled `xddot`. That
+is where an uncertainty-estimating observer should help, and it matters because `ke`
+is the least certain parameter.
 
-The Kalman noise settings came from a sweep over those 16 runs. `tilt_std = 0.1 rad`
-survived 12 with the lowest estimation error (0.014 deg). Looser settings survived 14,
-but their tilt error was 20-30x larger.
+The Kalman noise setting `tilt_std = 0.1 rad` came from a sweep over the `ke` runs on
+the plant before the sign correction, and has not been re-swept.
 
 ## 5. Plugging in a new design
 

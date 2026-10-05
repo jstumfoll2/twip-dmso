@@ -132,15 +132,21 @@ real robot logs.
 
 Found while building the corrected baseline (details in [`BASELINE.md`](BASELINE.md)):
 
-12. **Back-EMF uses `xdot` only.** The motor turns at `xdot/r - thetadot` relative to the body.
+12. **Back-EMF uses `xdot` only.** The motor turns at `xdot/r + thetadot` relative to the body.
 13. **`ke` is ~85x too small** for the thesis's own Table 4.2 motor data (0.00361 vs. 0.307 V s/rad).
 14. **`Ip` is about the axle**, but the EOM need it about the CG.
 15. **Accelerometer modeled as tilt + noise.** A real accelerometer reads tilt relative to apparent
     gravity, off by about `xddot/g` while the robot accelerates.
-16. **Encoders measure `x - r*theta`**, not `x`, because they count rotation relative to the body.
+16. **Encoders measure `x + r*theta`**, not `x`, because they count rotation relative to the body.
 17. **The thesis's discrete backlash engages one step late** (it tests the previous input).
 18. **The firmware's compiled-in LQR gains were overridden by potentiometers** on the robot, so no
     gain set is recorded as having balanced it.
+19. **Motor reaction torque has the wrong sign.** The thesis pendulum moment balance has
+    `-(C_L + C_R)`; the torque that turns the wheels clockwise reacts on the body
+    counterclockwise, so it is `+(C_L + C_R)`. This flips the back-EMF and input terms of the
+    tilt equation (`B2/B4` must equal the angular-momentum ratio about the contact point; see
+    `BASELINE.md`). Items 12 and 16 were first written with the opposite signs, inherited
+    from this error.
 
 ### Status
 
@@ -161,6 +167,7 @@ Found while building the corrected baseline (details in [`BASELINE.md`](BASELINE
 | 15-16 | accelerometer, encoders | `sensors.SensorSuite`, `baseline.KalmanEstimator` | `legacy.sensors` |
 | 17 | backlash timing | `actuators.Backlash` | `legacy.actuators.Backlash` |
 | 18 | hardware gains | `baseline.HARDWARE_DEFAULT_GAINS`, documented as unverified | |
+| 19 | motor reaction sign | `dynamics` (`back_emf="relative"`) | `back_emf="xdot"` keeps the thesis sign |
 
 ## 4. Still missing
 - Firmware producing `implementationtest3.txt` (15 columns).

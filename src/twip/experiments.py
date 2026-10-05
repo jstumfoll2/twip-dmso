@@ -33,9 +33,15 @@ DT = 0.01
 
 # Parameter error used for the "uncertainty" cases: the perturbation of
 # twipnonlinear_uncert.m (the thesis extra-control plant: l unchanged) with
-# km x1.25 instead of x2.5.  The full thesis set, including km x2.5 or l x0.9,
-# cannot be stabilized by the nominal LQR on the corrected plant even with
-# perfect state knowledge.
+# km x1.25 instead of x2.5.  At x2.5 the input-gain error (B_true - B) u, which
+# is not a function of the state, is large during the initial recovery from the
+# 5 deg tilt, so the worst-case basis residual eps_N grows about 30-fold
+# (0.013 -> 0.42) and the DMSO bound of Theorem 3.1 becomes vacuous, although
+# the RMS fit residual stays small.  All four controllers still balance the x2.5
+# plant.  (The first revision-8 run gave a different reason, that the nominal
+# LQR cannot hold the x2.5 plant upright; that was an artifact of the
+# motor-torque sign error fixed in twip.dynamics.  scripts/thesis_rev8.py
+# records the x2.5 check under results["perturbation_check"].)
 PERTURBATION = dict(Mp=1.1, Mw=1.5, km=1.25, ke=0.95, R=1.2)
 
 
