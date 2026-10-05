@@ -25,7 +25,7 @@ are summarized in Table~\ref{tab:phys}.
 Parameter & Value & Units \\
 \midrule
 Pendulum moment of inertia about the wheel axis, $I_p$ & 0.025\,$^a$ & \si{kg.m^2} \\
-Wheel moment of inertia, $I_w$ & $1.441\times10^{-4}$ & \si{kg.m^2} \\
+Wheel moment of inertia, $I_w$ & $1.441\times10^{-4}$\,$^b$ & \si{kg.m^2} \\
 Distance to CG from wheel axis, $l$ & 0.075 & \si{m} \\
 Mass of pendulum, $M_p$ & 1.432 & \si{kg} \\
 Mass of wheels, $M_w$ & 0.1168 & \si{kg} \\
@@ -34,7 +34,10 @@ Wheel radius, $r$ & 0.045 & \si{m} \\
 \end{tabular}\\[2pt]
 {\footnotesize $^a$ Computed with parallel-axis terms, i.e.\ about the wheel axis.
 The equations of motion require the value about the center of gravity,
-\SI{0.0169}{kg.m^2}; see Section~\ref{sec:simmodel}.}
+\SI{0.0169}{kg.m^2}; see Section~\ref{sec:simmodel}.\\
+\rev{$^b$ The simulations, here and in the revision~7 programs, use the
+uniform-disk value $M_wr^2/2=\SI{1.183e-4}{kg.m^2}$. The difference changes
+$\beta$ of \eqref{eq:beta} by 1.4\%.}}
 \end{table}
 
 \rev{The moment of inertia and the CG offset are the two parameters least well
@@ -144,7 +147,7 @@ summarized in Table~\ref{tab:gyro}.
 The accelerometer also has a 16-bit digital output, reporting in multiples of
 gravity. Calibration was required to obtain a \SI{1}{g} reading at rest. At the
 minimum range of \SI{\pm2}{g} the sensitivity is \SI{16384}{LSB\per g}, an exact
-resolution of $1/16384$ or approximately \SI{59.4}{\micro g}. Noise is specified
+resolution of $1/16384$ or approximately \SI{61.0}{\micro g}. Noise is specified
 as \SI{4}{mg} RMS at a \SI{100}{Hz} rate and a power spectral density of
 \SI{400}{\micro g/\sqrt{Hz}} at \SI{10}{Hz}. The difference in the reference
 rates between the two sensors necessitates a direct analysis of the noise from
@@ -178,7 +181,7 @@ Parameter & Value & Units \\
 \midrule
 Range & $\pm2$ & \si{g} \\
 Sensitivity & 16384 & LSB/\si{g} \\
-Resolution & 59.4 & \si{\micro g} \\
+Resolution & 61.0 & \si{\micro g} \\
 Total RMS noise & 4 & \si{mg} RMS \\
 Power spectral density & 400 & \si{\micro g/\sqrt{Hz}} \\
 \bottomrule
@@ -192,7 +195,9 @@ measuring the relative position of the motor output shaft. The shaft carries a
 magnetic disk with 16 magnetic divisions, and two Hall effect sensors detect the
 changing field as the shaft rotates. Counting both the rising and falling edges
 of both signals gives a total resolution of 64 counts per revolution of the
-motor output shaft, which is the origin of the term quadrature encoder. In
+motor output shaft. \rev{The two signals are a quarter cycle (\SI{90}{\degree})
+apart, in quadrature, which is the origin of the term and what allows the
+direction of rotation to be decoded.} In
 combination with the 30:1 gearbox, the gearbox output has a measurable
 resolution of 1920 counts per revolution. With \SI{90}{mm} diameter wheels the
 encoder measures discrete steps of \SI{1.47e-4}{m}.

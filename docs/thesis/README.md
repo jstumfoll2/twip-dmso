@@ -71,7 +71,12 @@ See Appendix B. In short:
 * Chapter 8: per-case metrics; results to be regenerated.
 * Chapter 5: the theta = pi convention is relabelled. Revision 7 called it the
   statically stable point; the gravity term sign in the linearization shows it
-  is the unstable upright equilibrium.
+  is the unstable upright equilibrium. The motor's reaction torque on the body
+  enters the pendulum moment balance with positive sign; revision 7 had it
+  negative, which flipped the back-EMF and input terms of the tilt equation.
+  A new remark after the linearization checks the corrected input vector
+  against the angular momentum about the wheel contact point, which the motor
+  torque cannot change.
 
 ## Regenerating results
 
@@ -81,9 +86,15 @@ are `twip.observers` (DMSO rev 8, Kalman baselines), `twip.controllers` (LQR,
 two-step, command-filtered backstepping) and `twip.experiments` (cases).
 
 Key findings recorded in the text: the rev-8 DMSO beats the augmented-state
-KF by ~11x on uncertainty identification without noise, but not with noise;
-the command-filtered controller as first written (Ch. 6) is unstable for all
-gains because it inverts the right-half-plane zero of x1/u (Section 8.3.1).
-Section 6.7 corrects it (flat output y = x1 - b x3, eta = x2 - b x4, attitude
-weight a2^2). The corrected design balances in every run and tracks 5-17x better
-than LQR, at up to 43% more control effort.
+KF by 1.6x (velocity) and 4x (tilt rate) on uncertainty identification without
+noise, but not with noise, and a larger adaptation gain inside the proven
+region does better still; the command-filtered controller as first written
+(Ch. 6) is unstable for all gains because it inverts the right-half-plane zero
+of x1/u (Section 8.3.1). Section 6.7 corrects it (flat output y = x1 - b x3,
+eta = x2 - b x4, attitude weight a2^2). The corrected design balances in every
+run and tracks 4-22x better than LQR, at 22-137% more RMS control effort.
+
+The hardware replays of Section 8.4 (`hw_states`, `hw_uncertainty`, and the
+DMSO/KF numbers quoted there) predate the motor-torque sign correction and need
+`uv run python scripts/thesis_rev8.py --only hardware` with the thesis data
+folder present. `docs/twip_thesis_rev8_results.pdf` predates it as well.

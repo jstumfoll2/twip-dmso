@@ -77,8 +77,12 @@ uses command filtering so that the functions approximated by the neural networks
 depend only on measured states and the reference trajectory, removing the
 algebraic dependence of each network's target on the other network's output.
 Uniform ultimate boundedness of all tracking errors and all weight estimation
-errors follows, with $\sigma$-modification supplying weight boundedness without
-a persistency-of-excitation requirement.}
+errors follows under a command-filter error assumption, with
+$\sigma$-modification supplying weight boundedness without a
+persistency-of-excitation requirement. Tracking the position, the construction
+inverts a right-half-plane zero and the assumption fails; recast on the flat
+output of the linearized robot it holds, and in simulation the controller
+reduces the RMS position tracking error of an LQR by factors of 4 to 22.}
 
 \clearpage
 

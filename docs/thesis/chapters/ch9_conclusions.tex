@@ -9,15 +9,22 @@ $\sigmax(F-\Km)<1$ together with an upper bound on the adaptation gain, both
 satisfiable over an open set of designs, and both reducing to the expected
 limiting behavior as the adaptation gain tends to zero. The analysis bounds the
 state estimation error and the functional approximation error
-$\Wt_k^T\phi_k$; boundedness of the weight estimate itself follows either from
-persistency of excitation or, without that requirement, from
-$\sigma$-modification of the update law.}
+$\Wt_k^T\phi_k$ in mean square without further assumptions, and uniformly once
+the weight estimate is bounded, which $\sigma$-modification of the update law
+provides directly and persistency of excitation provides with an additional
+argument.}
 
-\rev{In simulation on the corrected robot model, the observer satisfies its
-conditions with margin, settles inside the predicted ultimate bound, and under
-deterministic parameter error identifies the uncertainty an order of magnitude
-more accurately than an augmented-state Kalman filter. With realistic sensor
-noise the advantage is confined to the velocity channel. The diagonal error
+\rev{The robot model used for the results corrects the sign of the motor's
+reaction torque on the body, an error carried over from revision~7 that the
+angular momentum about the wheel contact point exposes
+(Remark~\ref{rem:momentum}). In simulation on the corrected model, the observer
+satisfies its conditions with margin, stays inside the predicted ultimate bound,
+and under deterministic parameter error identifies the uncertainty 1.6 to 4
+times more accurately than an augmented-state Kalman filter, with more
+available from a larger adaptation gain inside the proven region. With
+realistic sensor noise the augmented-state filter identifies the uncertainty
+better, and the observer's advantage over the unaugmented filters is confined to
+the velocity channel. The diagonal error
 injection that makes the proof simplest cannot use the model to reject the
 structured error of the accelerometer-derived tilt, which a Kalman-gain
 injection recovers empirically.}
@@ -33,11 +40,12 @@ zero of $x_1(s)/u(s)$ and cannot be stabilized for any gains. Recast on the flat
 output $y=x_1-b\,x_3$, with the attitude coordinates weighted by $a_2^2$ in the
 Lyapunov function, the same construction is realizable, and the control enters
 only at the last step. In simulation it balanced in every run and reduced the
-RMS position tracking error relative to the LQR by factors of 5 to 17, at up to
-43\% more control effort. Most of that gain comes from the corrected structure.
-The networks contribute measurably only under deadzone and backlash, because the
-dominant parameter error acts on the input gain, which the networks are not
-given the information to learn.}
+RMS position tracking error relative to the LQR by factors of 4 to 22, at 22\%
+to 137\% more RMS control effort and with peak voltages near the \SI{10}{V}
+limit. Most of that gain comes from the corrected structure. The networks
+contribute measurably only under deadzone and backlash, in part because the
+parameter error acts on the input gain, which the networks are not given the
+information to learn.}
 
 Four directions follow naturally from this work.
 
@@ -46,7 +54,7 @@ constants changes $B_2$, so part of the residual the networks must absorb is
 proportional to the control. Giving the second network the previous control as
 an input, or estimating $B_2$ directly as in adaptive feedback linearization,
 would bring that error within the approximation hypothesis. At present,
-robustness to it comes only from low position-loop gains.}
+robustness to it comes from the feedback gains alone.}
 
 \paragraph{Output feedback.} The present development assumes full state
 measurement, so the DMSO is properly a filter and uncertainty identifier. The

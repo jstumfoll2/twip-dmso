@@ -107,7 +107,9 @@ Summing moments about the center of the wheel,
 I_w\ddot\theta_w=C_L-H_{fL}r ,
 \end{equation}
 where $I_w$ is the wheel moment of inertia and $\ddot\theta_w$ the wheel angular
-acceleration. Starting from the motor shaft equation \eqref{eq:shaft} and
+acceleration. \rev{The wheel angle $\theta_w$ and the motor torque $C_L$ are both
+measured clockwise in Figure~\ref{fig:fbdwheel}, the sense in which a wheel turns
+when the robot rolls in the positive $x$ direction.} Starting from the motor shaft equation \eqref{eq:shaft} and
 substituting \eqref{eq:isimple}, the motor torque delivered to either wheel is
 \begin{equation}\label{eq:CL}
 C_L=C_R=\tau_m=-\frac{k_mk_e}{R}\dot\theta_w+\frac{k_m}{R}V_a .
@@ -209,19 +211,28 @@ P_L+P_R&=M_pg+M_p\Bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\Bigr).
 \label{eq:Psum}
 \end{align}
 
-Summing moments about the pendulum center of gravity, with the clockwise
-direction taken as positive,
+Summing moments about the pendulum center of gravity, with the
+\rev{counterclockwise direction (the sense of $\theta$, since
+$\bm{\omega}_p=\dot\theta\,\hat k$) taken as positive,}
 \begin{equation}\label{eq:pendm}
-\sum M=-\bigl(C_L+C_R\bigr)-\bigl(H_L+H_R\bigr)l\cos\theta
+\sum M=\bigl(C_L+C_R\bigr)-\bigl(H_L+H_R\bigr)l\cos\theta
 -\bigl(P_L+P_R\bigr)l\sin\theta=I_p\ddot\theta .
 \end{equation}
+\rev{The motors are mounted on the pendulum, so the torque $C_L+C_R$ that turns the
+wheels clockwise reacts on the pendulum counterclockwise, with positive sign.
+Revision~7 entered this reaction with a negative sign and described the sum as
+clockwise-positive, while the $H$ and $P$ terms and $I_p\ddot\theta$ are written
+counterclockwise-positive. That error reverses the motor's reaction on the body;
+it propagates to \eqref{eq:nl1}, \eqref{eq:lin1}, and the second and fourth rows
+of \eqref{eq:linss}, all corrected below. Remark~\ref{rem:momentum} gives an
+independent check.}
 
 \subsection{Combined Equations of Motion}
 
 Combining \eqref{eq:CL}, \eqref{eq:Hsum}, \eqref{eq:Psum}, and \eqref{eq:pendm},
 \begin{equation}\label{eq:combined}
 \begin{aligned}
--\left(-\frac{2k_mk_e}{R}\dot\theta_w+\frac{2k_m}{R}V_a\right)
+\left(-\frac{2k_mk_e}{R}\dot\theta_w+\frac{2k_m}{R}V_a\right)
 &-\Bigl(M_p\bigl(\ddot x+\ddot\theta l\cos\theta-\dot\theta^2l\sin\theta\bigr)\Bigr)l\cos\theta\\
 &-\Bigl(M_pg+M_p\bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\bigr)\Bigr)l\sin\theta
 =I_p\ddot\theta .
@@ -231,8 +242,8 @@ Cancelling terms, rearranging, and applying the identity
 $\sin^2\theta+\cos^2\theta=1$ gives the first nonlinear equation of motion,
 \begin{equation}\label{eq:nl1}
 \bigl(I_p+M_pl^2\bigr)\ddot\theta
--\frac{2k_mk_e}{Rr}\dot x
-+\frac{2k_m}{R}V
++\frac{2k_mk_e}{Rr}\dot x
+-\frac{2k_m}{R}V
 +M_pgl\sin\theta
 =-M_pl\ddot x\cos\theta .
 \end{equation}
@@ -264,8 +275,8 @@ together with the assumption that the squared angular rate is small,
 Applying \eqref{eq:smallangle} and \eqref{eq:smallrate} to \eqref{eq:nl1} and
 \eqref{eq:nl2} yields the linearized equations of motion,
 \begin{align}
-\bigl(I_p+M_pl^2\bigr)\ddot\phi-\frac{2k_mk_e}{Rr}\dot x
-+\frac{2k_m}{R}V-M_pgl\phi&=M_pl\ddot x ,\label{eq:lin1}\\[4pt]
+\bigl(I_p+M_pl^2\bigr)\ddot\phi+\frac{2k_mk_e}{Rr}\dot x
+-\frac{2k_m}{R}V-M_pgl\phi&=M_pl\ddot x ,\label{eq:lin1}\\[4pt]
 \frac{2k_m}{Rr}V=\left(2M_w+\frac{2I_w}{r^2}+M_p\right)\ddot x
 +\frac{2k_mk_e}{Rr^2}\dot x-M_pl\ddot\phi&. \label{eq:lin2}
 \end{align}
@@ -289,19 +300,19 @@ $\mathbf{x}=\begin{bmatrix}x&\dot x&\phi&\dot\phi\end{bmatrix}^T$ gives
 \mathcal{A}=
 \begin{bmatrix}
 0 & 1 & 0 & 0\\[4pt]
-0 & \dfrac{2k_mk_e\bigl(M_plr-I_p-M_pl^2\bigr)}{Rr^2\alpha}
+0 & -\dfrac{2k_mk_e\bigl(I_p+M_pl^2+M_plr\bigr)}{Rr^2\alpha}
   & \dfrac{M_p^2gl^2}{\alpha} & 0\\[8pt]
 0 & 0 & 0 & 1\\[4pt]
-0 & \dfrac{2k_mk_e\bigl(r\beta-M_pl\bigr)}{Rr^2\alpha}
+0 & -\dfrac{2k_mk_e\bigl(r\beta+M_pl\bigr)}{Rr^2\alpha}
   & \dfrac{M_pgl\beta}{\alpha} & 0
 \end{bmatrix},
 \qquad
 \mathcal{B}=
 \begin{bmatrix}
 0\\[4pt]
-\dfrac{2k_m\bigl(I_p+M_pl^2-M_plr\bigr)}{Rr\alpha}\\[8pt]
+\dfrac{2k_m\bigl(I_p+M_pl^2+M_plr\bigr)}{Rr\alpha}\\[8pt]
 0\\[4pt]
-\dfrac{2k_m\bigl(M_pl-r\beta\bigr)}{Rr\alpha}
+\dfrac{2k_m\bigl(r\beta+M_pl\bigr)}{Rr\alpha}
 \end{bmatrix},
 \end{equation}
 where
@@ -312,6 +323,26 @@ and
 \begin{equation}\label{eq:alphadef}
 \alpha:=I_p\beta+2M_pl^2\left(M_w+\frac{I_w}{r^2}\right).
 \end{equation}
+
+\rev{\begin{remark}[Check on the input direction]\label{rem:momentum}
+The motor torque acts between the pendulum and the wheels, so it cannot change
+the angular momentum of the robot about the wheel contact point; only gravity,
+which has no moment about that point when the robot is upright, and the motion
+of the point itself can. At the upright equilibrium with zero rates, the
+acceleration produced by the voltage alone must therefore leave that angular
+momentum unchanged. Measured clockwise, the angular momentum about the contact
+point is $(r\beta+M_pl)\dot x-(I_p+M_pl^2+M_plr)\dot\phi$ at $\phi=0$, and its
+rate of change is zero only if
+\begin{equation}\label{eq:momentum}
+\frac{\mathcal{B}_2}{\mathcal{B}_4}=\frac{I_p+M_pl^2+M_plr}{r\beta+M_pl} .
+\end{equation}
+The input vector of \eqref{eq:linss} satisfies \eqref{eq:momentum}, and the same
+ratio relates $\mathcal{A}_{22}$ to $\mathcal{A}_{42}$, since the back-EMF torque
+is internal too. Both entries of $\mathcal{B}$ are positive: a positive voltage
+pushes the base forward and turns the body backward. The input vector of
+revision~7, with $I_p+M_pl^2-M_plr$ and $M_pl-r\beta$ in place of the corrected
+factors, fails this check.
+\end{remark}}
 
 For the development in Chapter~\ref{ch:control} it is convenient to name the
 entries of \eqref{eq:linss} directly. Writing $x_1=x$, $x_2=\dot x$, $x_3=\phi$,
@@ -325,10 +356,16 @@ $d_1$ and $d_2$,
 \dot x_4&=A_3x_2+A_4x_3+B_2u+d_2(\mathbf{x}),
 \end{aligned}
 \end{equation}
-with $A_1,\dots,A_4,B_1,B_2$ read off from \eqref{eq:linss}. Note that
-$A_4=0$ in the nominal model, since the tilt rate does not appear in the tilt
-acceleration once friction is neglected; it is retained symbolically because the
-uncertainty $d_2$ generally reintroduces such a dependence.
+with $A_1,\dots,A_4,B_1,B_2$ read off from \eqref{eq:linss}: $A_1=\mathcal{A}_{22}$,
+$A_2=\mathcal{A}_{23}$, $A_3=\mathcal{A}_{42}$, $A_4=\mathcal{A}_{43}$,
+$B_1=\mathcal{B}_2$, $B_2=\mathcal{B}_4$. \rev{The tilt rate $x_4$ does not appear
+because \eqref{eq:CL} was evaluated with the absolute wheel rate. With the
+relative rate of Section~\ref{sec:simmodel} the terms $\mathcal{A}_{24}x_4$ and
+$\mathcal{A}_{44}x_4$ join the second and fourth equations; the designs of
+Chapter~\ref{ch:control} carry them as known terms, and the uncertainties $d_1$
+and $d_2$ absorb whatever the nominal model leaves out. (Revision~7 stated
+instead that $A_4=0$ in the nominal model; $A_4$ is the gravity coefficient
+$\mathcal{A}_{43}$, which is not zero.)}
 
 \rev{\begin{remark}[Structural consequences]
 Two features of \eqref{eq:plantform} drive everything that follows. First,
@@ -370,12 +407,15 @@ back-EMF term supplies a damping-like effect and the oscillations decay.
 Examining the free-body diagram in Figure~\ref{fig:fbdpend}, a small positive
 angle should cause the body to move initially in the positive direction as the
 tilt returns toward zero. Figure~\ref{fig:stab10} shows this behavior.
-\rev{With the corrected back-EMF constant of Section~\ref{sec:simmodel}, the
-damping is strong and the oscillation decays within about five periods. The
-translational position does not return to zero; after the initial positive
-excursion the base settles about \SI{8}{mm} behind its starting point, the
-net effect of the asymmetric damping over the swings. The figures show the
-corrected model used for the results of Chapter~\ref{ch:results}.} These checks
+\rev{The figures show the corrected model used for the results of
+Chapter~\ref{ch:results}. The swing has a period of \SI{0.84}{s} and is only
+lightly damped: its amplitude falls from \SI{10}{\degree} to about
+\SI{7}{\degree} over the \SI{10}{s} shown. The back-EMF damps only the rotation
+of the wheels relative to the body, and in a free swing the wheels roll nearly
+in step with the body; the RMS relative rate is \SI{0.18}{rad/s}, against
+\SI{0.90}{rad/s} for the wheels and \SI{0.77}{rad/s} for the body. The base
+oscillates between \SI{-1}{mm} and \SI{17}{mm}, about a point \SI{8}{mm} ahead
+of its start.} These checks
 establish that the nonlinear equations of motion behave as expected and can be
 relied upon.
 

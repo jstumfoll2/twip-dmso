@@ -38,17 +38,18 @@ against material already in this thesis.
 body, so the back-EMF and the friction of each motor depend on the rotation of
 the wheel \emph{relative to the body}, not on the absolute wheel rate
 $\dot\theta_w=\dot x/r$ of \eqref{eq:noslip}. In the upright-referenced
-coordinates of \eqref{eq:linss} the relative rate is $\dot x/r-\dot\phi$, and
-the total motor torque is
+coordinates of \eqref{eq:linss} the wheel turns clockwise at $\dot x/r$ while
+the body turns counterclockwise at $\dot\phi$, so the relative rate is
+$\dot x/r+\dot\phi$, and the total motor torque is
 \begin{equation}\label{eq:relemf}
-T=\frac{2k_m}{R}\Bigl(V-k_e\bigl(\tfrac{\dot x}{r}-\dot\phi\bigr)\Bigr).
+T=\frac{2k_m}{R}\Bigl(V-k_e\bigl(\tfrac{\dot x}{r}+\dot\phi\bigr)\Bigr).
 \end{equation}
 The input terms of \eqref{eq:linss} already imply this kinematics: the torque
-enters the wheel equation as $T/r$ and the pendulum equation as $-T$, which is
-the virtual work of $T$ acting through the relative angle. Using
-\eqref{eq:relemf} adds the tilt-rate terms $\mathcal{A}_{24}=-r\mathcal{A}_{22}$ and
-$\mathcal{A}_{44}=-r\mathcal{A}_{42}$ to \eqref{eq:linss}, which are zero in the
-original. It is also the form that makes the motor strictly dissipative at zero
+enters the wheel equation as $T/r$ and the pendulum equation as $+T$
+(\eqref{eq:pendm}), which is the virtual work of $T$ acting through the relative
+angle $x/r+\phi$. Using \eqref{eq:relemf} adds the tilt-rate terms
+$\mathcal{A}_{24}=r\mathcal{A}_{22}$ and $\mathcal{A}_{44}=r\mathcal{A}_{42}$ to
+\eqref{eq:linss}, which are zero in the original. It is also the form that makes the motor strictly dissipative at zero
 voltage.
 
 \paragraph{Back-EMF constant.} From the free-run data of Table~\ref{tab:motor},
@@ -70,9 +71,20 @@ terms, so it is the inertia about the wheel axis. Equations
 gravity, $I_p-M_pl^2=\SI{0.0169}{kg.m^2}$.
 
 Table~\ref{tab:linvals} compares the resulting linearizations. The corrected
-model has substantially more back-EMF damping and a faster unstable pole. The
+model has two to three orders of magnitude more back-EMF damping, a tilt input gain
+$\mathcal{B}_4$ ten times larger, and a slightly slower unstable pole. The
 right-half-plane zero of $x_1(s)/u(s)$, which matters in
-Section~\ref{sec:cfinstab}, is present in both.
+Section~\ref{sec:cfinstab}, is present in both. Setting $x\equiv0$ in the
+linearized equations shows that it lies at
+$\sqrt{M_pgl/(I_p+M_pl^2+M_plr)}$, independent of the motor constants. In the
+corrected model it nearly coincides with the unstable pole, for a physical
+reason. With the base still and zero voltage, the back-EMF torque is
+$-(2k_mk_e/R)\dot\phi$, while holding the base still requires
+$-M_plr\ddot\phi$. For a mode growing at rate $p$ the two agree when
+$2k_mk_e/R=M_plrp$, and the corrected constants give \num{0.0283} and
+\SI{0.0288}{N.m.s} at $p=\SI{5.95}{rad/s}$. The body therefore falls while the
+base moves by less than 1\% of $r\phi$: the unstable mode barely appears in
+$x_1$ and must be stabilized through the tilt.
 
 \begin{table}[htbp]
 \centering
@@ -82,11 +94,11 @@ Section~\ref{sec:cfinstab}, is present in both.
 \toprule
 Quantity & Revision 7 & Corrected \\
 \midrule
-$\mathcal{A}_{22},\ \mathcal{A}_{24}$ & $-0.098,\ 0$ & $-8.55,\ 0.385$ \\
-$\mathcal{A}_{42},\ \mathcal{A}_{43},\ \mathcal{A}_{44}$ & $-0.095,\ 39.7,\ 0$ & $-11.5,\ 57.0,\ 0.519$ \\
-$\mathcal{B}_2,\ \mathcal{B}_4$ & $1.22,\ 1.18$ & $1.25,\ 1.69$ \\
-Unstable pole (rad/s) & 6.30 & 7.50 \\
-RHP zero of $x_1/u$ (rad/s) & 6.11 & 7.23 \\
+$\mathcal{A}_{22},\ \mathcal{A}_{24}$ & $-0.098,\ 0$ & $-12.65,\ -0.569$ \\
+$\mathcal{A}_{42},\ \mathcal{A}_{43},\ \mathcal{A}_{44}$ & $-0.095,\ 39.7,\ 0$ & $-79.6,\ 57.0,\ -3.58$ \\
+$\mathcal{B}_2,\ \mathcal{B}_4$ & $1.22,\ 1.18$ & $1.86,\ 11.67$ \\
+Unstable pole (rad/s) & 6.30 & 5.953 \\
+RHP zero of $x_1/u$ (rad/s) & 6.11 & 5.946 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -96,8 +108,8 @@ IMU location, \SI{2}{cm} above the wheel axis on the body, expressed in body
 axes. The tilt presented to the estimators is therefore computed from a signal
 that includes the robot's own acceleration, as on the hardware, rather than
 being the true tilt plus white noise. The encoders measure the rotation of the
-wheel relative to the body, so the encoder position is $x-r\phi$; it is
-corrected by adding $r\hat\phi$ before use. Velocity is the difference of
+wheel relative to the body, so the encoder position is $x+r\phi$; it is
+corrected by subtracting $r\hat\phi$ before use. Velocity is the difference of
 successive quantized positions divided by $\Delta t$.}
 
 \section{CONTROL}
@@ -283,7 +295,7 @@ appears to the estimator as an unmodeled input nonlinearity rather than as a
 measurable state discrepancy. Second, \eqref{eq:backlash} is not smooth and
 therefore violates the smoothness assumption underlying
 Assumption~\ref{as:nn}. The networks can approximate it only in an averaged
-sense, and the residual appears in $\epsilon_N$ and in $w_{im}$. This is the
+sense, and the residual appears in $\epsilon_N$ and in $w_{i0}$. This is the
 correct explanation for the persistent oscillation in the uncertainty estimates
 reported in Chapter~\ref{ch:results}: the limit cycle is the signature of a
 nonsmooth input nonlinearity that no smooth approximator can cancel, not a
@@ -327,7 +339,7 @@ The filter is given by the update equations
 P_{k+1}^-&=FP_k^+F^T+Q_{\mathrm{K}},\label{eq:kf1}\\[2pt]
 L_{k+1}&=P_{k+1}^-H^T\bigl(HP_{k+1}^-H^T+R_{\mathrm{K}}\bigr)^{-1},\label{eq:kf2}\\[2pt]
 \xhat_{k+1}^-&=F\xhat_k^++Gu_k ,\label{eq:kf3}\\[2pt]
-\xhat_{k+1}^+&=\xhat_{k+1}^-+L_{k+1}\bigl(y_k-H\xhat_{k+1}^-\bigr),\label{eq:kf4}\\[2pt]
+\xhat_{k+1}^+&=\xhat_{k+1}^-+L_{k+1}\bigl(y_{k+1}-H\xhat_{k+1}^-\bigr),\label{eq:kf4}\\[2pt]
 P_{k+1}^+&=\bigl(I-L_{k+1}H\bigr)P_{k+1}^-\bigl(I-L_{k+1}H\bigr)^T
 +L_{k+1}R_{\mathrm{K}}L_{k+1}^T ,\label{eq:kf5}
 \end{align}
