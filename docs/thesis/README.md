@@ -22,7 +22,7 @@ amsmath/amssymb/booktabs/siunitx/tocloft/hyperref.
       ch2_literature.tex
       ch3_dmso.tex            corrected DMSO development and Lyapunov proof
       ch4_platform.tex        hardware
-      ch5_model.tex           DC motor + TWIP dynamics
+      ch5_model.tex           DC motor + TWIP dynamics, model validation against the logs (5.3)
       ch6_control.tex         LQR + command-filtered neural backstepping
       ch7_simulation.tex      discretization, noise, nonlinearities, KF baselines
       ch8_results.tex         test matrix, metrics, figure slots
@@ -33,15 +33,18 @@ amsmath/amssymb/booktabs/siunitx/tocloft/hyperref.
 
 ## Figures
 
-All 18 figure slots are filled. `figures/` is written by
+All 21 figure slots are filled. `figures/` is written by
 
     uv run python scripts/thesis_rev8.py        # from the repo root
+    uv run python scripts/validate_plant.py     # pv_*.pdf (Section 5.3)
 
-which also writes the Chapter 8 table bodies to `generated/tab_*.tex` and every
-number quoted in the text to `generated/results.json`. `twip_robot.jpg`,
-`fbd_wheel.png` and `fbd_pendulum.png` are copied from the original thesis
-folder (`Pictures/`, `Thesis/Diagrams/`); everything else is generated. The
-`\figslot` macro is still defined in main.tex for future placeholders.
+`thesis_rev8.py` also writes the Chapter 8 table bodies to `generated/tab_*.tex`
+and every number quoted in the text to `generated/results.json`.
+`pv_transient`, `pv_coefficients` and `pv_startup` come from
+`validate_plant.py`. `twip_robot.jpg`, `fbd_wheel.png` and `fbd_pendulum.png`
+are copied from the original thesis folder (`Pictures/`, `Thesis/Diagrams/`);
+everything else is generated. The `\figslot` macro is still defined in main.tex
+for future placeholders.
 
 Note: with MiKTeX's 2026 siunitx and a 2024 l3kernel, every `\si` fails to
 compile. TeX Live 2023 (which built rev 8) is fine; otherwise update MiKTeX or
@@ -68,7 +71,10 @@ See Appendix B. In short:
   makes both network targets functions of measured state alone.
 * Chapter 7: three Kalman baselines instead of one; the augmented-state filter
   is the one improvement claims are stated against.
-* Chapter 8: per-case metrics; results to be regenerated.
+* Chapter 8: per-case metrics, regenerated on the corrected model. The
+  hardware replays (Section 8.4) map the logged encoder position into the model
+  frame inferred in Section 5.3 (logged position mirrored, x = -pos - r*theta),
+  which is not yet confirmed in closed loop.
 * Chapter 5: the theta = pi convention is relabelled. Revision 7 called it the
   statically stable point; the gravity term sign in the linearization shows it
   is the unstable upright equilibrium. The motor's reaction torque on the body
@@ -77,6 +83,19 @@ See Appendix B. In short:
   A new remark after the linearization checks the corrected input vector
   against the angular momentum about the wheel contact point, which the motor
   torque cannot change.
+* Chapter 5, new Section 5.3: the model is tested against the robot's logs, with
+  three candidates (M1 corrected, +T; M2, -T; M3, revision 7). Three tests
+  decide the sign for M1: the input-free angular-momentum test on the two v9
+  switch-on transients, the tilt response to the saturated -10 V at switch-on,
+  and the v9 loop simulated with the gains recovered from the logs, in which no
+  -T plant stays up beyond 5.3 s. Some predictions favour M2 or M3 and the input
+  regression is inconclusive. M1 is not validated quantitatively: the
+  accelerometer points to a larger Ip, the steady-balancing coefficients
+  contradict all three models, and Ip, l, km, the present motors' deadzone and
+  backlash, and the floor's rolling resistance are unmeasured. The logged encoder position is inferred to
+  be mirrored relative to the model; in closed loop that frame reproduces the v9
+  runs only with a rolling resistance of at least about 4% of the weight, so it
+  is not yet confirmed.
 
 ## Regenerating results
 
@@ -94,7 +113,17 @@ of x1/u (Section 8.3.1). Section 6.7 corrects it (flat output y = x1 - b x3,
 eta = x2 - b x4, attitude weight a2^2). The corrected design balances in every
 run and tracks 4-22x better than LQR, at 22-137% more RMS control effort.
 
-The hardware replays of Section 8.4 (`hw_states`, `hw_uncertainty`, and the
-DMSO/KF numbers quoted there) predate the motor-torque sign correction and need
+The hardware replays of Section 8.4 (`hw_states`, `hw_complementary`,
+`hw_uncertainty`, and the DMSO/KF numbers quoted there) run in the encoder frame
+of Section 5.3 and are regenerated with
 `uv run python scripts/thesis_rev8.py --only hardware` with the thesis data
-folder present. `docs/twip_thesis_rev8_results.pdf` predates it as well.
+folder present.
+
+Section 5.3 is populated from `scripts/validate_plant.py` (needs the thesis
+data folder; writes `generated/plant_validation.json` and `figures/pv_*.pdf`)
+and `scripts/validate_closed_loop.py` (needs no robot data; writes
+`generated/plant_closedloop.json`).
+
+`docs/twip_thesis_rev8.pdf` is the current build.
+`docs/twip_thesis_rev8_results.pdf` is an older build that predates the
+motor-torque sign correction and the model validation.

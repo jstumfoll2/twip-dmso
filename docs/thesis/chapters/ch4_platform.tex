@@ -42,12 +42,18 @@ $\beta$ of \eqref{eq:beta} by 1.4\%.}}
 
 \rev{The moment of inertia and the CG offset are the two parameters least well
 known on a build of this kind. Both are computed from a lumped-mass
-idealization of the plates and components rather than measured, and the
-difference between the LQR gains computed from Table~\ref{tab:phys} and the
-gains that actually stabilized the hardware is direct evidence of that error.
-This is the motivation for the uncertainty estimation problem rather than an
-incidental nuisance; Appendix~\ref{app:validation} describes a pendulum-swing
-procedure for measuring $I_p$ and $l$ directly.}
+idealization of the plates and components rather than measured. The gains that
+balanced the hardware differ from the LQR gains computed from
+Table~\ref{tab:phys}, but much of that difference is in the position and
+velocity gains, whose sign the firmware's encoder frame affects
+(Section~\ref{sec:gaintest}), so it does not measure the parameter error. The
+recorded runs show the error nonetheless: at switch-on the tilt input gain is 8
+to 26\% above the model (Section~\ref{sec:voltagetest}), and the accelerometer
+points to an $I_p$ above the lumped-mass estimate
+(Section~\ref{sec:momtest}). This is the motivation for the uncertainty
+estimation problem rather than an incidental nuisance;
+Appendix~\ref{app:validation} describes a pendulum-swing procedure for
+measuring $I_p$ and $l$ directly.}
 
 \section{ELECTRONIC DESIGN}
 
@@ -326,18 +332,25 @@ its content had to be selected carefully and limited in order to keep the loop
 time acceptable. The minimum loop execution time obtained was \SI{0.01}{s}.
 
 The LQR gains had to be modified from the values computed from the measured
-parameters of the robot, which is indicative of inaccurately measured
-parameters. The model is also not entirely accurate to the true system: the
+parameters of the robot, which \rev{revision~7 took as evidence of}
+inaccurately measured parameters. The model is also not entirely accurate to the true system: the
 pendulum is modeled as a point mass attached by a thin beam to the motor axis,
-whereas the mounting plates create more complex interactions than this. Once
-tuned properly, stability was obtained.
+whereas the mounting plates create more complex interactions than this.
+\rev{Once the gains were retuned the robot balanced, for up to \SI{21}{s},
+although none of the recorded gain sets is linearly stable on any candidate
+model (Table~\ref{tab:gaintest}).}
 \rev{The logs point to a more specific cause (Section~\ref{sec:gaintest}). The
-firmware's encoder position is mirrored relative to the model, so position and
-velocity gains of the designed sign became destabilizing on the robot, and the
-potentiometers could only set gains of the other sign. Every recorded run
-balanced on the tilt gains, with the base held by the motor deadzone and gear
-stick-slip. The modification of the gains is therefore not evidence of
-parameter error alone.}
+switch-on transients indicate that the firmware's encoder position is mirrored
+relative to the model. In that frame, position and velocity gains entered with
+the signs of the LQR design act with the opposite sign on the robot, and the
+position and velocity potentiometers, which the firmware maps to $[-15,0]$,
+could not set the signs the design requires. Both v9 runs balanced on the tilt
+gains, with the base held within a few millimeters; in the two v8 runs the base
+drove away until the robot was switched off (test~1) or until a chatter ended
+the run (test~2). In closed-loop simulation the corrected model reproduces the
+v9 runs in that frame only if the floor resisted rolling by a few percent of
+the weight, so the frame is not yet confirmed. Either way, the modification of
+the gains is not evidence of parameter error alone.}
 
 \rev{\begin{remark}[These are the case for the work]
 Three of the observations above are the empirical case for

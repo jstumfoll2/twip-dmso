@@ -43,7 +43,8 @@ Sections (numbers follow the request in the PR thread):
 6. motor-test data (ke, R; km is not identifiable from what was logged).
 
 Section 8.4's hardware replay (``scripts/thesis_rev8.py --only hardware``) uses the
-encoder frame established here.
+encoder frame inferred here (not yet confirmed in closed loop; see
+``scripts/validate_closed_loop.py``).
 
 Writes ``docs/thesis/generated/plant_validation.json`` and
 ``docs/thesis/figures/pv_*.pdf``.  Raw logs are read from the thesis folder
@@ -89,7 +90,8 @@ MODELS = {  # name -> (parameters, motor-coupling model of twip.dynamics)
 
 # Firmware frame -> model frame.  The logged tilt has the model's sign (theta > 0
 # leans the body toward -x), but the logged encoder position is mirrored:
-# pos = -(x + r theta).  Established from the data in frame_evidence(); the input
+# pos = -(x + r theta).  Inferred from the switch-on transients in frame_evidence()
+# (not yet confirmed in closed loop: scripts/validate_closed_loop.py); the input
 # u has the model's sign.
 POS_SIGN = -1.0
 # MPU-9150 DLPF_CFG = 3 (42 Hz, 4.8 ms group delay) sampled at 200 Hz and read
@@ -184,7 +186,7 @@ RUN_FILES = {  # file -> (firmware, usable end in s after switch-on)
     "implementationtest4.txt": ("v9", np.inf),
     "implementationtest5.txt": ("v9", np.inf),
     "implementationtest1.txt": ("v8", np.inf),
-    "implementationtest2.txt": ("v8", 3.0),  # then a 37 Hz chatter at +-10 V and the robot falls
+    "implementationtest2.txt": ("v8", 3.0),  # then a 38 Hz chatter at +-10 V and the robot falls
 }
 
 
@@ -240,10 +242,10 @@ def inventory() -> dict:
     items = [
         ("Thesis/Thesis Programs/Implementation/implementationtest4.txt", "v9 balancing log, DMSO in the loop (12.6 s)", "used: tasks 2-5"),
         ("Thesis/Thesis Programs/Implementation/implementationtest5.txt", "v9 balancing log, DMSO in the loop (21.2 s)", "used: tasks 2-5"),
-        ("Thesis/Thesis Programs/Implementation/implementationtest1.txt", "v8 balancing log (3.1 s), pot gains logged", "used: tasks 2-5"),
+        ("Thesis/Thesis Programs/Implementation/implementationtest1.txt", "v8 balancing log (3.0 s), pot gains logged", "used: tasks 2-5"),
         (
             "Thesis/Thesis Programs/Implementation/implementationtest2.txt",
-            "v8 balancing log (3.9 s), ends in a 37 Hz chatter and fall",
+            "v8 balancing log (3.9 s), ends in a 38 Hz chatter and fall",
             "used: tasks 2-5 (to 3.0 s)",
         ),
         ("Thesis/Thesis Programs/Implementation/implementationtest3.txt", "15-column log matching no firmware in twip_v1/", "not used"),
@@ -595,29 +597,34 @@ def simulate(
     dt: float = 0.01,
     alpha: float = 0.99,
     K: np.ndarray | None = None,
+    mu_rr: float = 0.02,
+    vc: float = 0.6,
+    pos_sign: float | None = None,
 ) -> Run:
     """The v9 loop on a simulated plant: sensors (twip.sensors), complementary
     filter, the firmware DMSO, LQR, saturation at 10 V, truncation to PWM counts and
     M1 at 0.8 of the command.  Excitation is internal (a 0.3 V dither added to the
     motor voltage), so the input-free relation holds exactly in the plant.
 
-    ``nuisance`` adds what the real logs suggest: gearbox Coulomb friction (0.6 V
-    equivalent), 2 deg of gearbox backlash between the encoder (motor side) and the
-    wheel, and floor rolling resistance (0.02 of the weight, external).
+    ``nuisance`` adds what the real logs suggest: gearbox Coulomb friction (``vc``,
+    0.6 V equivalent), 2 deg of gearbox backlash between the encoder (motor side) and
+    the wheel, and floor rolling resistance (``mu_rr``, 0.02 of the weight, external).
+    ``pos_sign`` overrides the firmware frame of the encoder (default ``POS_SIGN``).
 
     ``alpha`` is the complementary-filter weight (0.99 on the robot); ``alpha = 1``
     integrates the gyro alone.  A -T plant needs ``alpha = 1`` to balance at all
     (see :func:`complementary_filter_check`)."""
     p, be = MODELS[model]
+    pos_sign = POS_SIGN if pos_sign is None else pos_sign
     rng = np.random.default_rng(seed)
     cfg = SensorConfig()
     sens = SensorSuite(cfg, p, rng)
     K = sim_gains(model, dt) if K is None else np.asarray(K, float)
     dmso = FirmwareDMSO()
     gain_eff = 0.9
-    Vc, eps_w = (0.6, 0.5) if nuisance else (0.0, 1.0)
+    Vc, eps_w = (vc, 0.5) if nuisance else (0.0, 1.0)
     backlash = 2 * DEG if nuisance else 0.0
-    mu_rr = 0.02 if nuisance else 0.0
+    mu_rr = mu_rr if nuisance else 0.0
     weight = (p.Mp + 2 * p.Mw) * p.g
     beta = 2 * p.Mw + 2 * p.Iw / p.r**2 + p.Mp
     rel = {"relative": 1.0, "xdot": 0.0, "rev8": -1.0}[be]  # coefficient of thetadot in w_rel
@@ -654,7 +661,7 @@ def simulate(
         T_m, _ = torque(X, v)
         phi_rel = X[0] / p.r + X[2] + 0.5 * backlash * math.tanh(T_m / 0.02)  # motor side of the gearbox
         counts = round(phi_rel * cfg.counts_per_rev / (2 * math.pi))
-        pos = POS_SIGN * counts * cfg.meters_per_count  # firmware frame
+        pos = pos_sign * counts * cfg.meters_per_count  # firmware frame
         xdot = 0.0 if pos_prev is None else (pos - pos_prev) / dt
         pos_prev = pos
         pitchc = alpha * (pitchc + m.gy * dt) + (1 - alpha) * math.atan2(-m.ax, m.az) * R2D
@@ -663,7 +670,7 @@ def simulate(
         drive = math.trunc(control)
         dither = a_d * dither + math.sqrt(1 - a_d**2) * 0.3 * rng.standard_normal()
         v = gain_eff * drive / COUNTS_PER_VOLT + dither
-        log["P"][k], log["th"][k], log["w"][k], log["u"][k] = POS_SIGN * pos, pitchc * DEG, m.gy * DEG, drive / COUNTS_PER_VOLT
+        log["P"][k], log["th"][k], log["w"][k], log["u"][k] = pos_sign * pos, pitchc * DEG, m.gy * DEG, drive / COUNTS_PER_VOLT
         log["ax"][k], log["az"][k] = m.ax, m.az
         log["x"][k], log["theta"][k] = X[0], X[2]
         est[:, k] = e

@@ -7,9 +7,10 @@ against.  Everything runs on the corrected plant (:mod:`twip.dynamics`), sensor
 * :func:`design_lqr` - the primary baseline: discrete LQR (``lqrd``) designed on the
   corrected linear model.  The default weights are the ones in the final thesis
   simulation, so differences come from the plant correction, not a retune.
-* :data:`HARDWARE_DEFAULT_GAINS` - the gains compiled into firmware v7-v9.  On the
-  robot they were overridden by potentiometers, so they are not confirmed to
-  have balanced it (see ``docs/BASELINE.md``).
+* :data:`HARDWARE_DEFAULT_GAINS` - the gains compiled into firmware v7-v9,
+  applied here in the model frame.  On the robot potentiometers overrode them;
+  the gains actually used are recovered from the logs by
+  ``scripts/validate_plant.py`` (see ``docs/BASELINE.md``).
 * :class:`ComplementaryEstimator` - the firmware's measurement pipeline without
   the DMSO: complementary-filtered tilt, gyro rate, tilt-compensated encoders.
 * :class:`KalmanEstimator` - a textbook 4-state Kalman filter on the corrected model.
@@ -71,6 +72,10 @@ class ComplementaryEstimator:
 
     The filter is initialized from the first accelerometer reading.  On the robot
     it ran continuously while idle, so it had converged before balancing started.
+
+    ``pos`` is the model-frame encoder reading of :mod:`twip.sensors`.  The firmware
+    used its own logged position, which the logs indicate is mirrored relative to it
+    (not yet confirmed in closed loop; see ``docs/BASELINE.md``).
     """
 
     def __init__(self, alpha: float = 0.99, r: float = CORRECTED.r):

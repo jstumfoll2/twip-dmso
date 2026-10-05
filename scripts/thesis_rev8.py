@@ -1,7 +1,7 @@
 """Generate the figures and tables for thesis revision 8 (docs/thesis).
 
     uv run python scripts/thesis_rev8.py            # everything
-    uv run python scripts/thesis_rev8.py --only ch8 # one chapter's figures
+    uv run python scripts/thesis_rev8.py --only ch7 # one step: ch4, ch5, ch7, observer, control, perturbation or hardware
 
 Writes vector PDFs to docs/thesis/figures/, LaTeX table bodies to
 docs/thesis/generated/, and all numbers quoted in the text to

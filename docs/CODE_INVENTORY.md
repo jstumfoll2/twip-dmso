@@ -6,11 +6,12 @@ port found. Paths below are relative to that folder (`N:\Two wheeled robot` on
 the author's machine), which is not part of this repository.
 
 **Project in one line:** a two-wheeled inverted pendulum (TWIP) robot (Arduino
-Due, MPU-9150 IMU, Pololu VNH5019 driver, 34:1 gearmotors with encoders, 3S LiPo)
-used to study a **discrete modified state observer (DMSO)**. The DMSO estimates
-state and model uncertainty with a neural-network basis, and the thesis compares
-it against Kalman and complementary filters. A later chapter adds neural-network
-**"extra control"** on top of LQR.
+Due, MPU-9150 IMU, Pololu VNH5019 driver, 30:1 gearmotors with 64 CPR encoders
+(34:1, 48 CPR before firmware v7), 3S LiPo) used to study a **discrete modified
+state observer (DMSO)**. The DMSO estimates state and model uncertainty with a
+neural-network basis, and the thesis compares it against Kalman and
+complementary filters. A later chapter adds neural-network **"extra control"** on
+top of LQR.
 
 ---
 
@@ -22,16 +23,17 @@ an exact copy, or an experiment.
 
 | Thesis topic | Canonical file(s) | What it does | Python port |
 |---|---|---|---|
-| Plant model | `Thesis Programs/*/twipnonlinear.m` | Nonlinear EOM, state `[x, xdot, theta, thetadot, v]` | `twip.dynamics.twip_nonlinear` |
-| Linearized model | parameter block at the top of every `main_*.m` | A, B about upright (symbolic results hard-coded) | `twip.dynamics.linear_model` |
+| Plant model | `Thesis Programs/*/twipnonlinear.m` | Nonlinear EOM, state `[x, xdot, theta, thetadot, v]` | `twip.legacy.dynamics.twip_nonlinear` |
+| Linearized model | parameter block at the top of every `main_*.m` | A, B about upright (symbolic results hard-coded) | `twip.legacy.dynamics.linear_model` |
 | Integrator | `RK4.m` (8 identical copies) | Fixed-step RK4 | `twip.integrators.rk4` |
-| EOM validation | `Thesis Programs/EOM Test/EOMtest_discrete.m` | LQR on nonlinear vs. discrete linear plant | covered by `test_dynamics.py`, `test_control.py` |
-| **DMSO simulation** (main result) | `Thesis Programs/{no noise no uncertainty, no noise with uncertainty, Noise with uncertainty}/main_bala_discrete.m` | LQR on the DMSO estimate; DMSO vs. 4-state Kalman; uncertainty estimation; sensor noise; saturation, deadzone, backlash | `twip.sim_dmso` |
-| **Extra control** (NN) | `Thesis Programs/Extra control/ExtraControl_v5.m`, `NN1v3.m`, `twipnonlinear_uncert.m` | Two 2-layer NN "extra control" terms on top of LQR, tracking a velocity trajectory | `twip.extra_control` |
+| EOM validation | `Thesis Programs/EOM Test/EOMtest_discrete.m` | LQR on nonlinear vs. discrete linear plant | covered by `test_legacy_dynamics.py`, `test_control.py` |
+| **DMSO simulation** (main result) | `Thesis Programs/{no noise no uncertainty, no noise with uncertainty, Noise with uncertainty}/main_bala_discrete.m` | LQR on the DMSO estimate; DMSO vs. 4-state Kalman; uncertainty estimation; sensor noise; saturation, deadzone, backlash | `twip.legacy.sim_dmso` |
+| **Extra control** (NN) | `Thesis Programs/Extra control/ExtraControl_v5.m`, `NN1v3.m`, `twipnonlinear_uncert.m` | Two 2-layer NN "extra control" terms on top of LQR, tracking a velocity trajectory | `twip.legacy.extra_control` |
 | Hardware results | `Thesis Programs/Implementation/lqrkalmantest1v2.m` + `implementationtest1-5.txt` | Replays logged LQR runs through Kalman/DMSO offline | `twip.analysis.replay_implementation` |
-| On-board DMSO (hardware) | `twip_v1/twip_v9/twip_v9/filters.ino` | The DMSO that actually ran during the hardware tests | `twip.estimators.FirmwareDMSO`, `analysis.replay_firmware_v9` |
+| On-board DMSO (hardware) | `twip_v1/twip_v9/twip_v9/filters.ino` | The DMSO that actually ran during the hardware tests | `twip.legacy.observers.FirmwareDMSO`, `analysis.replay_firmware_v9` |
 | Sensor filter comparison | `Tests/Filtering Test/filteringtest.m`, `DMSO.m`, `kalmanFilter.m`, `complementaryFilter.m` | Offline complementary / Kalman / 2-state DMSO on raw IMU logs | `twip.analysis.replay_filters` |
 | Sensor noise | `Tests/Allan Variance/allan.m`, `allanprocess.m` | Allan deviation + Gauss-Markov bias fit used in the sim noise model | `twip.analysis.allan` |
+| Plant validation (rev 8, Section 5.3) | `implementationtest1,2,4,5.txt`, `Tests/Motor Tests/motortest9.txt` | Tests the plant model against the logged runs; recovers the gains actually used | `scripts/validate_plant.py`, `scripts/validate_closed_loop.py` |
 
 ### The three DMSO-simulation folders are not just flag changes
 
@@ -63,7 +65,7 @@ version that no longer exists. Findings:
   reproduces the saved figures. Nominal and LQR-only match `Unmodeled Dynamics/figure1.jpg`,
   and all three curves match `Deadzone/figure1.jpg` and `Deadzone and Backlash/figure1.jpg`.
   The deadzone figures used the **nominal** nonlinear plant, not `twipnonlinear_uncert.m`,
-  which was edited on 28 May. These settings are the `twip.extra_control` presets.
+  which was edited on 28 May. These settings are the `twip.legacy.extra_control` presets.
 - **Backlash acts on the tilt state**, not the input. The angle stays frozen until
   `|thetadot|*dt` exceeds the 0.1 deg band, so results change completely with dt.
 - **NN2's weight law is driven by `e(4)`** (tilt rate minus desired rate). The design
@@ -89,8 +91,9 @@ version that no longer exists. Findings:
 | v8 | Mar 2015 | LQR on MSO estimate | 4-state MSO (Kalman tilt in) | logged `implementationtest1-2.txt` |
 | **v9** | 27 Mar 2015 | LQR on MSO estimate | 4-state MSO (complementary tilt in) | logged `implementationtest4-5.txt` → **thesis hardware results** |
 
-- LQR gains on the robot: `[-1.5811, -2.3951, 93.13, 14.9217]`, set by potentiometer knobs
-  in the idle loop. They match the "Modified gains used for simulation" comment in `main_bala_discrete.m`.
+- LQR gains compiled into v7-v9: `[-1.5811, -2.3951, 93.13, 14.9217]`, matching the "Modified gains
+  used for simulation" comment in `main_bala_discrete.m`. On the robot, potentiometer knobs read in the
+  idle loop overrode them; the gains actually used are recovered from the logs (item 18 below).
 - `5904.5`: "PWM input/V" (about 65535 counts / 11.1 V battery). Control is clamped to ±10 V first.
 - Loop period is 10 ms in v9 (13 ms in v8). Encoder: 0.000147 m/count.
 
@@ -138,9 +141,20 @@ Found while building the corrected baseline (details in [`BASELINE.md`](BASELINE
 15. **Accelerometer modeled as tilt + noise.** A real accelerometer reads tilt relative to apparent
     gravity, off by about `xddot/g` while the robot accelerates.
 16. **Encoders measure `x + r*theta`**, not `x`, because they count rotation relative to the body.
+    The switch-on transients (encoder vs. tilt, with the accelerometer agreeing) indicate that the
+    firmware's logged position is the mirror image, `pos = -(x + r*theta)`, so `x = -pos - r*theta`
+    (`scripts/validate_plant.py`, thesis Section 5.3.3); the Section 8.4 hardware replay uses this frame.
+    It is not yet confirmed in closed loop: in simulation the corrected model reproduces the v9 runs in
+    this frame only if the floor's rolling resistance is at least about 4% of the weight (2% unmirrored
+    or with the tilt gains alone). Bench check: motors off, lean the robot so the logged tilt is positive
+    and roll it toward the lean; the logged position rises if the encoder is mirrored.
 17. **The thesis's discrete backlash engages one step late** (it tests the previous input).
-18. **The firmware's compiled-in LQR gains were overridden by potentiometers** on the robot, so no
-    gain set is recorded as having balanced it.
+18. **The firmware's compiled-in LQR gains were overridden by potentiometers** on the robot. The gains
+    actually used, recovered from the logs by least squares (RMS residual <= 2.4 mV,
+    `scripts/validate_plant.py`), are, in the firmware frame, v8 `[-0.22, -0.38, K3, 2.61]` with
+    `K3` = 26.9 (test 1) or 72.5 (test 2), and v9 `[-5.49, -5.86, 118.4, 0.90]`. The v9 gains balanced
+    the robot for 12.6 s and 21.2 s, although none of these gain sets is linearly stable on any
+    candidate model.
 19. **Motor reaction torque has the wrong sign.** The thesis pendulum moment balance has
     `-(C_L + C_R)`; the torque that turns the wheels clockwise reacts on the body
     counterclockwise, so it is `+(C_L + C_R)`. This flips the back-EMF and input terms of the
@@ -166,7 +180,7 @@ Found while building the corrected baseline (details in [`BASELINE.md`](BASELINE
 | 12-14 | back-EMF, `ke`, `Ip` | `dynamics`, `params.CORRECTED` | `params.THESIS`, `back_emf="xdot"` |
 | 15-16 | accelerometer, encoders | `sensors.SensorSuite`, `baseline.KalmanEstimator` | `legacy.sensors` |
 | 17 | backlash timing | `actuators.Backlash` | `legacy.actuators.Backlash` |
-| 18 | hardware gains | `baseline.HARDWARE_DEFAULT_GAINS`, documented as unverified | |
+| 18 | hardware gains | `baseline.HARDWARE_DEFAULT_GAINS` is the compiled-in set, not what ran; the gains used are recovered by `scripts/validate_plant.py` | |
 | 19 | motor reaction sign | `dynamics` (`back_emf="relative"`) | `back_emf="xdot"` keeps the thesis sign |
 
 ## 4. Still missing

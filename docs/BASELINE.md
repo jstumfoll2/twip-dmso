@@ -52,8 +52,9 @@ for plates 23.5 cm and 2 cm above the axle, so it is the inertia about the *axle
 The EOM need it about the *CG*: `Ip_cg = Ip_axle - Mp*l^2 = 0.0169 kg m^2` (was 0.0250).
 
 **Not changed:** `km = 0.11541`. The stall data give ~0.155, but the source of 0.11541
-isn't recorded (`twip.params.km_from_stall` keeps the discrepancy visible). All masses
-and `l` are the thesis's measured values.
+isn't recorded (`twip.params.km_from_stall` keeps the discrepancy visible). The masses
+are the thesis's measured values; `l`, like `Ip`, is a lumped-mass estimate and has not
+been measured.
 
 Effect on the linearized model (dt = 0.01):
 
@@ -77,30 +78,48 @@ still, so the pole and the zero of `x/u` nearly coincide (5.953 vs 5.946).
 - **Measured data** (`scripts/validate_plant.py` on `implementationtest1, 2, 4, 5`;
   results in `docs/thesis/generated/plant_validation.json`, thesis Section 5.3).
   The script runs against the thesis data folder, which is not in this repo.
-  Every test that can tell the models apart picks the corrected `+T` model and none
-  picks `-T`:
+  The first three tests below decide the reaction sign, all in favour of the corrected
+  `+T` model; the last item lists what does not discriminate or favours `-T`:
   - *Input-free momentum test* (`p_ddot = c1 theta_ddot + c2 theta`, no voltage or
-    motor constants). On the switch-on transients, `+T` predicts the encoder from the
-    tilt history to 0.4-1.8 mm RMS, against 1.7-12.3 mm for `-T` and 2.1-18.9 mm for
-    the thesis model. The double-integrated accelerometer gives the same ranking.
-    Free fit: `c1 = 0.205` and `0.203` (`+T` 0.204, `-T` 0.786, thesis 1.082).
+    motor constants). On the two v9 switch-on transients, `+T` predicts the encoder
+    from the tilt history to 1.3-1.8 mm RMS, against 5.8-12.3 mm for `-T` and
+    8.5-18.9 mm for the thesis model; on the encoder and the double-integrated
+    accelerometer, its errors are 3 to 16 times smaller. Free fit: `c1 = 0.205` and
+    `0.203` (`+T` 0.204, `-T` 0.786, thesis 1.082). The accelerometer's axle
+    coefficient is 20-50% above `+T`'s, which points to an `Ip` above the
+    0.0169 kg m^2 lumped-mass estimate.
   - *Voltage response.* At switch-on the command sits at -10 V. The logged tilt falls
     15.1 deg in 100 ms. `+T` predicts -12.7 / -14.3 deg; `-T` and the thesis model
-    predict that the robot keeps falling. The in-situ B4 is 12.6-14.7 rad/s^2 per V
-    (model 11.67).
-  - *Gains used.* The gains were recovered exactly from the logs. With the v8 test-1
-    gains the base ran away at 1.49 /s; `+T` predicts 1.48, `-T` 5.48, thesis 2.72.
-  - *Not discriminating:* the steady state. The robot sits in a stick-slip / backlash
-    limit cycle with an encoder frozen for 0.3-0.8 s, and a motor deadzone of about
-    2 V. No linear model captures this, and none predicts the tilt better than
-    holding the state.
-- **Firmware frame** (from the same logs): logged tilt and command have the model's
-  sign; the logged position is mirrored, `pos = -(x + r*theta)`, so
-  `x = -pos - r*theta`. As a result, every recorded run fed back position and velocity
-  with the opposite sign to the LQR design (the potentiometers spanned only
-  [-15, 0] in the firmware frame).
+    predict that the robot keeps falling, and `-T` cannot match it for any `Ip`, `l`,
+    `km` tried. The in-situ B4 is 12.6-14.7 rad/s^2 per V (`+T` 11.67, 8-26% low).
+  - *Closed loop* (`scripts/validate_closed_loop.py`, which needs no robot data;
+    results in `docs/thesis/generated/plant_closedloop.json`). With the v9 gains
+    recovered from the logs, a simulated `-T` plant falls within 5.3 s for every one
+    of 160 parameter sets (`Ip`, `l`, `km`, `ke`) and in either encoder frame, and the
+    thesis model never holds the base, while the robot balanced for 12.6 s and 21.2 s.
+  - *Gains used.* The gains were recovered from the logs by least squares (RMS
+    residual <= 2.4 mV). With the v8 test-1 gains the base ran away at 1.49 /s; `+T`
+    predicts 1.48, `-T` 5.48, thesis 2.72, though with the encoder not mirrored (and no
+    estimator) the thesis model gives 1.48 too.
+  - *Not discriminating, or favouring `-T`:* the steady state, whose coefficients
+    contradict all three models. The robot sits in a stick-slip / backlash limit
+    cycle with an encoder frozen for 0.3-0.8 s, possibly with a motor deadzone (about
+    2 V on the earlier gearmotors, not measured on the present ones). No linear model
+    captures this, and none predicts the tilt better than holding the state. Some
+    predictions in the short v8 runs and of the tilt near upright favour the `-T`
+    models, and the input regression is inconclusive.
+- **Firmware frame** (inferred from the switch-on transients, encoder vs. tilt, with
+  the accelerometer agreeing): logged tilt and command have the model's sign; the
+  logged position is mirrored, `pos = -(x + r*theta)`, so `x = -pos - r*theta`. In
+  this frame the position and velocity gains the robot used have the opposite sign
+  to the LQR design (the potentiometers spanned only [-15, 0] in the firmware frame).
+  The frame is not yet confirmed in closed loop: in simulation the corrected model
+  reproduces the v9 runs (base held within a few mm for 21 s) in the mirrored frame
+  only if the floor's rolling resistance is at least about 4% of the weight;
+  unmirrored, or with the tilt gains alone, it does so with 2%.
 - **Still unmeasured:** `Ip`, `l`, `km`, the reflected armature inertia, deadzone and
-  backlash of the 12 V motors. The quick bench tests:
+  backlash of the 12 V motors, and the floor's rolling resistance. The quick bench
+  tests:
   1. *Wheels blocked, +1 V:* the body must pitch backward (`+T`) at about 3.7 rad/s^2
      per V. `-T` predicts forward.
   2. *Motor free-run / back-drive:* `V = R i + ke w` gives `ke`. Back-driving a wheel at
@@ -108,16 +127,22 @@ still, so the pole and the zero of `x/u` nearly coincide (5.953 vs 5.946).
   3. *Pendulum swing* with the wheels clamped:
      `T = 2*pi*sqrt((Ip + Mp*l^2) / (Mp*g*l))` gives `Ip` at a measured `l`
      (predicted 0.967 s).
+  4. *Encoder frame:* motors off, lean the robot so the logged tilt is positive and
+     roll it toward the lean; the logged position rises if the encoder is mirrored.
+     The force needed to push it slowly over the floor it balanced on gives the
+     rolling resistance.
 
 ## 2. Sensors (`twip.sensors`)
 
-Models what firmware v9 read each 10 ms loop:
+Models what firmware v9 read each 10 ms loop, in the model's sign convention. The
+firmware's own logged position is the mirror image, `-(x + r*theta)` (inferred from the
+switch-on transients and not yet confirmed in closed loop; see *Firmware frame* above).
 
 | Sensor | Model | Thesis model |
 |---|---|---|
 | Accelerometer | specific force at the IMU, **2 cm above the axle**, in the firmware's axes; firmware tilt = `atan2(-ax, az)`; white noise + Gauss-Markov bias per axis; 1/16384 g LSB | tilt = truth + noise |
 | Gyroscope | tilt rate + white noise + Gauss-Markov bias (deg/s throughout); 1/131 deg/s LSB | bias variance in deg/s added to rad/s |
-| Encoders | counts of wheel rotation **relative to the body** (1920/rev); `pos = counts * 0.000147` (= `x + r*theta`); velocity = backward difference | `x` quantized; velocity quantized at 0.0113 m/s (13 ms) |
+| Encoders | counts of wheel rotation **relative to the body** (1920/rev); `pos = counts * 0.000147` (= `x + r*theta`; the firmware logged `-(x + r*theta)`); velocity = backward difference | `x` quantized; velocity quantized at 0.0113 m/s (13 ms) |
 
 Noise levels are the thesis Allan-variance results (reproduced in `twip.analysis`).
 Biases start from their stationary distribution; set `bias_init="zero"` to start at zero.
@@ -162,11 +187,16 @@ corrected model:
 
 **Second baseline: `HARDWARE_DEFAULT_GAINS = [-1.5811, -2.3951, 93.13, 14.9217]`**, the
 gains compiled into firmware v7-v9. They are *not* a working baseline:
-- They don't stabilize the corrected model (spectral radius 1.001), and are
-  marginal (0.990) on the thesis model.
-- On the robot, potentiometers overrode them. The v8 logs show the gains actually
-  used, e.g. `[-0.22, -0.381, 72.5, 2.62]`, with runs of 2-3 s; the v9 runs behind the
-  thesis results didn't log their gains.
+- Applied in the model frame, as `run_baseline.py --gains hardware` does, they don't
+  stabilize the corrected model (spectral radius 1.001), and are marginal (0.990) on
+  the thesis model.
+- On the robot, potentiometers overrode them. The gains actually used are recovered
+  from the logs by least squares (RMS residual <= 2.4 mV, `scripts/validate_plant.py`).
+  In the firmware frame they are v8 `[-0.22, -0.38, 26.9 (test 1) or 72.5 (test 2), 2.61]`,
+  with runs of 3.0 s and 3.9 s, and v9 `[-5.49, -5.86, 118.4, 0.90]`, the runs of 12.6 s
+  and 21.2 s behind the thesis results. None is linearly stable on any candidate
+  model. In the model frame the position and velocity entries flip sign if the
+  encoder is mirrored (*Firmware frame*, Section 1).
 - They match the MATLAB comment "Modified gains used for simulation", i.e. they came
   from simulation.
 

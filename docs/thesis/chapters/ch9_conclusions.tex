@@ -17,7 +17,14 @@ argument.}
 \rev{The robot model used for the results corrects the sign of the motor's
 reaction torque on the body, an error carried over from revision~7 that the
 angular momentum about the wheel contact point exposes
-(Remark~\ref{rem:momentum}). In simulation on the corrected model, the observer
+(Remark~\ref{rem:momentum}). The robot's recorded balancing runs confirm the
+correction independently (Section~\ref{sec:modelsim}). At switch-on the robot
+recovered \SI{15}{\degree} of lean in \SI{100}{ms}, as the corrected model
+predicts and the models with the revision~7 sign do not, and with the gains the
+robot ran a plant with the revision~7 sign falls within seconds while the robot
+balanced for \SI{21}{s}. The same runs do not validate the parameters, and they
+indicate that the firmware's encoder position is mirrored relative to the
+model. In simulation on the corrected model, the observer
 satisfies its conditions with margin, stays inside the predicted ultimate bound,
 and under deterministic parameter error identifies the uncertainty 1.6 to 4
 times more accurately than an augmented-state Kalman filter, with more
@@ -47,7 +54,7 @@ contribute measurably only under deadzone and backlash, in part because the
 parameter error acts on the input gain, which the networks are not given the
 information to learn.}
 
-Four directions follow naturally from this work.
+\rev{Five} directions follow naturally from this work.
 
 \paragraph{Input-gain uncertainty.} \rev{A parameter error in the motor
 constants changes $B_2$, so part of the residual the networks must absorb is
@@ -70,6 +77,14 @@ network cannot cancel what it cannot approximate. Two remedies are worth
 pursuing: an explicit deadzone- and backlash-inverse placed ahead of the plant,
 or a discontinuous term in the control law that is robust to the deadband rather
 than attempting to estimate it.
+
+\paragraph{Bench identification.} \rev{The recorded runs fix the sign of the
+motor reaction but not the parameters. $I_p$, $l$, $k_m$, the deadzone and
+backlash of the present motors and the rolling resistance of the floor are
+unmeasured, and near upright the robot is dominated by stick-slip that no
+linear model contains. The bench tests of Table~\ref{tab:benchtests}, with a
+check of the encoder frame, would complete the validation, after which the LQR
+design could be tested on the robot as designed.}
 
 \paragraph{Deterministic timing.} \rev{The achievable sample rate on the
 platform was set by telemetry rather than by the control computation, and the

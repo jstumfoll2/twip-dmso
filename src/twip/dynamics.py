@@ -22,7 +22,8 @@ of the motor torque through that relative angle gives the generalized forces
 ``T / r`` on ``x`` and ``+T`` on ``theta``: driving the wheels forward pitches the
 body backward.  This is the only sign that conserves angular momentum about the
 wheel contact point, where every external force acts or (at upright) passes
-through (tested).
+through (tested).  The robot's logged runs confirm it (``scripts/validate_plant.py``,
+thesis Section 5.3).
 
 The thesis pendulum moment balance (revision 7, and the first revision-8 code)
 used ``-T`` on ``theta``.  Three motor-coupling models are available:
@@ -32,7 +33,8 @@ used ``-T`` on ``theta``.  Three motor-coupling models are available:
 * ``"xdot"``: the thesis EOM, ``-T`` and ``xdot / r`` only.  Reproduces
   :mod:`twip.legacy.dynamics` exactly (tested to 1e-12).
 * ``"rev8"``: ``-T`` with ``w_rel = xdot/r - thetadot``, the truth model behind the
-  first revision-8 results, kept so those numbers stay reproducible.
+  first revision-8 results, kept so those numbers stay reproducible.  It is
+  candidate M2 of thesis Section 5.3, which the logs contradict.
 """
 
 from __future__ import annotations

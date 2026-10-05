@@ -41,10 +41,20 @@ uv run python scripts/run_baseline.py
 uv run python scripts/run_baseline.py --scale ke=0.5 --tilt 2
 ```
 
-Thesis revision 8 (`docs/thesis`): regenerate every Chapter 8 figure and table:
+Thesis revision 8 (`docs/thesis`): regenerate the figures, tables and quoted numbers of Chapters 4, 5, 7 and 8 (except Section 5.3, below):
 
 ```bash
 uv run python scripts/thesis_rev8.py
+```
+
+Plant validation against the robot's logs (thesis Section 5.3):
+
+```bash
+uv run python scripts/validate_plant.py
+```
+
+```bash
+uv run python scripts/validate_closed_loop.py
 ```
 
 Thesis reproductions and data replays:
@@ -67,8 +77,10 @@ uv run python scripts/run_data_replays.py firmware
 | `legacy/run_dmso_sim.py` | `no_noise_no_uncertainty`, `no_noise_with_uncertainty`, `noise_with_uncertainty`, `noise_with_uncertainty_perturbed` |
 | `legacy/run_extra_control.py` | `as_saved`, `unmodeled_dynamics`, `parameter_uncertainty`, `deadzone`, `deadzone_and_backlash` |
 | `run_data_replays.py` | `filters`, `implementation` (`--thesis-r-bug`), `firmware`, `allan` |
+| `validate_plant.py` | `--quick`; needs the thesis data folder; writes `docs/thesis/generated/plant_validation.json` and `docs/thesis/figures/pv_*.pdf` |
+| `validate_closed_loop.py` | `--quick`; needs no robot data; writes `docs/thesis/generated/plant_closedloop.json` |
 
-All scripts take `--out DIR` to save PNGs instead of opening windows.
+The other scripts in the table take `--out DIR` to save PNGs instead of opening windows.
 
 ## Layout
 
@@ -134,15 +146,30 @@ The corrected baseline is checked against physics:
 - The linear model is the Jacobian of the nonlinear one.
 - The motors are dissipative, and the accelerometer and encoder models behave as expected.
 
-It is **not** validated against hardware data: the closed-loop logs cannot discriminate
-between parameter sets. See [`docs/BASELINE.md`](docs/BASELINE.md) for the evidence and
-suggested bench tests.
+Against hardware data, `scripts/validate_plant.py` tests the plant on the robot's logged
+balancing runs, and `scripts/validate_closed_loop.py` simulates the v9 firmware loop with
+the gains recovered from those logs (thesis Section 5.3; results in
+`docs/thesis/generated/plant_validation.json` and `plant_closedloop.json`). Three tests
+decide the motor reaction sign in favour of the corrected `+T` model: the input-free
+angular-momentum test on the two v9 switch-on transients, the tilt response to the
+saturated -10 V at switch-on, and the closed loop, where a simulated `-T` plant falls
+within 5.3 s for every parameter set tried while the robot balanced for 12.6 s and 21.2 s.
+Not every test favours `+T` (some predictions in the short v8 runs and of the tilt near
+upright favour the `-T` models), and the corrected model is **not** validated
+quantitatively: `Ip`, `l`, `km`, the motors' deadzone and backlash, and the floor's
+rolling resistance are unmeasured. The logs indicate that the firmware's encoder position
+is mirrored relative to the model, but in closed-loop simulation that frame reproduces the
+v9 runs only with a rolling resistance of at least about 4% of the weight, so it is not
+yet confirmed. See [`docs/BASELINE.md`](docs/BASELINE.md) for the evidence and suggested
+bench tests.
 
 ## Not ported
 
 - `animation.m` (3-D robot animation).
 - `Tests/LQR Tests` (~25 near-duplicate tuning scripts). `replay_implementation` covers the final version.
 - DMSO gain tuning (`maintuning.m`, `fminsearchbnd`); `scipy.optimize.minimize(..., bounds=...)` would replace it.
-- Motor tests / motor constant identification (`Tests/Motor Tests`); they used the earlier 6 V motors.
+- Motor tests / motor constant identification (`Tests/Motor Tests`). They were recorded on the earlier
+  34:1, 48 CPR gearmotors, not the present 30:1, 64 CPR ones, so they do not identify the present motors;
+  `scripts/validate_plant.py` reads only `motortest9` (ke 0.49-0.57 V s/rad, assuming 12 V at full PWM).
 - Sliding-mode control (root `slidingmode*.m`, firmware v5-v9). It was explored but is not a thesis result.
 - The Simulink models in `Model/` (earliest iteration, superseded).

@@ -1,6 +1,7 @@
 """Sensor model of the robot (corrected baseline).
 
-Models what the v9 firmware actually read each loop:
+Models what the v9 firmware actually read each loop, in the model's sign
+convention:
 
 * **MPU-9150 accelerometer** (``ax``, ``az`` in g): the specific force at the
   IMU location, a point ``imu_height`` above the axle on the body axis.  This
@@ -13,7 +14,10 @@ Models what the v9 firmware actually read each loop:
   counterclockwise, so the relative angle is ``x / r + theta`` and
   ``pos = counts * 0.000147`` is ``x + r * theta``, quantized (see
   :mod:`twip.dynamics`).  Velocity is the firmware's backward difference
-  ``(pos - pos_prev) / dt``.
+  ``(pos - pos_prev) / dt``.  The firmware's own logged position is the mirror
+  image, ``-(x + r * theta)``, as inferred from the switch-on transients in
+  ``scripts/validate_plant.py`` (thesis Section 5.3.3); that frame is not yet
+  confirmed in closed loop (see ``docs/BASELINE.md``).
 
 Noise levels are from the thesis's Allan-variance analysis (``allandata.mat``,
 recomputed in :mod:`twip.analysis`).  Each inertial sensor gets white noise plus
@@ -73,7 +77,7 @@ class Measurement:
     az: float  # g
     gy: float  # deg/s
     counts: int  # encoder counts (relative wheel rotation)
-    pos: float  # m, counts * meters_per_count  (~ x + r*theta)
+    pos: float  # m, counts * meters_per_count  (~ x + r*theta; the firmware logged the mirror image)
     vel: float  # m/s, backward difference of pos
     dt: float  # s, time since the previous sample
 
