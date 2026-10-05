@@ -11,9 +11,12 @@ about which component is working.
 \section{STAGE 0: PARAMETER IDENTIFICATION}
 
 The detuning of the LQR gains reported in Section~\ref{sec:difficulties} is
-evidence of parameter error, and the two parameters most likely responsible are
-the pendulum inertia $I_p$ and the CG offset $l$. Both can be measured directly
-and should be, before any estimator is judged.
+\rev{partly explained by a sign error in the firmware's encoder frame
+(Section~\ref{sec:gaintest}), but the parameters are still uncertain, and the}
+two parameters most likely \rev{to be in error} are the pendulum inertia $I_p$
+and the CG offset $l$. Both can be measured directly and should be, before any
+estimator is judged. \rev{Table~\ref{tab:benchtests} gives each candidate
+model's prediction for the measurements below.}
 
 \paragraph{Procedure.} Remove the wheels and suspend the chassis from a knife
 edge at the wheel axis so that it swings as a physical pendulum. Record the
@@ -42,15 +45,20 @@ $\delta_+$ and $\delta_-$ of \eqref{eq:deadzone}. Measure backlash by holding
 the motor shaft and rotating the wheel through the deadband, reading the
 free rotation directly; this gives $\Delta_b$ in \eqref{eq:backlash}.
 
-\rev{\paragraph{Sign conventions.} Hold the wheels on the ground and rotate the
-body by hand in the positive sense of $\phi$ (counterclockwise in
+\rev{\paragraph{Sign conventions.} The recorded runs fix the frame of
+firmware v9 (Section~\ref{sec:datatests}): the logged tilt and command have the
+signs of $\phi$ and $V$, and the logged position is mirrored,
+$\mathrm{pos}=-(x+r\phi)$, so the estimators and the replays of
+Section~\ref{sec:implresults} use $x=-\mathrm{pos}-r\phi$. Any change to the
+firmware should be checked by hand. Hold the wheels on the ground and rotate the
+body in the positive sense of $\phi$ (counterclockwise in
 Figure~\ref{fig:fbdpend}, center of gravity moving toward $-x$). The logged tilt
 should increase, and the encoder count should change in the same sense as when
-the robot rolls forward, since the encoders read $x/r+\phi$
-(Section~\ref{sec:simmodel}). These two signs fix the tilt compensation of the
-encoder position, $x=\mathrm{pos}-r\phi$, used in the estimators and in the
-replays of Section~\ref{sec:implresults}; with either reversed, the compensation
-doubles the tilt term instead of removing it.}
+the robot rolls forward, since the encoders read $x/r+\phi$. With the wheels blocked, a small positive voltage
+should pitch the body backward (Table~\ref{tab:benchtests}). The controller
+gains must be entered in the same frame; with the position mirrored, gains
+designed in the model frame change the sign of their position and velocity
+entries.}
 
 \paragraph{Pass criterion.} The LQR gains computed from the measured parameters
 stabilize the hardware without manual detuning. If they do not, the model is

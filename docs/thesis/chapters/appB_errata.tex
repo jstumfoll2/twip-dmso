@@ -163,7 +163,10 @@ sign in the counterclockwise moment balance \eqref{eq:pendm}; revision~7 had the
 opposite sign, which changes the back-EMF and input terms of \eqref{eq:nl1},
 \eqref{eq:lin1}, and \eqref{eq:linss}. The corrected input vector satisfies the
 angular-momentum check of Remark~\ref{rem:momentum}, and the free swing of
-Section~\ref{sec:modelsim} is lightly rather than strongly damped. The remaining
+Section~\ref{sec:simchecks} is lightly rather than strongly damped. The
+recorded balancing runs confirm the sign: they contradict the revision~7 input
+vector and agree with the corrected one (Section~\ref{sec:modelsim}). The
+remaining
 three are in Section~\ref{sec:simmodel}: the back-EMF acts on the wheel rate
 relative to the body, $\dot x/r+\dot\phi$; $k_e=\SI{0.307}{V.s/rad}$ from the
 free-run data in place of \SI{0.00361}{V.s/rad}; and $I_p$ is taken about the
@@ -196,3 +199,14 @@ control is independent of $u_{\mathrm{nom}}$ in both forms, since it cancels in
 corrected to variances, the tilt white-noise variance is the value used in
 simulation ($4.0474\times10^{-6}$ rather than $4.0397\times10^{-6}$~rad$^2$),
 and the walking-bias entries are identified as steady-state variances.}
+
+\paragraph{B.4.5 Model validation and hardware frame.} \rev{Revision~7
+validated the model only by simulating it. Section~\ref{sec:modelsim} now
+tests three candidate models against the recorded balancing runs, with an
+input-free angular-momentum test, the response to the saturated voltage at
+switch-on, and the gains recovered from the logs. The same logs show that the
+firmware's encoder position is mirrored relative to the model,
+$\mathrm{pos}=-(x+r\phi)$. The hardware replays of
+Section~\ref{sec:implresults} use that frame, and the position and velocity
+gains used on the robot are found to have had the opposite sign to the LQR
+design (Section~\ref{sec:gaintest}).}

@@ -71,28 +71,43 @@ still, so the pole and the zero of `x/u` nearly coincide (5.953 vs 5.946).
 
 ### What the plant is (and isn't) validated against
 
-- **Validated:** the mechanics (independent Lagrangian vs. thesis symbolic EOM); the
+- **Mechanics:** independent Lagrangian vs. thesis symbolic EOM; the
   linearization (Jacobian); energy dissipation of the motor model; and that the
   corrected parameters follow from the thesis's own Table 4.2.
-- **Not validated by data.** The hardware logs (`implementationtest4/5.txt`) cannot
-  discriminate between the thesis and corrected parameters:
-  - One-step regression explains only 15-34% of the variance, with unstable
-    coefficients (closed-loop data under `u = -Kx` is nearly collinear).
-  - Over 100-200 ms, open-loop prediction from logged states and voltages is *worse*
-    for both models than a naive "tilt rate stays constant" predictor (1.72 deg vs.
-    1.93 deg thesis and 2.26 deg corrected, RMS tilt error at 200 ms).
-  - A simulation-error parameter fit diverges (`Ip -> infinity`).
-
-  The logs are dominated by effects neither model contains (frame flex, motor
-  mismatch, battery voltage, timing, the filtered tilt signal).
-- **Recommended bench tests** (if the robot still exists). Each takes minutes and pins
-  down the parameters that matter most:
-  1. *Motor free-run:* wheels off the ground, step the PWM through 2-10 V and log the
-     encoder speed. The slope gives `ke` directly; the current sense gives `km` and `R`.
-  2. *Pendulum swing:* hold the wheels, let the body swing hanging *down*, and time
-     the period. `T = 2*pi*sqrt((Ip + Mp*l^2) / (Mp*g*l))` gives `Ip` at the measured `l`.
-  3. *Balance-point check:* the tilt at which the robot balances on the bench (motors
-     off) gives any CG offset from the body axis.
+- **Measured data** (`scripts/validate_plant.py` on `implementationtest1, 2, 4, 5`;
+  results in `docs/thesis/generated/plant_validation.json`, thesis Section 5.3).
+  The script runs against the thesis data folder, which is not in this repo.
+  Every test that can tell the models apart picks the corrected `+T` model and none
+  picks `-T`:
+  - *Input-free momentum test* (`p_ddot = c1 theta_ddot + c2 theta`, no voltage or
+    motor constants). On the switch-on transients, `+T` predicts the encoder from the
+    tilt history to 0.4-1.8 mm RMS, against 1.7-12.3 mm for `-T` and 2.1-18.9 mm for
+    the thesis model. The double-integrated accelerometer gives the same ranking.
+    Free fit: `c1 = 0.205` and `0.203` (`+T` 0.204, `-T` 0.786, thesis 1.082).
+  - *Voltage response.* At switch-on the command sits at -10 V. The logged tilt falls
+    15.1 deg in 100 ms. `+T` predicts -12.7 / -14.3 deg; `-T` and the thesis model
+    predict that the robot keeps falling. The in-situ B4 is 12.6-14.7 rad/s^2 per V
+    (model 11.67).
+  - *Gains used.* The gains were recovered exactly from the logs. With the v8 test-1
+    gains the base ran away at 1.49 /s; `+T` predicts 1.48, `-T` 5.48, thesis 2.72.
+  - *Not discriminating:* the steady state. The robot sits in a stick-slip / backlash
+    limit cycle with an encoder frozen for 0.3-0.8 s, and a motor deadzone of about
+    2 V. No linear model captures this, and none predicts the tilt better than
+    holding the state.
+- **Firmware frame** (from the same logs): logged tilt and command have the model's
+  sign; the logged position is mirrored, `pos = -(x + r*theta)`, so
+  `x = -pos - r*theta`. As a result, every recorded run fed back position and velocity
+  with the opposite sign to the LQR design (the potentiometers spanned only
+  [-15, 0] in the firmware frame).
+- **Still unmeasured:** `Ip`, `l`, `km`, the reflected armature inertia, deadzone and
+  backlash of the 12 V motors. The quick bench tests:
+  1. *Wheels blocked, +1 V:* the body must pitch backward (`+T`) at about 3.7 rad/s^2
+     per V. `-T` predicts forward.
+  2. *Motor free-run / back-drive:* `V = R i + ke w` gives `ke`. Back-driving a wheel at
+     1 rev/s should read about 1.9 V open-circuit.
+  3. *Pendulum swing* with the wheels clamped:
+     `T = 2*pi*sqrt((Ip + Mp*l^2) / (Mp*g*l))` gives `Ip` at a measured `l`
+     (predicted 0.967 s).
 
 ## 2. Sensors (`twip.sensors`)
 

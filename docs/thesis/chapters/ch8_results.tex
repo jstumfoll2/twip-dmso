@@ -439,21 +439,13 @@ Controller & C1 & C2 & C3 & C4 \\
 \section{IMPLEMENTATION RESULTS}
 \label{sec:implresults}
 
-\rev{\emph{Status of this section.} The DMSO and Kalman filter replays below
-(Figures~\ref{fig:hw} and~\ref{fig:hwunc}, and the values \SI{295}{\degree/s},
-\SI{4.2}{\degree/s}, and $1.4\times10^{-2}$) were computed with the linear model
-and encoder compensation as they stood before the sign correction of
-\eqref{eq:pendm}, and must be regenerated with
-\texttt{scripts/thesis\_rev8.py --only hardware} from the logged data before
-they are relied on. The raw accelerometer and complementary filter values
-(\SI{476}{\degree/s} and \SI{9.9}{\degree/s}) do not depend on the model. The
-regenerated replay subtracts $r\hat\phi$ from the logged encoder position, as in
-Section~\ref{sec:simmodel}; that assumes the firmware's tilt has the sign of
-$\phi$, which should be confirmed on the robot (Appendix~\ref{app:validation}).
-
-The hardware results are replays of the logged LQR run
+\rev{The hardware results replay the LQR run logged in
 \texttt{implementationtest5.txt}, recorded with firmware v9 at a
-\SI{10}{ms} loop. Figure~\ref{fig:hw} compares the measured states, the
+\SI{10}{ms} loop. The replays use the corrected model and the frame
+established from the same logs in Section~\ref{sec:datatests}: the logged
+position is mirrored relative to the model, so the estimators receive
+$x=-\mathrm{pos}-r\phi$, and the on-board estimates are mapped the same way for
+plotting. Figure~\ref{fig:hw} compares the measured states, the
 estimates computed on board by the v9 DMSO (which the replay reproduces to
 print precision), and the revision~8 DMSO run offline on the same data. After
 the first second the three agree to within the measurement quantization. There
@@ -489,9 +481,10 @@ by its consistency with the gyroscope, the RMS of
 $\dd\hat\theta/\dd t-g_y$. This measures high-frequency error and is blind to
 slow bias. On that score the raw accelerometer tilt is at
 \SI{476}{\degree/s}, the complementary filter at \SI{9.9}{\degree/s}, and the
-DMSO fed raw accelerometer tilt at \SI{295}{\degree/s}. The Kalman filter fed
+DMSO fed raw accelerometer tilt at \SI{294}{\degree/s}. The Kalman filter fed
 the same raw tilt, with a measurement variance that reflects its actual error,
-reaches \SI{4.2}{\degree/s}.
+reaches \SI{4.1}{\degree/s}. Fed the complementary-filter tilt instead, the
+Kalman filter and the DMSO reach \SI{2.9}{\degree/s} and \SI{5.9}{\degree/s}.
 
 The finding therefore holds for the DMSO but not for a correctly weighted
 Kalman filter. The explanation needs no gearbox transients: an accelerometer
@@ -502,9 +495,10 @@ weights the measurement by its true error does not. The conclusion of
 revision~7 stands in modified form: it is a statement about measurement
 construction and error-injection design, not about the adaptation.
 
-Figure~\ref{fig:hwunc} shows the uncertainty estimated on hardware. In the
-replay computed before the sign correction, the tilt-rate channel had RMS
-$1.4\times10^{-2}$, against $1.24\times10^{-2}$ for the true uncertainty of the
-simulated case O2. Whether the model error on the physical robot is larger than
-the simulated perturbation cannot be decided until the replay is regenerated;
-Appendix~\ref{app:validation} describes how to settle it by measurement.}
+Figure~\ref{fig:hwunc} shows the uncertainty estimated on hardware. The
+tilt-rate channel has RMS $1.8\times10^{-2}$, against $1.24\times10^{-2}$ for
+the true uncertainty of the simulated case O2, and the velocity channel
+$2.5\times10^{-3}$. The model error on the physical robot is therefore somewhat
+larger than the simulated perturbation, which is consistent with the motor
+deadzone and gear stick-slip found in Section~\ref{sec:modelsim}; neither is in
+the nominal model.}

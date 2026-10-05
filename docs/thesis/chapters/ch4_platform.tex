@@ -331,6 +331,13 @@ parameters. The model is also not entirely accurate to the true system: the
 pendulum is modeled as a point mass attached by a thin beam to the motor axis,
 whereas the mounting plates create more complex interactions than this. Once
 tuned properly, stability was obtained.
+\rev{The logs point to a more specific cause (Section~\ref{sec:gaintest}). The
+firmware's encoder position is mirrored relative to the model, so position and
+velocity gains of the designed sign became destabilizing on the robot, and the
+potentiometers could only set gains of the other sign. Every recorded run
+balanced on the tilt gains, with the base held by the motor deadzone and gear
+stick-slip. The modification of the gains is therefore not evidence of
+parameter error alone.}
 
 \rev{\begin{remark}[These are the case for the work]
 Three of the observations above are the empirical case for

@@ -1286,10 +1286,10 @@ def summarize(res: dict, runs: list[Run]) -> dict:
         },
         "data": {},
     }
-    I, sv = res["input_free"]["integral"], res["input_free"]["svf"]
+    integ, sv = res["input_free"]["integral"], res["input_free"]["svf"]
     for rn in runs:
         e = {}
-        it = I.get(rn.name, {}).get("[0.1, 0.8]")
+        it = integ.get(rn.name, {}).get("[0.1, 0.8]")
         if it:
             e["transient_rms_mm_encoder"] = {k: round(v["rms_mm"], 1) for k, v in it["encoder"]["models"].items()}
             e["transient_c1_encoder"] = [
