@@ -107,9 +107,11 @@ Summing moments about the center of the wheel,
 I_w\ddot\theta_w=C_L-H_{fL}r ,
 \end{equation}
 where $I_w$ is the wheel moment of inertia and $\ddot\theta_w$ the wheel angular
-acceleration. \rev{The wheel angle $\theta_w$ and the motor torque $C_L$ are both
-measured clockwise in Figure~\ref{fig:fbdwheel}, the sense in which a wheel turns
-when the robot rolls in the positive $x$ direction.} Starting from the motor shaft equation \eqref{eq:shaft} and
+acceleration. \rev{The wheel angle $\theta_w$ and the motor torque $C_L$ are both taken
+clockwise, the sense in which a wheel turns when the robot rolls in the positive $x$
+direction. Equations \eqref{eq:wheelm}, \eqref{eq:noslip} and the back-EMF term of
+\eqref{eq:CL} require this; the $\theta_w$ arrow in Figure~\ref{fig:fbdwheel} is
+drawn the other way.} Starting from the motor shaft equation \eqref{eq:shaft} and
 substituting \eqref{eq:isimple}, the motor torque delivered to either wheel is
 \begin{equation}\label{eq:CL}
 C_L=C_R=\tau_m=-\frac{k_mk_e}{R}\dot\theta_w+\frac{k_m}{R}V_a .
@@ -261,8 +263,9 @@ of the two-wheeled inverted pendulum.
 
 \subsection{Linearization}
 
-In the convention of Figure~\ref{fig:fbdpend}, $\theta=\pi$ is the upright
-vertical configuration. A set of linearized equations is obtained by writing
+In the convention of \eqref{eq:rBA}, $\theta=\pi$ is the upright
+vertical configuration (the angle drawn in Figure~\ref{fig:fbdpend} is measured
+from the upward vertical, so it equals $\phi$ below). A set of linearized equations is obtained by writing
 $\theta=\pi+\phi$, where $\phi$ is a small angle from the vertical. The
 small-angle assumptions are
 \begin{equation}\label{eq:smallangle}
