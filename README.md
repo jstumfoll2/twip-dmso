@@ -158,8 +158,10 @@ the two v9 switch-on transients; and the drive-away rate of the v8 test 1 (1.49 
 measured, `+T` 1.48, `-T` above 5.4). In the simulated loop with the v9 gains, a `-T` plant
 with the corrected parameters falls within 5.3 s for every parameter set tried, and the
 thesis model never holds the base, while the robot balanced for 12.6 s and 21.2 s.
-Not every test favours `+T` (some predictions in the short v8 runs and of the tilt near
-upright favour the `-T` models), and the corrected model is **not** validated
+Not every comparison favours `+T` (some predictions in the short v8 runs and of the tilt
+near upright favour the `-T` models, although in simulation the `-T` models also predict a
+`+T` plant with backlash better, so these do not discriminate), and the test-2 drift is
+missed by `+T` and `-T` alike. The corrected model is **not** validated
 quantitatively: `Ip`, `l`, `km`, the motors' deadzone and backlash, and the floor's
 rolling resistance are unmeasured. The switch-on transients indicate that the firmware's
 encoder position is mirrored relative to the model. The closed loop does not decide that:

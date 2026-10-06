@@ -94,25 +94,27 @@ still, so the pole and the zero of `x/u` nearly coincide (5.953 vs 5.946).
     v8 runs two of four fits agree with `+T` (test-1 accelerometer, test-2 encoder) and
     none with `-T`.
   - *Voltage response.* At switch-on the command sits at -10 V. After 50 ms the gyro
-    reads -98 / -110 deg/s: the body is already turning back. `+T` predicts -139 /
-    -168 deg/s; `-T` (+44 / +13) and the thesis model (+28 / +5) have it still falling
-    forward; in both runs the thesis model turns it back only with `km` at least 2.5x
-    the data sheet, and `-T` not up to 5x. The
+    reads -98 / -110 deg/s: the body is already turning back toward upright. `+T`
+    predicts -139 / -168 deg/s; `-T` (+44 / +13) and the thesis model (+28 / +5) have it
+    still falling further into its lean. The thesis model turns it back from `km` 2.5x
+    the data sheet in test 4 but 1.2x in test 5, `-T` from 7.5x and 1.6x. The
     on-board filtered tilt overstates the fall (5.5 deg at 50 ms against about 2.5 deg
     from the gyro), so the size fixes `+T`'s tilt input gain only within about 40%
     (`km` x0.64-0.73 from the gyro, x1.08-1.26 from the filtered tilt). With `Ip`, `l`,
-    `km` freed, `-T` matches the filtered tilt only with `km` 3-5x and then moves the
-    base 113-128 mm against 51 mm measured, which is the input-free relation again.
+    `km` freed, `-T` matches the rotation over 100 ms with `km` from 1.25x (test 5;
+    2-3x in test 4) but then moves the base 70-135 mm against 51 mm measured, which is
+    the input-free relation again.
   - *Closed loop* (`scripts/validate_closed_loop.py`, which needs no robot data;
     results in `docs/thesis/generated/plant_closedloop.json`). With the v9 gains
     recovered from the logs, a simulated `-T` plant with the corrected parameters falls
     within 5.3 s for every one of 160 parameter sets (`Ip`, `l`, `km`, `ke`) and in every
-    encoder frame (also with the gyro alone in the filter), and the thesis model either
+    encoder frame (with the gyro alone in the filter, the nominal `-T` plant falls within
+    0.7-5.5 s in every frame), and the thesis model either
     falls or, with the encoder not mirrored, drives off by metres, while the robot
     balanced for 12.6 s and 21.2 s with its base held.
   - *Gains used.* The gains were recovered from the logs by least squares (RMS
     residual <= 2.4 mV). With the v8 test-1 gains the base ran away at 1.49 /s; `+T`
-    predicts 1.48 (2.0-2.2 with the swept `ke`), `-T` 5.48, thesis 2.72, though with the
+    predicts 1.48 (1.9-2.0 with the swept `ke` scaled to 30:1), `-T` 5.48, thesis 2.72, though with the
     encoder not mirrored (and no estimator) the thesis model gives 1.48 too. The test-2
     drift (1.6 /s) is missed by `+T` (0.65) and `-T` (3.89) by similar factors.
   - *Not discriminating, or favouring `-T`:* the steady state, whose coefficients
@@ -121,7 +123,10 @@ still, so the pole and the zero of `x/u` nearly coincide (5.953 vs 5.946).
     2 V on the earlier gearmotors, not measured on the present ones). No linear model
     captures this, and none predicts the tilt better than holding the state. Some
     predictions in the short v8 runs and of the tilt near upright favour the `-T`
-    models, and the input regression is inconclusive.
+    models, but in the simulated v9 loop with friction, backlash and floor resistance the
+    `-T` models also predict the tilt of a `+T` plant better (0.25-0.30 deg against
+    0.42-0.50 deg at 100 ms), so these do not discriminate. The input regression is
+    inconclusive.
 - **Firmware frame** (inferred from the switch-on transients, encoder vs. tilt, with
   the accelerometer agreeing): logged tilt and command have the model's sign; the
   logged position is mirrored, `pos = -(x + r*theta)`, so `x = -pos - r*theta`. In
@@ -153,7 +158,8 @@ still, so the pole and the zero of `x/u` nearly coincide (5.953 vs 5.946).
 
 Models what firmware v9 read each 10 ms loop, in the model's sign convention. The
 firmware's own logged position is the mirror image, `-(x + r*theta)` (inferred from the
-switch-on transients and not yet confirmed in closed loop; see *Firmware frame* above).
+switch-on transients; the closed loop does not decide it, and it is not yet confirmed by
+hand; see *Firmware frame* above).
 
 | Sensor | Model | Thesis model |
 |---|---|---|

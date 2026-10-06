@@ -1265,7 +1265,8 @@ def frame_evidence(runs: list[Run]) -> dict:
     """At switch-on (u = -10 V) the logged position and the tilt moved in opposite
     senses.  Every model has B_p / B4 = c1 > 0 (wheel and body accelerate in the same
     sense in the model frame), so the logged position is inferred to be mirrored,
-    pos = -(x + r theta) (not confirmed in closed loop; see validate_closed_loop.py)."""
+    pos = -(x + r theta) (not confirmed: the closed loop of validate_closed_loop.py does
+    not decide it; a hand check would)."""
     out = {}
     for run in runs:
         if run.firmware != "v9":

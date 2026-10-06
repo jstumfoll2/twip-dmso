@@ -301,8 +301,9 @@ characteristics. Two consequences follow. First, the measurement noise
 covariance used by the Kalman filter baseline must describe the complementary
 filter output, not the accelerometer. Second, the comparison reported in
 Section~\ref{sec:implresults}, in which the complementary filter outperforms
-both model-based estimators fed raw accelerometer tilt, is a statement about
-this pre-filtering step rather than about the estimators.
+the DMSO fed raw accelerometer tilt but not a Kalman filter weighted by that
+tilt's actual error, is a statement about this pre-filtering step rather than
+about the estimators.
 \end{remark}}
 
 \section{DIFFICULTIES}

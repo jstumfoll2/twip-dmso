@@ -73,8 +73,9 @@ See Appendix B. In short:
   is the one improvement claims are stated against.
 * Chapter 8: per-case metrics, regenerated on the corrected model. The
   hardware replays (Section 8.4) map the logged encoder position into the model
-  frame inferred in Section 5.3 (logged position mirrored, x = -pos - r*theta),
-  which is not yet confirmed in closed loop.
+  frame inferred in Section 5.3 from the switch-on transients (logged position
+  mirrored, x = -pos - r*theta), which the closed loop does not decide and which
+  is not yet confirmed by hand.
 * Chapter 5: the theta = pi convention is relabelled. Revision 7 called it the
   statically stable point; the gravity term sign in the linearization shows it
   is the unstable upright equilibrium. The motor's reaction torque on the body
@@ -92,7 +93,8 @@ See Appendix B. In short:
   the two v9 switch-on transients, and the drive-away rate of the v8 test 1. In
   the v9 loop simulated with the gains recovered from the logs, no M2 plant stays
   up beyond 5.3 s and M3 stays up only by driving the base more than 1.9 m away.
-  Some predictions favour M2 or M3 and the input regression is inconclusive. M1
+  Some predictions favour M2 or M3, but the simulator shows they would also for
+  an M1 plant with backlash, and the input regression is inconclusive. M1
   is not validated quantitatively: the switch-on response fixes its tilt input
   gain only within about 40%, the accelerometer's axle coefficient is 20-50%
   above it, the steady-balancing coefficients contradict all three models, and
