@@ -1,6 +1,7 @@
 """Sensor model of the robot (corrected baseline).
 
-Models what the v9 firmware actually read each loop:
+Models what the v9 firmware actually read each loop, in the model's sign
+convention:
 
 * **MPU-9150 accelerometer** (``ax``, ``az`` in g): the specific force at the
   IMU location, a point ``imu_height`` above the axle on the body axis.  This
@@ -8,9 +9,15 @@ Models what the v9 firmware actually read each loop:
   tilt estimate ``atan2(-ax, az)`` is corrupted while the robot accelerates, as
   on the real robot.
 * **MPU-9150 gyroscope** (``gy`` in deg/s): tilt rate.
-* **Motor encoders**: they count wheel rotation *relative to the body*, so
-  ``pos = counts * 0.000147`` is ``x - r * theta``, quantized.  Velocity is the
-  firmware's backward difference ``(pos - pos_prev) / dt``.
+* **Motor encoders**: they count wheel rotation *relative to the body*.  Rolling
+  forward turns the wheel clockwise at ``xdot / r`` while ``theta`` is
+  counterclockwise, so the relative angle is ``x / r + theta`` and
+  ``pos = counts * 0.000147`` is ``x + r * theta``, quantized (see
+  :mod:`twip.dynamics`).  Velocity is the firmware's backward difference
+  ``(pos - pos_prev) / dt``.  The firmware's own logged position is the mirror
+  image, ``-(x + r * theta)``, as inferred from the switch-on transients in
+  ``scripts/validate_plant.py`` (thesis Section 5.3.3); the closed loop does not
+  decide that frame, so it is not yet confirmed (see ``docs/BASELINE.md``).
 
 Noise levels are from the thesis's Allan-variance analysis (``allandata.mat``,
 recomputed in :mod:`twip.analysis`).  Each inertial sensor gets white noise plus
@@ -70,7 +77,7 @@ class Measurement:
     az: float  # g
     gy: float  # deg/s
     counts: int  # encoder counts (relative wheel rotation)
-    pos: float  # m, counts * meters_per_count  (~ x - r*theta)
+    pos: float  # m, counts * meters_per_count  (~ x + r*theta; the firmware logged the mirror image)
     vel: float  # m/s, backward difference of pos
     dt: float  # s, time since the previous sample
 
@@ -142,10 +149,10 @@ class SensorSuite:
         ax, az = self._q(ax, c.accel_lsb), self._q(az, c.accel_lsb)
         gy = self._q(gy, c.gyro_lsb)
 
-        phi_rel = X[0] / self.p.r - X[2]  # wheel angle relative to the body
+        phi_rel = X[0] / self.p.r + X[2]  # wheel angle relative to the body
         counts_f = phi_rel * c.counts_per_rev / (2 * math.pi)
         counts = int(round(counts_f)) if c.quantize else counts_f
-        pos = counts * c.meters_per_count if c.quantize else (X[0] - self.p.r * X[2])
+        pos = counts * c.meters_per_count if c.quantize else (X[0] + self.p.r * X[2])
         vel = 0.0 if self._pos_prev is None else (pos - self._pos_prev) / dt
         self._pos_prev = pos
         return Measurement(ax, az, gy, counts, pos, vel, dt)

@@ -70,7 +70,7 @@ def test_rev8_dmso_beats_augmented_kf_on_uncertainty_in_case_O2():
     ests = make_estimators(tr, noise=False)
     f_dmso = rms(run_observer(ests["DMSO (rev. 8)"], tr).fhat - tr.f, 500)
     f_aug = rms(run_observer(ests["Augmented-state KF"], tr).fhat - tr.f, 500)
-    assert np.all(f_dmso < f_aug / 5)
+    assert np.all(f_dmso < f_aug / 1.4)  # about 1.6x (v) and 4x (tilt rate) on the corrected plant
 
 
 # --- controllers (Chapter 6) -------------------------------------------------
@@ -97,7 +97,7 @@ def test_cfb_applied_control_does_not_depend_on_lqr_gain():
 def test_position_output_is_non_minimum_phase():
     from twip.params import THESIS
 
-    assert np.max(position_zeros(A, B).real) == pytest.approx(7.2333, abs=1e-3)
+    assert np.max(position_zeros(A, B).real) == pytest.approx(5.9458, abs=1e-3)
     At, Bt = linear_model(THESIS, "xdot")
     assert np.max(position_zeros(At, Bt).real) == pytest.approx(6.1133, abs=1e-3)  # not caused by the corrections
 
@@ -112,7 +112,7 @@ def test_cfb_closed_loop_is_unstable_at_the_rhp_zero():
     for wn in ((20, 40, 60), (200, 400, 600)):
         ev = np.linalg.eigvals(mod._cfb_jacobian(CFBGains(wn=wn)))
         assert ev.real.max() > 5.0
-    assert ev.real.max() == pytest.approx(7.23, abs=0.05)  # converges to the zero as bandwidth grows
+    assert ev.real.max() == pytest.approx(5.95, abs=0.05)  # converges to the zero as bandwidth grows
 
 
 def test_lqr_and_two_step_track_the_velocity_command():
@@ -138,7 +138,10 @@ def test_flat_coordinates_remove_the_control_and_motor_constants():
         b = Bp[1, 0] / Bp[3, 0]
         assert Ap[1, 1] - b * Ap[3, 1] == pytest.approx(0, abs=1e-9)  # a1 = 0
         assert Ap[1, 3] - b * Ap[3, 3] == pytest.approx(0, abs=1e-9)  # a4 = 0
-        assert Ap[1, 2] - b * Ap[3, 2] == pytest.approx(-38.746, abs=1e-3)  # a2 independent of motor constants
+        assert Ap[1, 2] - b * Ap[3, 2] == pytest.approx(-5.6159, abs=1e-3)  # a2 independent of motor constants
+        beta = 2 * p.Mw + 2 * p.Iw / p.r**2 + p.Mp
+        assert b == pytest.approx((p.Ip + p.Mp * p.l**2 + p.Mp * p.l * p.r) / (p.Mp * p.l + p.r * beta))
+        assert Ap[1, 2] - b * Ap[3, 2] == pytest.approx(-p.Mp * p.g * p.l / (p.Mp * p.l + p.r * beta))
         # y = x1 - b x3 has no finite transmission zeros (it is the flat output)
         C = np.array([[1.0, 0, -b, 0]])
         from scipy.linalg import eigvals

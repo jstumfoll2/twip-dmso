@@ -48,10 +48,14 @@ controllers use the nominal linearization discretized by \eqref{eq:zoh}.
 $M_p\times1.1$, $M_w\times1.5$, $k_m\times1.25$, $k_e\times0.95$, and $R\times1.2$;
 the observer and controller retain the nominal values. This is the
 perturbation of the revision~7 extra-control study with the torque-constant
-error reduced from $\times2.5$ to $\times1.25$. With the corrected model of
-Section~\ref{sec:simmodel}, the nominal LQR cannot stabilize the revision~7
-perturbation even with perfect state knowledge, and a comparison of estimators
-on a plant that no controller holds upright is not informative.
+error reduced from $\times2.5$ to $\times1.25$. At $\times2.5$ all four
+controllers of Section~\ref{sec:ctrlresults} still balance the corrected plant
+(case C2, five seeds), but the input-gain error $(B^{\mathrm{true}}-B)u$, which
+is not a function of the state, is large during the recovery from the initial
+tilt. The largest residual of the basis fit in case O2 grows from
+$\epsilon_N=0.013$ to $0.42$, which makes the bound of Theorem~\ref{thm:main}
+vacuous, although the RMS fit residual stays below 6\% of the RMS uncertainty.
+The smaller error keeps the observer comparison within the theorem.
 
 \emph{Unmodeled dynamics.} Case O4 adds the revision~7 unmodeled terms
 $0.5\sin(x_1)x_2$ to $\dot x_2$ and $0.25x_2^2$ to $\dot x_4$.
@@ -109,7 +113,7 @@ basis is $\phi(y)=\bigl[1,\ \tanh(y_1/1),\ \tanh(y_2/1),\ \tanh(y_3/0.2),\
 $\phi_{\max}^2=5$. The adaptation gain is one tenth of the bound
 \eqref{eq:simple}, $\Gamma=0.01$. Table~\ref{tab:obscond} confirms that the
 conditions hold along every trajectory; the realized $\phi_{\max}^2$ never
-exceeds $2.2$, well below its design value.}
+exceeds $1.92$, well below its design value.}
 
 \begin{table}[htbp]
 \centering
@@ -133,7 +137,7 @@ $\Gamma=0.1$) for reference; and the revision~8 DMSO, with and without
 $\sigma$-modification ($\kappa=0.1$). A seventh row, marked $\dagger$, uses the
 same adaptation law with the steady-state Kalman gain as error injection,
 $\Km=FL$, so that $A=F(I-L)$. That $A$ is Schur but strongly non-normal
-($\sigmax(A)=1.04$ without noise and $6.3$ with it), so Theorem~\ref{thm:main}
+($\sigmax(A)=1.03$ without noise and $6.5$ with it), so Theorem~\ref{thm:main}
 does not apply in the Euclidean norm and the row is an empirical extension;
 see Remark~\ref{rem:nonnormal} and Section~\ref{sec:obsdiscussion}.}
 
@@ -148,20 +152,33 @@ a noise-free measurement. Figure~\ref{fig:O2} shows the norm of the estimation
 error against the ultimate bound of Theorem~\ref{thm:main}. The bound requires
 $\epsilon_N$; a valid value on the realized trajectory is the largest residual
 of a least-squares fit of the true uncertainty onto the basis,
-$\epsilon_N=0.0113$, which gives $b_e=0.0235$. The error enters the bound after
-0.12~s and remains inside it from 0.86~s onward. The excursions before that are
-the initial transient, which Theorem~\ref{thm:main} does not constrain.
+$\epsilon_N=0.0133$, which gives $b_e=0.0276$. The error stays inside the bound
+for the whole run, initial transient included; its largest value is $0.0259$.
 
 The DMSO identifies the uncertainty itself, not only the state
 (Figure~\ref{fig:O2unc}). Against the augmented-state Kalman filter, the
 baseline against which improvement is claimed, the RMS error of $\fhat$ is
-lower by a factor of 11 in both the velocity and the tilt-rate channel
-(Table~\ref{tab:obsunc}). The one-step prediction error of the uncertain states
-is lower by a factor of 5 in both channels (Table~\ref{tab:obsrms}). Relative to
-the revision~7 observer, the corrected basis and adaptation law reduce the
-uncertainty estimation error by a factor of about 3. $\sigma$-modification
-costs accuracy here, as the analysis predicts, because the leakage biases
-the weights toward zero while the uncertainty is persistently nonzero.}
+lower by a factor of 1.6 in the velocity channel and 4.0 in the tilt-rate
+channel (Table~\ref{tab:obsunc}). The one-step prediction error of the
+uncertain states is mixed (Table~\ref{tab:obsrms}): 27\% higher than the
+augmented filter's in velocity and half of it in tilt rate.
+$\sigma$-modification costs accuracy here, as the analysis predicts, because
+the leakage biases the weights toward zero while the uncertainty is
+persistently nonzero.
+
+The revision~7 observer identifies the O2 uncertainty about four times more
+accurately than the revision~8 DMSO. The difference is the adaptation gain, not
+the structure. Revision~7 uses $\Gamma=0.1$ with $\Km=I$, for which
+$\sigmax(F-\Km)=0.92$ and the bound of Corollary~\ref{cor:theta1} is at most
+$0.085$, so it runs outside the proven region. The revision~8 DMSO uses one tenth
+of its bound. At half and nine tenths of the bound ($\Gamma=0.05$ and $0.09$),
+still inside the conditions, its errors are $0.11/0.74$ and $0.06/0.42$
+($\times10^{-3}$), equal to and then better than revision~7's. Faster error
+injection is not the cause: with $\Km=I$ and $\Gamma=0.1$ the revision~8 law
+gives $0.12/0.80$. With sensor noise (case O3) the gain makes no difference,
+$0.88$--$1.00$ and $11.4$--$11.5$ across the same range, because the error is
+then set by the measurements. The value $\Gamma=0.01$ is kept below so that
+every reported run satisfies the conditions with a wide margin.}
 
 \begin{figure}[htbp]
 \centering
@@ -192,9 +209,10 @@ DMSO and the augmented-state Kalman filter for comparison.}
 (Figure~\ref{fig:O3} and Table~\ref{tab:obsrms}).
 
 In the velocity channel the DMSO remains better than both unaugmented Kalman
-filters, by a factor of 2.5 in case O3, and is within 40\% of the
-augmented-state filter. In the tilt channel it is an order of magnitude worse
-than the two unaugmented filters and comparable to the augmented one. The cause is the measurement rather than the adaptation.
+filters, by a factor of 2.5 to 3 in case O3, and is about 40\% worse than the
+augmented-state filter. In the tilt channel it is three to five times worse than
+the two unaugmented filters and 50\% worse than the augmented one. The cause is
+the measurement rather than the adaptation.
 The complementary-filtered tilt carries a slowly varying error of about
 \SI{1.1}{\degree} RMS, because the accelerometer measures tilt relative to the
 apparent vertical, which is displaced by the robot's own acceleration. With
@@ -205,18 +223,17 @@ makes available.
 
 The Kalman-gain variant ($\dagger$) combines the two mechanisms. Its velocity
 and tilt errors lie between those of the unaugmented and augmented filters, and
-its tilt-rate error is 30\% above the nominal filter's in O3 and equal to it in
-O4. It gives the best
-uncertainty estimate in the noisy cases: 1.4 times lower
-than the augmented filter in the velocity channel of O3, and 3 to 4 times lower
-in the tilt-rate channel. Its gain lies outside the conditions of
-Theorem~\ref{thm:main}, so these numbers are empirical.
+its tilt-rate error is about 9\% below the nominal filter's in O3 and O4. Its
+gain lies outside the conditions of Theorem~\ref{thm:main}, so these numbers
+are empirical.
 
-In the tilt-rate channel of the noisy cases, every estimator's uncertainty error
-is comparable to or larger than the RMS of the true uncertainty itself
-(Table~\ref{tab:obsunc}). At this
-noise level, $f_2$ is not identifiable from the available measurements by any
-of the six estimators; only $f_1$ is.}
+In the noisy cases the augmented-state filter gives the best uncertainty
+estimate in both channels (Table~\ref{tab:obsunc}). The Kalman-gain variant
+is 1.4 and 1.3 times worse in the velocity and tilt-rate channels of O3, and the
+DMSO with $A=\bar\sigma I$ about 1.6 times worse in both. In the tilt-rate
+channel every estimator's error is between 60\% and 100\% of the RMS of the
+true uncertainty itself, so at this noise level $f_2$ is barely identifiable
+from the available measurements; $f_1$ is identified to within 30\% to 60\%.}
 
 \begin{figure}[htbp]
 \centering
@@ -230,8 +247,9 @@ three Kalman baselines of Section~\ref{sec:dkf}.}
 \centering
 \caption{Observer RMS one-step prediction error by case and estimator:
 velocity (\si{mm/s}) / tilt (\si{mrad}) / tilt rate (\si{mrad/s}). Position
-errors are set by the encoder quantization and are identical across
-estimators (\SI{1.6}{mm} in O3 and O4).}
+errors are not listed: in O3 and O4 they are 0.56 to \SI{0.84}{mm} for every
+estimator, close to the \SI{0.55}{mm} RMS error of the tilt-compensated
+position measurement itself.}
 \label{tab:obsrms}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
@@ -263,20 +281,20 @@ Estimator & O2 & O3 & O4 \\
 \label{sec:obsdiscussion}
 
 \rev{Three conclusions follow. First, the corrected DMSO does what the analysis
-claims. Its conditions are satisfied with margin, its error settles inside the
+claims. Its conditions are satisfied with margin, its error stays inside the
 predicted bound, and under deterministic model error it identifies the
-uncertainty an order of magnitude more accurately than the fairest Kalman
-baseline. Second, the choice $A=\bar\sigma I$, which makes the proof simplest,
+uncertainty 1.6 to 4 times more accurately than the fairest Kalman baseline,
+with more to gain from a larger adaptation gain inside the proven region.
+Second, the choice $A=\bar\sigma I$, which makes the proof simplest,
 discards the cross-channel information that a model-based filter exploits. When
 one measurement carries a structured error, that choice costs more than the
 adaptation gains. Third, Theorem~\ref{thm:main} admits any $\Km$ with
 $\sigmax(F-\Km)<1$, and the empirical success of the Kalman-gain injection
 suggests extending the proof through the weighted norm of
-Remark~\ref{rem:nonnormal}. That extension is not immediate. With
-$V_k=e_k^TT^TTe_k+\Gamma^{-1}\norm{\Wt_k}_F^2$, the cancellations of
-Proposition~\ref{prop:exact} survive only if the adaptation law is weighted
-correspondingly, $\What_{k+1}=\What_k+\Gamma\phi_ke_{k+1}^TT^TT\Bm$, and if
-$\Bm^TT^TT\Bm=I$. Those conditions should be imposed explicitly.}
+Remark~\ref{rem:nonnormal}. That extension is not immediate: the cancellations
+of Proposition~\ref{prop:exact} survive only if the adaptation law is weighted
+by the same matrix as the error, as Remark~\ref{rem:nonnormal} sets out, and the
+Kalman-gain row above uses the unweighted law.}
 
 \section{CONTROL RESULTS}
 \label{sec:ctrlresults}
@@ -288,16 +306,15 @@ $\Bm^TT^TT\Bm=I$. Those conditions should be imposed explicitly.}
 be stabilized, and the reason is structural. Stage~3 of
 Appendix~\ref{app:validation} was followed: the backstepping structure was run
 first with both networks disabled, on the nominal linear model, with perfect
-state knowledge and no saturation. The closed loop diverged within seven samples.
+state knowledge and no saturation. The closed loop diverged.
 
 Linearizing the continuous-time closed loop (plant and three command filters,
-networks disabled) gives a real eigenvalue near $+7$~rad/s for every gain set
-tried: 720 combinations of $c_1,\dots,c_4$ and $\varpi_1,\varpi_2,\varpi_3$, including
-all combinations satisfying \eqref{eq:gaincond}. The smallest value found for
-the largest real part was $+6.35$~rad/s. As the filter bandwidths are raised,
-that eigenvalue converges to $+7.23$~rad/s (Figure~\ref{fig:chi}a), which is the
-right-half-plane transmission zero of the position-to-voltage transfer function
-$x_1(s)/u(s)$. On the revision~7 parameters the zero is at $+6.11$~rad/s, so the
+networks disabled) gives a real eigenvalue between $+5.0$ and $+5.9$~rad/s for
+every gain set tried: 720 combinations of $c_1,\dots,c_4$ and
+$\varpi_1,\varpi_2,\varpi_3$, all satisfying \eqref{eq:gaincond}. As the filter
+bandwidths are raised, that eigenvalue converges to $+5.95$~rad/s
+(Figure~\ref{fig:chi}a), which is the right-half-plane transmission zero of the
+position-to-voltage transfer function $x_1(s)/u(s)$. On the revision~7 parameters the zero is at $+6.11$~rad/s, so the
 difficulty does not come from the model corrections.
 
 The mechanism is the following. With $x_1$ as the tracked output, the recursion
@@ -313,18 +330,26 @@ $\chi_i=O(1/\varpi_i)$, does not follow from the construction.
 
 The corrected design of Section~\ref{sec:flatcf} tracks the flat output
 $y=x_1-b\,x_3$ instead and weights the attitude coordinates by $w=a_2^2$. Its
-linearized closed loop is stable at every bandwidth in Figure~\ref{fig:chi}a.
-In closed-loop simulation of case C2 its filter errors decrease as the bandwidth
-is raised (Figure~\ref{fig:chi}b), as Assumption~\ref{as:filt} requires. The
-workable range is bounded at both ends. Below $\varpi_2\approx\SI{30}{rad/s}$ the
-filters are too slow to follow the virtual controls, and at
-$\varpi_2\ge\SI{80}{rad/s}$ the fastest filter ($\varpi_3=1.5\varpi_2$) reaches
-the one-fifth-of-sample-rate limit of Appendix~\ref{app:validation} and the
-robot falls. The results below use $\varpi=(20,40,60)$~rad/s and
-$c=(0.8,1.5,10,12)$, chosen by a sweep over the perturbed cases C2 and C4 with the
-networks disabled. Of 54 gain sets with $c_1\le0.8$ and $c_2\le1.5$, 46 balanced
-in both cases. Larger position-loop gains fail under the input-gain error
-discussed at the end of Section~\ref{sec:flatcf}.}
+linearized closed loop is stable at every bandwidth in Figure~\ref{fig:chi}a and
+at all 720 points of the grid above. In closed-loop simulation of case C2
+(Figure~\ref{fig:chi}b) the robot balances at every bandwidth tested, from
+$\varpi_2=20$ to \SI{120}{rad/s}, including bandwidths beyond the
+one-fifth-of-sample-rate guideline of Appendix~\ref{app:validation}. The filter
+errors do not decrease with bandwidth: $\chi_1$ and $\chi_2$ stay near
+$10^{-3}$, and $\chi_3$ grows from $0.005$ to $0.18$, because the virtual
+controls carry measurement noise (Section~\ref{sec:flatcf}).
+
+The results below use $\varpi=(20,40,60)$~rad/s and $c=(0.8,1.5,10,12)$. These
+gains were chosen by a sweep over C2 and C4 before the sign error of
+\eqref{eq:pendm} was corrected, and on the corrected plant they are
+conservative. A closed-loop sweep over 64 gain sets, $c_1\in\{0.4,0.8,1.5,3\}$,
+$c_2\in\{1.2,1.5,3,6\}$, $c_3\in\{5,10\}$, $c_4\in\{6,12\}$ (networks off, one
+seed), balanced in both cases for all but $c=(3,6,5,6)$, which fell in C4. Larger
+$c_2$ tracks better: $c=(1.5,6,10,12)$ gives \SI{6.2}{mm} RMS in C2 and
+\SI{3.7}{mm} in C4, against \SI{16}{mm} and \SI{35}{mm} at the design gains.
+The design gains are retained rather than retuned on the corrected plant, so
+the flat-design errors reported below understate what the structure can
+achieve.}
 
 \begin{figure}[htbp]
 \centering
@@ -334,8 +359,8 @@ eigenvalues (networks disabled, nominal linear model) for the design as written
 in Section~\ref{sec:cffb} and for the flat-output design of
 Section~\ref{sec:flatcf}. The dashed line is the right-half-plane zero of
 $x_1(s)/u(s)$. (b) RMS command-filter errors $\chi_i$ of the flat-output design
-in case C2 against the bandwidth; dotted red lines mark bandwidths at which the
-robot fell, and the dashed line is the sample-rate limit of
+in case C2 against the bandwidth; the robot balanced at every bandwidth shown
+(a fall would be marked by a dotted red line), and the dashed line is the sample-rate limit of
 Appendix~\ref{app:validation} applied to $\varpi_3$.}
 \label{fig:chi}
 \end{figure}
@@ -351,32 +376,33 @@ leakage $\kappa_{ij}=0.01$). Each entry is the mean over five noise seeds. All
 four controllers balanced in all twenty runs of every case.
 
 The flat-output design reduces the RMS position tracking error relative to the
-LQR by a factor of 4.9 in the nominal case C1, 5.4 with parameter uncertainty
-(C2), 13 with the deadzone (C3), and 17 with deadzone and backlash (C4). The
-price is control effort: its RMS voltage is higher than the LQR's by 7\%, 16\%,
-26\%, and 43\% in the four cases, and it saturates during the initial recovery
-as the others do.
+LQR by a factor of 13 in the nominal case C1, 4.2 with parameter uncertainty
+(C2), 5.8 with the deadzone (C3), and 22 with deadzone and backlash (C4). The
+price is control effort: its RMS voltage is higher than the LQR's by 30\%, 24\%,
+22\%, and 137\% in the four cases, and its peak voltage during the initial
+recovery is about \SI{9.7}{V}, close to the \SI{10}{V} limit, against
+\SI{2.6}{V} for the LQR, which does not saturate.
 
 Most of the improvement comes from the structure, not the adaptation. With the
-networks disabled the errors are the same in C1--C3, and the networks reduce the
-error by 18\% only in C4. That is consistent with Section~\ref{sec:flatcf}: the
-dominant uncertainty in these cases is the input-gain error, which the networks
-are not given the information to learn. Backlash and deadzone, which do enter as
-functions of the state, are where the networks help. A persistent
+networks disabled the errors are within 1\% in C1--C3, and the networks reduce
+the error by 6\% only in C4. That is consistent with Section~\ref{sec:flatcf}:
+part of the uncertainty in these cases is the input-gain error, which the
+networks are not given the information to learn. Backlash and deadzone, which
+do enter as functions of the state, are where the networks help. A persistent
 small-amplitude oscillation remains in C4 (Figure~\ref{fig:C4}), the signature
 of the nonsmooth input nonlinearity described in Remark~\ref{rem:backlash}.
 
-The two-step extra control changes the error relative to the LQR by $-16\%$,
-$-3\%$, $+8\%$, and $-36\%$ in C1--C4, with 2\% to 28\% more RMS control. Both it
-and the LQR show a slow position ramp in C2--C4 (0.02 to \SI{0.06}{m/s} over the
-last \SI{10}{s}). That is the velocity error left by an incorrect
+The two-step extra control changes the error relative to the LQR by $-7\%$,
+$0\%$, $+9\%$, and $-5\%$ in C1--C4, with at most 4\% more RMS control. Both it
+and the LQR show a slow position ramp in C2--C4 (0.012 to \SI{0.042}{m/s} over
+the last \SI{10}{s}). That is the velocity error left by an incorrect
 steady-state feedforward under parameter error, integrated by the weak position
 loop of the LQR (the thesis weights place a closed-loop pole at
 $\abs{\lambda}=0.9995$ at \SI{10}{ms}). Because it appears equally without the
 extra control, test T3 of Appendix~\ref{app:validation} neither confirms nor
 refutes Remark~\ref{rem:twostep}. The flat-output design, which damps $z_1$
-explicitly, drifts an order of magnitude more slowly, at 0.002 to
-\SI{0.004}{m/s}.}
+explicitly, drifts two orders of magnitude more slowly, at less than
+\SI{0.0005}{m/s}.}
 
 \begin{figure}[htbp]
 \centering
@@ -413,9 +439,15 @@ Controller & C1 & C2 & C3 & C4 \\
 \section{IMPLEMENTATION RESULTS}
 \label{sec:implresults}
 
-\rev{The hardware results are replays of the logged LQR run
+\rev{The hardware results replay the LQR run logged in
 \texttt{implementationtest5.txt}, recorded with firmware v9 at a
-\SI{10}{ms} loop. Figure~\ref{fig:hw} compares the measured states, the
+\SI{10}{ms} loop. The replays use the corrected model and the frame
+inferred from the switch-on transients of the same logs in
+Section~\ref{sec:datatests}, which the closed loop of
+Section~\ref{sec:gaintest} does not decide: the logged position is taken as
+mirrored relative to the model, so the estimators receive
+$x=-\mathrm{pos}-r\phi$, and the on-board estimates are mapped the same way for
+plotting. Figure~\ref{fig:hw} compares the measured states, the
 estimates computed on board by the v9 DMSO (which the replay reproduces to
 print precision), and the revision~8 DMSO run offline on the same data. After
 the first second the three agree to within the measurement quantization. There
@@ -451,9 +483,10 @@ by its consistency with the gyroscope, the RMS of
 $\dd\hat\theta/\dd t-g_y$. This measures high-frequency error and is blind to
 slow bias. On that score the raw accelerometer tilt is at
 \SI{476}{\degree/s}, the complementary filter at \SI{9.9}{\degree/s}, and the
-DMSO fed raw accelerometer tilt at \SI{295}{\degree/s}. The Kalman filter fed
+DMSO fed raw accelerometer tilt at \SI{294}{\degree/s}. The Kalman filter fed
 the same raw tilt, with a measurement variance that reflects its actual error,
-reaches \SI{4.2}{\degree/s}.
+reaches \SI{4.1}{\degree/s}. Fed the complementary-filter tilt instead, the
+Kalman filter and the DMSO reach \SI{2.9}{\degree/s} and \SI{5.9}{\degree/s}.
 
 The finding therefore holds for the DMSO but not for a correctly weighted
 Kalman filter. The explanation needs no gearbox transients: an accelerometer
@@ -465,7 +498,13 @@ revision~7 stands in modified form: it is a statement about measurement
 construction and error-injection design, not about the adaptation.
 
 Figure~\ref{fig:hwunc} shows the uncertainty estimated on hardware. The
-tilt-rate channel is several times larger than in simulation (RMS
-$1.4\times10^{-2}$ against $2.3\times10^{-3}$), consistent with the model
-error on the physical robot being larger than the simulated perturbation.
-Appendix~\ref{app:validation} describes how to settle this by measurement.}
+tilt-rate channel has RMS $1.8\times10^{-2}$, against $1.24\times10^{-2}$ for
+the true uncertainty of the simulated case O2, and the velocity channel
+$2.5\times10^{-3}$. The model error on the physical robot is therefore somewhat
+larger than the simulated perturbation, which is consistent with the gear
+backlash and stick-slip found in Section~\ref{sec:modelsim}, with the external
+force (or the error in the integrated tilt or in $l$) that its steady-balancing
+coefficients call for, which rolling resistance of the floor has not been
+shown to supply, and possibly with a motor deadzone (about \SI{2}{V} on
+the earlier gearmotors, not measured on the present ones); none of these is in
+the nominal model.}

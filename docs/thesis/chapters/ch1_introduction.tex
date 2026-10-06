@@ -49,7 +49,8 @@ approximation target a function of measured state and reference trajectory
 alone.}
 
 \item \textbf{Hardware validation.} The observer is implemented on a physical
-TWIP robot. Chapter~\ref{ch:platform} documents the platform and the practical
+TWIP robot\rev{, and the model of the robot is tested against its recorded
+balancing runs (Section~\ref{sec:modelsim})}. Chapter~\ref{ch:platform} documents the platform and the practical
 obstacles encountered; Appendix~\ref{app:validation} gives a staged validation
 procedure for reproducing and extending the results.
 
@@ -61,7 +62,8 @@ Chapter~\ref{ch:lit} reviews the relevant literature on two-wheeled inverted
 pendulum control and on modified state observers. Chapter~\ref{ch:dmso} develops
 the DMSO and its stability proof. Chapter~\ref{ch:platform} describes the
 physical robot. Chapter~\ref{ch:model} derives the TWIP equations of motion from
-the DC motor model upward. Chapter~\ref{ch:control} presents the LQR baseline
+the DC motor model upward \rev{and tests them against the robot's recorded
+data}. Chapter~\ref{ch:control} presents the LQR baseline
 and the command-filtered neural controller. Chapter~\ref{ch:simulation}
 describes the simulation environment, including the discretization, the noise
 models, and the actuator nonlinearities. Chapter~\ref{ch:results} presents

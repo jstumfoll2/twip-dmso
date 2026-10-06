@@ -41,10 +41,20 @@ uv run python scripts/run_baseline.py
 uv run python scripts/run_baseline.py --scale ke=0.5 --tilt 2
 ```
 
-Thesis revision 8 (`docs/thesis`): regenerate every Chapter 8 figure and table:
+Thesis revision 8 (`docs/thesis`): regenerate the figures, tables and quoted numbers of Chapters 4, 5, 7 and 8 (except Section 5.3, below):
 
 ```bash
 uv run python scripts/thesis_rev8.py
+```
+
+Plant validation against the robot's logs (thesis Section 5.3):
+
+```bash
+uv run python scripts/validate_plant.py
+```
+
+```bash
+uv run python scripts/validate_closed_loop.py
 ```
 
 Thesis reproductions and data replays:
@@ -67,8 +77,10 @@ uv run python scripts/run_data_replays.py firmware
 | `legacy/run_dmso_sim.py` | `no_noise_no_uncertainty`, `no_noise_with_uncertainty`, `noise_with_uncertainty`, `noise_with_uncertainty_perturbed` |
 | `legacy/run_extra_control.py` | `as_saved`, `unmodeled_dynamics`, `parameter_uncertainty`, `deadzone`, `deadzone_and_backlash` |
 | `run_data_replays.py` | `filters`, `implementation` (`--thesis-r-bug`), `firmware`, `allan` |
+| `validate_plant.py` | `--quick`; needs the thesis data folder; writes `docs/thesis/generated/plant_validation.json` and `docs/thesis/figures/pv_*.pdf` |
+| `validate_closed_loop.py` | `--quick`; needs no robot data; writes `docs/thesis/generated/plant_closedloop.json` |
 
-All scripts take `--out DIR` to save PNGs instead of opening windows.
+The other scripts in the table take `--out DIR` to save PNGs instead of opening windows.
 
 ## Layout
 
@@ -134,15 +146,36 @@ The corrected baseline is checked against physics:
 - The linear model is the Jacobian of the nonlinear one.
 - The motors are dissipative, and the accelerometer and encoder models behave as expected.
 
-It is **not** validated against hardware data: the closed-loop logs cannot discriminate
-between parameter sets. See [`docs/BASELINE.md`](docs/BASELINE.md) for the evidence and
-suggested bench tests.
+Against hardware data, `scripts/validate_plant.py` tests the plant on the robot's logged
+balancing runs, and `scripts/validate_closed_loop.py` simulates the v9 firmware loop with
+the gains recovered from those logs (thesis Section 5.3; results in
+`docs/thesis/generated/plant_validation.json` and `plant_closedloop.json`). The sign error
+shows not as a reversed response but in its size, and the logs decide it in favour of the
+corrected `+T` model in three places: at switch-on under a saturated -10 V the gyro shows
+the body turning back within 50 ms, as `+T` predicts, while the `-T` models at the
+data-sheet motor constant still have it falling; the input-free angular-momentum test on
+the two v9 switch-on transients; and the drive-away rate of the v8 test 1 (1.49 /s
+measured, `+T` 1.48, `-T` above 5.4). In the simulated loop with the v9 gains, a `-T` plant
+with the corrected parameters falls within 5.3 s for every parameter set tried, and the
+thesis model never holds the base, while the robot balanced for 12.6 s and 21.2 s.
+Not every comparison favours `+T` (some predictions in the short v8 runs and of the tilt
+near upright favour the `-T` models, although in simulation the `-T` models also predict a
+`+T` plant with backlash better, so these do not discriminate), and the test-2 drift is
+missed by `+T` and `-T` alike. The corrected model is **not** validated
+quantitatively: `Ip`, `l`, `km`, the motors' deadzone and backlash, and the floor's
+rolling resistance are unmeasured. The switch-on transients indicate that the firmware's
+encoder position is mirrored relative to the model. The closed loop does not decide that:
+in simulation the corrected model holds the base only if the floor resists rolling, by
+about 6% of the weight in the mirrored frame and 2% unmirrored. See
+[`docs/BASELINE.md`](docs/BASELINE.md) for the evidence and suggested bench tests.
 
 ## Not ported
 
 - `animation.m` (3-D robot animation).
 - `Tests/LQR Tests` (~25 near-duplicate tuning scripts). `replay_implementation` covers the final version.
 - DMSO gain tuning (`maintuning.m`, `fminsearchbnd`); `scipy.optimize.minimize(..., bounds=...)` would replace it.
-- Motor tests / motor constant identification (`Tests/Motor Tests`); they used the earlier 6 V motors.
+- Motor tests / motor constant identification (`Tests/Motor Tests`). They were recorded on the earlier
+  34:1, 48 CPR gearmotors, not the present 30:1, 64 CPR ones, so they do not identify the present motors;
+  `scripts/validate_plant.py` reads only `motortest9` (ke 0.49-0.57 V s/rad, assuming 12 V at full PWM).
 - Sliding-mode control (root `slidingmode*.m`, firmware v5-v9). It was explored but is not a thesis result.
 - The Simulink models in `Model/` (earliest iteration, superseded).

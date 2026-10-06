@@ -11,12 +11,19 @@ about which component is working.
 \section{STAGE 0: PARAMETER IDENTIFICATION}
 
 The detuning of the LQR gains reported in Section~\ref{sec:difficulties} is
-evidence of parameter error, and the two parameters most likely responsible are
-the pendulum inertia $I_p$ and the CG offset $l$. Both can be measured directly
-and should be, before any estimator is judged.
+\rev{probably explained in part by the firmware's encoder frame
+(Section~\ref{sec:gaintest}), but the parameters are still uncertain, and the}
+two parameters most likely \rev{to be in error} are the pendulum inertia $I_p$
+and the CG offset $l$. Both can be measured directly and should be, before any
+estimator is judged. \rev{The torque constant $k_m$ is equally uncertain
+(Section~\ref{sec:valresults}); the motor tests below measure it.
+Table~\ref{tab:benchtests} gives each candidate model's prediction for the
+measurements below.}
 
-\paragraph{Procedure.} Remove the wheels and suspend the chassis from a knife
-edge at the wheel axis so that it swings as a physical pendulum. Record the
+\paragraph{Procedure.} \rev{Clamp the wheels to a fixture at the wheel axis, or
+remove them and suspend the chassis from a knife edge at the axis,} so that the
+chassis swings as a physical pendulum. \rev{The clamped arrangement also allows
+the leads-shorted decay test of Table~\ref{tab:benchtests}.} Record the
 small-amplitude period $T$ with the onboard gyroscope. Then
 \begin{equation}\label{eq:pendid}
 T=2\pi\sqrt{\frac{I_{\mathrm{pivot}}}{M_pgl}},
@@ -42,8 +49,29 @@ $\delta_+$ and $\delta_-$ of \eqref{eq:deadzone}. Measure backlash by holding
 the motor shaft and rotating the wheel through the deadband, reading the
 free rotation directly; this gives $\Delta_b$ in \eqref{eq:backlash}.
 
-\paragraph{Pass criterion.} The LQR gains computed from the measured parameters
-stabilize the hardware without manual detuning. If they do not, the model is
+\rev{\paragraph{Sign conventions.} The switch-on transients of the recorded
+runs indicate the frame of firmware v9 (Section~\ref{sec:datatests}): the
+logged tilt and command have the signs of $\phi$ and $V$, and the logged
+position is mirrored, $\mathrm{pos}=-(x+r\phi)$, so the estimators and the
+replays of Section~\ref{sec:implresults} use $x=-\mathrm{pos}-r\phi$. In closed
+loop the corrected model holds the base of the v9 runs in either frame only
+with a floor resistance (about 2\% of the weight with the encoder not mirrored,
+about 6\% mirrored; Section~\ref{sec:gaintest}), so the closed loop does not
+decide the frame, and it should be confirmed by hand, and rechecked after any
+change to the firmware. Hold the wheels on the ground and rotate the body in the positive
+sense of $\phi$ (counterclockwise in Figure~\ref{fig:fbdpend}, center of
+gravity moving toward $-x$). The logged tilt should increase. Since the
+encoders read $x/r+\phi$, the logged position should then fall if it is
+mirrored and rise if it is not; rolling the robot toward $-x$ at a fixed lean
+gives the opposite change. With the wheels blocked, a small positive voltage
+should pitch the body backward (Table~\ref{tab:benchtests}). The controller
+gains must be entered in the frame found; with the position mirrored, gains
+designed in the model frame change the sign of their position and velocity
+entries.}
+
+\paragraph{Pass criterion.} The LQR gains computed from the measured
+parameters\rev{, entered in the firmware's frame,} stabilize the hardware without
+manual detuning. If they do not, the model is
 still wrong and no amount of online estimation will make the comparison in
 Chapter~\ref{ch:results} interpretable.
 
@@ -89,9 +117,12 @@ target value $\bar\sigma$. Note that $\sigmax$, not the eigenvalues, is what
 matters; a gain that places the eigenvalues of $A$ well inside the unit circle
 can still have $\sigmax(A)>1$ if $A$ is strongly non-normal. Compute the
 singular values explicitly. A practical starting point is
-$\bar\sigma\in[0.5,0.8]$: smaller values reject model error faster but amplify
-measurement noise, since \eqref{eq:limbounds} shows the noise floor scales as
-$1/(1-\bar\sigma)$ while the response time scales as $1/\log(1/\bar\sigma)$.
+$\bar\sigma\in[0.5,0.8]$. \rev{Smaller values reject model error faster, with a
+response time that scales as $1/\log(1/\bar\sigma)$, and lower the model-error
+floor $\epsilon_N/(1-\bar\sigma)$ of \eqref{eq:limbounds}. Their cost is
+measurement noise, which Theorem~\ref{thm:main} does not model: as $\bar\sigma$
+falls, $\Km=F-\bar\sigma I$ approaches $F$ and the prediction follows each noisy
+measurement more closely. That side of the trade has to be judged from data.}
 
 \item \textbf{Bound $\phi_{\max}$ by construction.} Rather than estimating
 $\phi_{\max}$ from a nominal trajectory, choose activation functions that are
@@ -127,8 +158,9 @@ increase $\Gamma$.
 
 \section{STAGE 3: CONTROLLER BRING-UP}
 
-The controller of Section~\ref{sec:cffb} has four damping gains, three filter
-bandwidths, four learning rates, and four leakage gains. Bring them up in this
+The controller of Section~\ref{sec:flatcf} \rev{(the structure of
+Section~\ref{sec:cffb} in flat-output coordinates)} has four damping gains,
+three filter bandwidths, four learning rates, and four leakage gains. Bring them up in this
 order, and only in this order.
 
 \begin{enumerate}[label=\arabic*.,leftmargin=*]
@@ -138,18 +170,24 @@ parameters from Stage~0. Record the baseline metrics of
 Section~\ref{sec:testmatrix}.
 
 \item \textbf{Backstepping with networks disabled.} Set $\hat F_1=\hat F_2=0$
-and run the structure of Section~\ref{sec:cffb} with $u_e$ active. This tests
+and run the structure of Section~\ref{sec:flatcf} with $u_e$ active. This tests
 the command filters, the error coordinate bookkeeping, and the sign conventions
 without any adaptation. \rev{Most implementation errors in a backstepping design
 are sign errors in the cross-term cancellations, and they are far easier to find
-with the adaptation off.} Verify numerically that the three groups of terms
-identified in the proof of Theorem~\ref{thm:control} actually cancel: log
-$z_1z_2-z_2z_1$, $A_2z_2z_3-A_2z_3z_2$, and $z_3z_4-z_4z_3$ from the
-implemented code, and confirm each is zero to machine precision. If one is not,
-the implementation does not match the derivation.
+with the adaptation off.} \rev{Verify numerically that the implemented error
+dynamics are the derived ones: difference the logged $z_i$ to estimate
+$\dot z_i$, evaluate the right-hand sides of the error equations of
+Section~\ref{sec:flatcf} from the logged signals, and confirm that the two agree
+to within the discretization error. A sign error in a cancelling pair, such as
+$a_2z_3$ in $\dot z_2$ against $-(a_2/w)z_2$ in $\dot z_3$, appears as a residual
+proportional to one of the coordinates. (Logging expressions such as
+$z_1z_2-z_2z_1$ is not a test: they are zero for any numbers.)} If the two do not
+agree, the implementation does not match the derivation.
 
 \item \textbf{Filter bandwidths.} Raise $\varpi_i$ until $\chi_i$ is small
-relative to the corresponding $z_i$, then stop. The upper limit is the lesser of
+relative to the corresponding $z_i$, then stop. \rev{With noisy measurements
+$\chi_i$ stops shrinking, and can grow, as the bandwidth rises
+(Figure~\ref{fig:chi}b), so raise $\varpi_i$ only while $\chi_i$ falls.} The upper limit is the lesser of
 one fifth of the sample rate and the lowest unmodeled structural mode of the
 chassis. \rev{The stiffening rods described in
 Section~\ref{sec:difficulties} exist because that mode was originally low enough

@@ -1,7 +1,7 @@
 """Generate the figures and tables for thesis revision 8 (docs/thesis).
 
     uv run python scripts/thesis_rev8.py            # everything
-    uv run python scripts/thesis_rev8.py --only ch8 # one chapter's figures
+    uv run python scripts/thesis_rev8.py --only ch7 # one step: ch4, ch5, ch7, observer, control, perturbation or hardware
 
 Writes vector PDFs to docs/thesis/figures/, LaTeX table bodies to
 docs/thesis/generated/, and all numbers quoted in the text to
@@ -11,6 +11,7 @@ docs/thesis/generated/results.json.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import shutil
@@ -237,8 +238,32 @@ def observer_study():
     be = r8.conditions.ultimate_bound(epsN)
     en = np.linalg.norm(observer_error(r8, tr), axis=0)
     outside = np.where(en > be)[0]
-    t_in = float((outside[-1] + 1) * 0.01) if len(outside) else 0.0
-    results["O2_bound"] = {"eps_N": epsN, "b_e": be, "stays_inside_after_s": t_in, "max_e_after": float(en[outside[-1] + 1 :].max())}
+    inside = np.where(en <= be)[0]
+    k_in = int(outside[-1] + 1) if len(outside) else 0
+    # adaptation-gain sensitivity (Section 8.2): the revision 8 DMSO at larger fractions
+    # of the bound of Theorem 3.1, against the revision 7 observer (gamma = 0.1)
+    sens = {}
+    for case in ("O2", "O3"):
+        sens[case] = {}
+        for frac in (0.1, 0.5, 0.9):
+            d = DMSO(truths[case].F, truths[case].G, gamma_frac=frac)
+            r = run_observer(d, truths[case])
+            sens[case][str(frac)] = {
+                "gamma": d.gamma,
+                "f_rms": rms(r.fhat - truths[case].f, SETTLE).tolist(),
+                "pred_rms": rms(observer_error(r, truths[case]), SETTLE).tolist(),
+                "satisfied": bool(r.conditions.satisfied),
+            }
+    results["dmso_gamma_sensitivity"] = sens
+
+    results["O2_bound"] = {
+        "eps_N": epsN,
+        "b_e": be,
+        "first_inside_s": float(inside[0] * 0.01) if len(inside) else None,
+        "stays_inside_after_s": float(k_in * 0.01),
+        "max_e_after": float(en[k_in:].max()),
+        "max_e": float(en.max()),
+    }
 
     t = tr.time[1:]
 
@@ -379,7 +404,9 @@ def control_study():
                     stats.append(None)
                     continue
                 e = r.x - xd
-                stats.append((np.sqrt(np.mean(e[0, SETTLE:] ** 2)), np.sqrt(np.mean(r.v_applied**2)), np.max(np.abs(r.v_applied))))
+                last = r.time >= r.time[-1] - 10.0  # slope of the position error over the last 10 s
+                drift = np.polyfit(r.time[last], e[0, last], 1)[0]
+                stats.append((np.sqrt(np.mean(e[0, SETTLE:] ** 2)), np.sqrt(np.mean(r.v_applied**2)), np.max(np.abs(r.v_applied)), drift))
             ok = [s for s in stats if s is not None]
             ctrl.setdefault(name, {})[cn] = {
                 "fell_runs": len(stats) - len(ok),
@@ -387,8 +414,12 @@ def control_study():
                 "rms_pos_err": float(np.mean([s[0] for s in ok])) if ok else None,
                 "rms_u": float(np.mean([s[1] for s in ok])) if ok else None,
                 "peak_u": float(np.max([s[2] for s in ok])) if ok else None,
+                "drift_mps": float(np.mean([abs(s[3]) for s in ok])) if ok else None,
             }
     results["control"] = ctrl
+    A, B = linear_model()
+    F, G = c2d_zoh(A, B, 0.01)
+    results["lqr_slowest_pole"] = float(np.max(np.abs(np.linalg.eigvals(F - G @ K[None, :]))))
 
     lines = []
     for cn in CONTROLLERS:
@@ -484,16 +515,102 @@ def control_study():
         "flat_weight_w": float(CommandFilteredBackstepping(K, m, np.zeros(4), output="flat").w),
         "flat_a2": float(CommandFilteredBackstepping(K, m, np.zeros(4), output="flat").a2),
         "flat_b": float(CommandFilteredBackstepping(K, m, np.zeros(4), output="flat").b),
+        "A2": float(m.A2),
     }
+    gain_sweeps(K, m)
 
 
-def _cfb_jacobian(g: CFBGains, flat: bool = False) -> np.ndarray:
-    """Continuous-time closed loop (plant + command filters, networks off, nominal linear model)."""
+# Gain grids behind the sweep counts quoted in Sections 6.7 and 8.3.1.  Every point
+# of the linear grid satisfies the gain conditions of Theorem 6.1 (c2 > 1, others > 1/2).
+LIN_GRID_C = list(itertools.product((0.6, 1.0, 2.0), (1.2, 2.0, 4.0), (1.0, 3.0, 6.0, 10.0), (1.0, 4.0, 12.0, 25.0)))
+LIN_GRID_SCALE = (0.5, 1.0, 2.0, 4.0, 8.0)  # applied to varpi = (20, 40, 60) rad/s
+SIM_GRID_C = list(itertools.product((0.4, 0.8, 1.5, 3.0), (1.2, 1.5, 3.0, 6.0), (5.0, 10.0), (6.0, 12.0)))
+
+
+def gain_sweeps(K, m):
+    """Linearized closed-loop stability over LIN_GRID (720 points) for the design as
+    written and the flat design (w = a2^2 and w = 1), and nonlinear closed-loop runs of
+    the flat design (networks off) over SIM_GRID in cases C2 and C4."""
+    lin = {"as_written": [], "flat": [], "flat_w1": []}
+    for c in LIN_GRID_C:
+        for s in LIN_GRID_SCALE:
+            g = CFBGains(c=c, wn=tuple(s * w for w in (20.0, 40.0, 60.0)))
+            lin["as_written"].append(np.linalg.eigvals(_cfb_jacobian(g)).real.max())
+            lin["flat"].append(np.linalg.eigvals(_cfb_jacobian(g, flat=True)).real.max())
+            lin["flat_w1"].append(np.linalg.eigvals(_cfb_jacobian(g, flat=True, weight=1.0)).real.max())
+    out = {
+        k: {"points": len(v), "stable": int(np.sum(np.array(v) < 0)), "min_max_real": float(np.min(v)), "max_max_real": float(np.max(v))}
+        for k, v in lin.items()
+    }
+    sim = []
+    for c in SIM_GRID_C:
+        g = CFBGains(c=c, wn=FLAT_GAINS.wn, zeta=FLAT_GAINS.zeta)
+        row = {"c": c}
+        for case in ("C2", "C4"):
+            cfg = control_sim_config(CONTROL_CASES[case])
+            ctl = CommandFilteredBackstepping(K, m, np.array(cfg.x0), gains=g, networks=False, output="flat")
+            r = simulate(ctl, KalmanEstimator(sensors=cfg.sensors), cfg)
+            xd = np.array([m.x_des(k) for k in range(len(r.time))]).T
+            row[case] = None if r.fell else float(np.sqrt(np.mean((r.x[0, SETTLE:] - xd[0, SETTLE:]) ** 2)))
+        sim.append(row)
+    both = [r for r in sim if r["C2"] is not None and r["C4"] is not None]
+    out["closed_loop"] = {
+        "gain_sets": len(sim),
+        "balanced_both": len(both),
+        "fell": [r["c"] for r in sim if r["C2"] is None or r["C4"] is None],
+        "runs": sim,
+    }
+    # w = 1 at the design gains, closed loop, case C2
+    cfg = control_sim_config(CONTROL_CASES["C2"])
+    ctl = CommandFilteredBackstepping(K, m, np.array(cfg.x0), gains=FLAT_GAINS, networks=False, output="flat", weight=1.0)
+    r = simulate(ctl, KalmanEstimator(sensors=cfg.sensors), cfg)
+    xd = np.array([m.x_des(k) for k in range(len(r.time))]).T
+    out["flat_w1_C2"] = None if r.fell else float(np.sqrt(np.mean((r.x[0, SETTLE:] - xd[0, SETTLE:]) ** 2)))
+    results["cfb_sweeps"] = out
+
+
+def perturbation_check():
+    """The revision-7 torque-constant error (km x2.5) on the corrected plant: whether each
+    controller balances (case C2, five seeds), and how much of the resulting uncertainty
+    the observer basis can represent (case O2)."""
+    from dataclasses import replace
+
+    from twip.experiments import PERTURBATION, ObserverCase
+
+    p25 = CORRECTED.scaled(**{**PERTURBATION, "km": 2.5})
+    m = TrackingModel.build()
+    K = design_lqr()
+    out = {"controllers_C2_km2.5": {}}
+    for cn in CONTROLLERS:
+        fell = 0
+        for sd in SEEDS:
+            cfg = control_sim_config(replace(CONTROL_CASES["C2"], plant=p25, seed=sd))
+            r = simulate(_make_controller(cn, K, m, np.array(cfg.x0)), KalmanEstimator(sensors=cfg.sensors), cfg)
+            fell += int(r.fell)
+        out["controllers_C2_km2.5"][cn] = {"runs": len(SEEDS), "fell": fell}
+    b = TanhBasis()
+    for label, plant in (("km1.25", CORRECTED.scaled(**PERTURBATION)), ("km2.5", p25)):
+        tr = make_truth(ObserverCase("O2", noise=False, plant=plant))
+        Phi = np.array([b(tr.x[:, k]) for k in range(len(tr.u))])
+        W, *_ = np.linalg.lstsq(Phi, tr.f.T, rcond=None)
+        res = tr.f.T - Phi @ W
+        out[f"O2_{label}"] = {
+            "eps_N": float(np.max(np.linalg.norm(res, axis=1))),
+            "f_rms": rms(tr.f, SETTLE).tolist(),
+            "fit_residual_rms": rms(res.T, SETTLE).tolist(),
+        }
+    results["perturbation_check"] = out
+
+
+def _cfb_jacobian(g: CFBGains, flat: bool = False, weight: float | None = None) -> np.ndarray:
+    """Continuous-time closed loop (plant + command filters, networks off, nominal linear model).
+
+    ``weight`` is the attitude weight ``w`` of the flat design (default ``a2**2``)."""
     m = TrackingModel.build()
     A, B = m.A, m.B
     b = m.B1 / m.B2
     a2 = m.A2 - b * m.A4
-    W = a2**2
+    W = a2**2 if weight is None else weight
 
     def f(s):
         x = s[:4]
@@ -542,8 +659,19 @@ def hardware():
     Gw = np.array([[dt**2 / 2, 0], [dt, 0], [0, dt**2 / 2], [0, dt]])
     Q = Gw @ np.diag([1.0, 5.0**2]) @ Gw.T + 1e-10 * np.eye(4)
 
+    # The encoders count wheel rotation relative to the body, x / r + theta (twip.sensors).
+    # The firmware's tilt has the sign of theta; its position is inferred to be mirrored,
+    # pos = -(x + r theta), from the switch-on transients (scripts/validate_plant.py
+    # frame_evidence, with the accelerometer agreeing).  The closed loop
+    # (scripts/validate_closed_loop.py) does not decide it; a hand check would.  So
+    # x = -pos - r * tilt in the model frame the estimators use.
+    pos_sign = -1.0
+
+    def to_model(pos, vel, tilt, rate):
+        return pos_sign * pos - r * tilt, pos_sign * vel - r * rate
+
     def run(est, tilt):
-        y = np.vstack([L["x"] + r * tilt, L["xdot"] + r * w, tilt, w])
+        y = np.vstack([*to_model(L["x"], L["xdot"], tilt, w), tilt, w])
         est.initialize(y[:, 0])
         xp = np.zeros_like(y)
         fh = np.full((2, y.shape[1]), np.nan)
@@ -566,8 +694,8 @@ def hardware():
     tt = t[s0:] - t[s0]
 
     fig, axs = plt.subplots(2, 2, figsize=(6.5, 4.8), sharex=True)
-    meas = [L["x"] + r * th, L["xdot"] + r * w, th, w]
-    onboard = [L["xhat"], L["xhatdot"], L["pitchm"] * DEG, L["gyhat"] * DEG]
+    meas = [*to_model(L["x"], L["xdot"], th, w), th, w]
+    onboard = [*to_model(L["xhat"], L["xhatdot"], L["pitchm"] * DEG, L["gyhat"] * DEG), L["pitchm"] * DEG, L["gyhat"] * DEG]
     for ax, i in zip(axs.flat, range(4)):
         lab, unit, sc = STATE[i]
         ax.plot(tt, meas[i][s0:] * sc, color="0.6", lw=0.8, label="measured")
@@ -615,7 +743,7 @@ def hardware():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--only", choices=["ch4", "ch5", "ch7", "observer", "control", "hardware"])
+    ap.add_argument("--only", choices=["ch4", "ch5", "ch7", "observer", "control", "perturbation", "hardware"])
     args = ap.parse_args()
     FIG.mkdir(parents=True, exist_ok=True)
     GEN.mkdir(parents=True, exist_ok=True)
@@ -628,6 +756,7 @@ def main():
         "ch7": lambda: (fig_allan(), fig_deadzone_backlash()),
         "observer": observer_study,
         "control": control_study,
+        "perturbation": perturbation_check,
         "hardware": hardware,
     }
     for name, fn in steps.items():

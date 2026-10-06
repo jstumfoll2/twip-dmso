@@ -7,9 +7,10 @@ against.  Everything runs on the corrected plant (:mod:`twip.dynamics`), sensor
 * :func:`design_lqr` - the primary baseline: discrete LQR (``lqrd``) designed on the
   corrected linear model.  The default weights are the ones in the final thesis
   simulation, so differences come from the plant correction, not a retune.
-* :data:`HARDWARE_DEFAULT_GAINS` - the gains compiled into firmware v7-v9.  On the
-  robot they were overridden by potentiometers, so they are not confirmed to
-  have balanced it (see ``docs/BASELINE.md``).
+* :data:`HARDWARE_DEFAULT_GAINS` - the gains compiled into firmware v7-v9,
+  applied here in the model frame.  On the robot potentiometers overrode them;
+  the gains actually used are recovered from the logs by
+  ``scripts/validate_plant.py`` (see ``docs/BASELINE.md``).
 * :class:`ComplementaryEstimator` - the firmware's measurement pipeline without
   the DMSO: complementary-filtered tilt, gyro rate, tilt-compensated encoders.
 * :class:`KalmanEstimator` - a textbook 4-state Kalman filter on the corrected model.
@@ -67,10 +68,14 @@ class Estimator(Protocol):
 
 class ComplementaryEstimator:
     """Tilt from a complementary filter (alpha = 0.99 as in v9), rate from the gyro,
-    and position/velocity from the encoders corrected for body tilt (``pos + r*theta``).
+    and position/velocity from the encoders corrected for body tilt (``pos - r*theta``).
 
     The filter is initialized from the first accelerometer reading.  On the robot
     it ran continuously while idle, so it had converged before balancing started.
+
+    ``pos`` is the model-frame encoder reading of :mod:`twip.sensors`.  The firmware
+    used its own logged position, which the logs indicate is mirrored relative to it
+    (inferred from the switch-on transients, not confirmed; see ``docs/BASELINE.md``).
     """
 
     def __init__(self, alpha: float = 0.99, r: float = CORRECTED.r):
@@ -86,14 +91,14 @@ class ComplementaryEstimator:
             self.tilt = m.accel_tilt
         else:
             self.tilt = self.alpha * (self.tilt + rate * m.dt) + (1 - self.alpha) * m.accel_tilt
-        return np.array([m.pos + self.r * self.tilt, m.vel + self.r * rate, self.tilt, rate])
+        return np.array([m.pos - self.r * self.tilt, m.vel - self.r * rate, self.tilt, rate])
 
 
 class KalmanEstimator:
     """Textbook discrete Kalman filter on the corrected linear model.
 
     Measurements ``z = [pos, vel, accel_tilt, gyro_rate]`` with
-    ``pos = x - r*theta`` and ``vel = xdot - r*thetadot`` (relative encoders).
+    ``pos = x + r*theta`` and ``vel = xdot + r*thetadot`` (relative encoders).
 
     The accelerometer tilt is modeled as ``theta + (xddot - h*thetaddot)/g``
     (``accel_model=True``).  The robot's own acceleration shifts the apparent
@@ -124,7 +129,7 @@ class KalmanEstimator:
         self.F, G = c2d_zoh(A, B, dt)
         self.G = G.ravel()
         r = p.r
-        self.H = np.array([[1, 0, -r, 0], [0, 1, 0, -r], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=float)
+        self.H = np.array([[1, 0, r, 0], [0, 1, 0, r], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=float)
         self.Dv = np.zeros(4)  # measurement feedthrough from the applied voltage
         if accel_model:
             h = s.imu_height
@@ -180,8 +185,8 @@ class LQRController:
 class SimConfig:
     dt: float = 0.01  # v9 loop period
     duration: float = 10.0
-    # 5 deg from rest.  The thesis initial condition (1 m, 0.3 m/s, 10 deg, 1 deg/s) needs
-    # more than the 10 V available on the corrected plant and cannot be recovered.
+    # 5 deg from rest.  The thesis initial condition (1 m, 0.3 m/s, 10 deg, 1 deg/s) is
+    # also recoverable on the corrected plant, peaking near 2.7 V.
     x0: tuple[float, float, float, float] = (0.0, 0.0, 5 * DEG, 0.0)
     plant: RobotParams = CORRECTED
     back_emf: BackEMF = "relative"

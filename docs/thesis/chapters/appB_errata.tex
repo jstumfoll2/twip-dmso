@@ -13,7 +13,7 @@ $\norm{(I-\Gamma\phi\phi^T)\Wt}^2\le(1-\Gamma\norm{\phi}^2)^2\norm{\Wt}^2$. The
 matrix $I-\Gamma\phi\phi^T$ is symmetric with eigenvalue $1$ of multiplicity
 $l-1$ and eigenvalue $1-\Gamma\norm{\phi}^2$ of multiplicity one, so its induced
 $2$-norm is $\max\{1,\abs{1-\Gamma\norm{\phi}^2}\}$, which equals $1$ whenever
-$\Gamma\norm{\phi}^2\le1$. The factor used was strictly smaller than the true
+$\Gamma\norm{\phi}^2\le2$. The factor used was strictly smaller than the true
 norm, so the step was not conservative but invalid. Substituting the correct
 value makes the coefficient of $\norm{\Wt_k}^2$ in the former Eq.~(23) equal to
 $2/\alpha+3\phi_{\max}^2>0$, and the argument cannot close in that form.
@@ -43,7 +43,8 @@ persistency of excitation or $\sigma$-modification.
 
 \paragraph{B.1.4 Matrix norm (was above Eq.~23).}
 Revision~7 used $\norm{A}\le\lmax(A)$. The induced $2$-norm is the largest
-singular value, and $\sigmax(A)\ge\rho(A)$ with equality only for normal $A$.
+singular value, and $\sigmax(A)\ge\rho(A)$, with equality for normal $A$ (and
+for some non-normal $A$).
 For $A=F-\Km$ the inequality is generally strict and $\lmax(A)$ may be complex.
 See Remark~\ref{rem:nonnormal}.
 
@@ -60,6 +61,18 @@ Applying Young's inequality to the first difference before evaluating the trace
 difference discards the cancellations established in
 Proposition~\ref{prop:exact}, which are precisely what the adaptation law was
 constructed to produce.
+
+\paragraph{B.1.7 What the Lyapunov argument concludes.} \rev{The first
+difference is negative outside a set that bounds $e_k$ and $\psi_k$ but not the
+components of $\Wt_k$ orthogonal to $\phi_k$, so that set is not compact in the
+observer state $(e_k,\Wt_k)$ and the Lyapunov extension theorem does not apply to
+it directly. Theorem~\ref{thm:main} now states a mean-square bound
+\eqref{eq:msbound} that needs no bound on the weights, and uniform ultimate
+boundedness under a bound on $\Wt_k$ from Section~\ref{sec:weightbound}. The
+same applies to Corollary~\ref{cor:deadbeat}. Assumption~\ref{as:nn} now states
+that the plant trajectory remains in the compact set on which the approximation
+holds, and Remark~\ref{rem:nonnormal} states that a weighted Lyapunov function
+requires a correspondingly weighted adaptation law.}
 
 \section{CHAPTER 6: THE EXTRA CONTROL DESIGN}
 
@@ -109,6 +122,14 @@ The two layers carried opposite overall signs in the update laws. Both laws in
 The trailing factor was written as $A$, a carryover from continuous-time
 notation. It is $F$, the discretized system matrix; see \eqref{eq:dare}.
 
+\paragraph{B.2.7 Gain conditions and network residual.} \rev{The state $z_2$
+carries two cross terms in the Lyapunov derivative, the filter error and the
+residual of network one, so Theorem~\ref{thm:control} requires $c_2>1$, as its
+proof always concluded. The Taylor residual $w_i$ of \eqref{eq:nnerr} contains
+the weight errors and is bounded by $w_{i0}+w_{i1}\norm{\Wt_i}_F$, not by a
+constant; the $\sigma$-modification leakage absorbs the weight-dependent part
+when $\kappa_{ij}>2w_{i1}^2$, which is now part of \eqref{eq:gaincond}.}
+
 \section{FRAMING AND REPORTING}
 
 \paragraph{B.3.1 Observer or filter.}
@@ -136,18 +157,37 @@ the actual accelerometer tilt error.}
 
 \section{MODEL AND RESULTS}
 
-\paragraph{B.4.1 Plant model.} \rev{Three corrections enter the simulations of
-Chapter~\ref{ch:results} (Section~\ref{sec:simmodel}): the back-EMF acts on the
-wheel rate relative to the body; $k_e=\SI{0.307}{V.s/rad}$ from the free-run
-data in place of \SI{0.00361}{V.s/rad}; and $I_p$ is taken about the center of
-gravity. The sensor model now includes the accelerometer kinematics and the
-relative encoder measurement.}
+\paragraph{B.4.1 Plant model.} \rev{Four corrections enter the simulations of
+Chapter~\ref{ch:results}. The motor torque reacts on the pendulum with positive
+sign in the counterclockwise moment balance \eqref{eq:pendm}; revision~7 had the
+opposite sign, which changes the back-EMF and input terms of \eqref{eq:nl1},
+\eqref{eq:lin1}, and \eqref{eq:linss}. The corrected input vector satisfies the
+angular-momentum check of Remark~\ref{rem:momentum}, and the free swing of
+Section~\ref{sec:simchecks} is lightly rather than strongly damped. The
+recorded balancing runs confirm the sign (Section~\ref{sec:modelsim}): the
+switch-on transients contradict the revision~7 input vector and are far closer
+to the corrected one, although several measured coefficients differ from it
+beyond their intervals, and with the gains the robot ran no plant with the
+revision~7 sign balances with its base held in the simulated loop: M2 falls
+within seconds, and M3 stays up only with the encoder not mirrored, driving off
+by metres. The
+remaining
+three are in Section~\ref{sec:simmodel}: the back-EMF acts on the wheel rate
+relative to the body, $\dot x/r+\dot\phi$; $k_e=\SI{0.307}{V.s/rad}$ from the
+free-run data in place of \SI{0.00361}{V.s/rad}; and $I_p$ is taken about the
+center of gravity. The sensor model now includes the accelerometer kinematics
+and the relative encoder measurement $x+r\phi$. Two smaller items: revision~7
+stated that $A_4=0$ in the nominal model, but $A_4$ is the gravity coefficient
+of the tilt equation; and Table~\ref{tab:phys} lists
+$I_w=\SI{1.441e-4}{kg.m^2}$ while the simulations, here and in revision~7's
+programs, use $M_wr^2/2=\SI{1.183e-4}{kg.m^2}$.}
 
 \paragraph{B.4.2 Parameter perturbation.} \rev{The torque-constant error of the
 uncertainty cases is reduced from $\times2.5$ to $\times1.25$, and $l$ is left
-unperturbed, as in the revision~7 extra-control plant. With the corrected model,
-the revision~7 perturbation cannot be stabilized by the nominal LQR even with
-perfect state knowledge.}
+unperturbed, as in the revision~7 extra-control plant. The revision~7
+perturbation is still stabilized by every controller on the corrected plant,
+but its input-gain error makes the observer bound vacuous during the initial
+recovery ($\epsilon_N=0.42$ against $0.013$); see Section~\ref{sec:setup}.}
 
 \paragraph{B.4.3 Command-filtered design.} \rev{The design of
 Section~\ref{sec:cffb} is not realizable for the TWIP as written; see
@@ -164,3 +204,17 @@ control is independent of $u_{\mathrm{nom}}$ in both forms, since it cancels in
 corrected to variances, the tilt white-noise variance is the value used in
 simulation ($4.0474\times10^{-6}$ rather than $4.0397\times10^{-6}$~rad$^2$),
 and the walking-bias entries are identified as steady-state variances.}
+
+\paragraph{B.4.5 Model validation and hardware frame.} \rev{Revision~7
+validated the model only by simulating it. Section~\ref{sec:modelsim} now
+tests three candidate models against the recorded balancing runs, with an
+input-free angular-momentum test, the response to the saturated voltage at
+switch-on, and the gains recovered from the logs, simulated in closed loop. The
+switch-on transients indicate that the firmware's encoder position is mirrored
+relative to the model, $\mathrm{pos}=-(x+r\phi)$, and the hardware replays of
+Section~\ref{sec:implresults} use that frame. In that frame the position and
+velocity gains used on the robot have the opposite sign to the LQR design
+(Section~\ref{sec:gaintest}). In the simulated loop the corrected model holds
+the base of the v9 runs only if the floor resisted rolling, by about 2\% of the
+weight with the encoder not mirrored and about 6\% mirrored, so the closed loop
+does not decide the frame, which rests on the switch-on transients.}
