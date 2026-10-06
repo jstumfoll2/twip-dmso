@@ -43,8 +43,8 @@ Sections (numbers follow the request in the PR thread):
 6. motor-test data (ke, R; km is not identifiable from what was logged).
 
 Section 8.4's hardware replay (``scripts/thesis_rev8.py --only hardware``) uses the
-encoder frame inferred here (not yet confirmed in closed loop; see
-``scripts/validate_closed_loop.py``).
+encoder frame inferred here from the switch-on transients (not confirmed: the
+closed loop of ``scripts/validate_closed_loop.py`` does not decide it).
 
 Writes ``docs/thesis/generated/plant_validation.json`` and
 ``docs/thesis/figures/pv_*.pdf``.  Raw logs are read from the thesis folder
@@ -91,7 +91,7 @@ MODELS = {  # name -> (parameters, motor-coupling model of twip.dynamics)
 # Firmware frame -> model frame.  The logged tilt has the model's sign (theta > 0
 # leans the body toward -x), but the logged encoder position is mirrored:
 # pos = -(x + r theta).  Inferred from the switch-on transients in frame_evidence()
-# (not yet confirmed in closed loop: scripts/validate_closed_loop.py); the input
+# (not confirmed: the closed loop of scripts/validate_closed_loop.py does not decide it); the input
 # u has the model's sign.
 POS_SIGN = -1.0
 # MPU-9150 DLPF_CFG = 3 (42 Hz, 4.8 ms group delay) sampled at 200 Hz and read
@@ -1264,7 +1264,8 @@ def _clean(o):
 def frame_evidence(runs: list[Run]) -> dict:
     """At switch-on (u = -10 V) the logged position and the tilt moved in opposite
     senses.  Every model has B_p / B4 = c1 > 0 (wheel and body accelerate in the same
-    sense in the model frame), so the logged position is mirrored: pos = -(x + r theta)."""
+    sense in the model frame), so the logged position is inferred to be mirrored,
+    pos = -(x + r theta) (not confirmed in closed loop; see validate_closed_loop.py)."""
     out = {}
     for run in runs:
         if run.firmware != "v9":

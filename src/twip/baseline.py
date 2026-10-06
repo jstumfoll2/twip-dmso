@@ -75,7 +75,7 @@ class ComplementaryEstimator:
 
     ``pos`` is the model-frame encoder reading of :mod:`twip.sensors`.  The firmware
     used its own logged position, which the logs indicate is mirrored relative to it
-    (not yet confirmed in closed loop; see ``docs/BASELINE.md``).
+    (inferred from the switch-on transients, not confirmed; see ``docs/BASELINE.md``).
     """
 
     def __init__(self, alpha: float = 0.99, r: float = CORRECTED.r):

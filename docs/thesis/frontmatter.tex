@@ -66,9 +66,11 @@ incorrectly excludes.}
 To demonstrate the DMSO, simulation studies are performed on a two-wheeled
 inverted pendulum (TWIP) robot, an unstable nonlinear system with unmatched
 uncertainties, and the observer is implemented on hardware. \rev{The robot
-model is tested against the robot's recorded balancing runs: the response to
-the saturated voltage at switch-on and the closed loop with the gains the robot
-ran confirm the corrected sign of the motor's reaction torque.}
+model is tested against the robot's recorded balancing runs: an input-free
+angular-momentum test and the response to the saturated voltage at switch-on,
+and the closed loop with the gains the robot ran, confirm the corrected sign of
+the motor's reaction torque, although the model is not validated
+quantitatively.}
 
 \rev{A command-filtered backstepping controller with neural network uncertainty
 compensation is then developed for the TWIP. The controller uses the tilt angle

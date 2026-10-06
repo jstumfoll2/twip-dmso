@@ -18,13 +18,18 @@ argument.}
 reaction torque on the body, an error carried over from revision~7 that the
 angular momentum about the wheel contact point exposes
 (Remark~\ref{rem:momentum}). The robot's recorded balancing runs confirm the
-correction independently (Section~\ref{sec:modelsim}). At switch-on the robot
-recovered \SI{15}{\degree} of lean in \SI{100}{ms}, as the corrected model
-predicts and the models with the revision~7 sign do not, and with the gains the
-robot ran a plant with the revision~7 sign falls within seconds while the robot
-balanced for \SI{21}{s}. The same runs do not validate the parameters, and they
-indicate that the firmware's encoder position is mirrored relative to the
-model. In simulation on the corrected model, the observer
+correction independently (Section~\ref{sec:modelsim}). At switch-on, with the
+command saturated at \SI{-10}{V}, the body was turning back at about
+\SI{100}{\degree/s} within \SI{50}{ms}, the direction the corrected model
+predicts, while the models with the revision~7 sign at the data-sheet motor
+constant have the body still falling forward. Per unit of body rotation the
+base moved as the corrected model predicts, in a relation that does not involve
+the motor, and the drive-away of an early run matched its rate. With the gains
+the robot ran, a simulated plant with the revision~7 sign either falls within
+\SI{5.3}{s} or drives the base metres away, while the robot balanced for
+\SI{21}{s} with its base held. The same runs do not validate the model
+quantitatively, and their switch-on transients indicate, without confirming,
+that the firmware's encoder position is mirrored relative to the model. In simulation on the corrected model, the observer
 satisfies its conditions with margin, stays inside the predicted ultimate bound,
 and under deterministic parameter error identifies the uncertainty 1.6 to 4
 times more accurately than an augmented-state Kalman filter, with more

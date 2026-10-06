@@ -41,7 +41,7 @@ All 21 figure slots are filled. `figures/` is written by
 `thesis_rev8.py` also writes the Chapter 8 table bodies to `generated/tab_*.tex`
 and every number quoted in the text to `generated/results.json`.
 `pv_transient`, `pv_coefficients` and `pv_startup` come from
-`validate_plant.py`. `twip_robot.jpg`, `fbd_wheel.png` and `fbd_pendulum.png`
+`validate_plant.py`, which also writes `pv_frequency.pdf` (not used in the text). `twip_robot.jpg`, `fbd_wheel.png` and `fbd_pendulum.png`
 are copied from the original thesis folder (`Pictures/`, `Thesis/Diagrams/`);
 everything else is generated. The `\figslot` macro is still defined in main.tex
 for future placeholders.
@@ -84,18 +84,24 @@ See Appendix B. In short:
   against the angular momentum about the wheel contact point, which the motor
   torque cannot change.
 * Chapter 5, new Section 5.3: the model is tested against the robot's logs, with
-  three candidates (M1 corrected, +T; M2, -T; M3, revision 7). Three tests
-  decide the sign for M1: the input-free angular-momentum test on the two v9
-  switch-on transients, the tilt response to the saturated -10 V at switch-on,
-  and the v9 loop simulated with the gains recovered from the logs, in which no
-  -T plant stays up beyond 5.3 s. Some predictions favour M2 or M3 and the input
-  regression is inconclusive. M1 is not validated quantitatively: the
-  accelerometer points to a larger Ip, the steady-balancing coefficients
-  contradict all three models, and Ip, l, km, the present motors' deadzone and
-  backlash, and the floor's rolling resistance are unmeasured. The logged encoder position is inferred to
-  be mirrored relative to the model; in closed loop that frame reproduces the v9
-  runs only with a rolling resistance of at least about 4% of the weight, so it
-  is not yet confirmed.
+  three candidates (M1 corrected, +T; M2, -T; M3, revision 7). Its conclusions
+  open with the direct answer to whether the sign error shows in the voltages
+  and controller results: not as a reversed response but in its size. The
+  measured tests that decide the sign for M1 are the body rate 50 ms after
+  switch-on at -10 V (from the gyro), the input-free angular-momentum test on
+  the two v9 switch-on transients, and the drive-away rate of the v8 test 1. In
+  the v9 loop simulated with the gains recovered from the logs, no M2 plant stays
+  up beyond 5.3 s and M3 stays up only by driving the base more than 1.9 m away.
+  Some predictions favour M2 or M3 and the input regression is inconclusive. M1
+  is not validated quantitatively: the switch-on response fixes its tilt input
+  gain only within about 40%, the accelerometer's axle coefficient is 20-50%
+  above it, the steady-balancing coefficients contradict all three models, and
+  Ip, l, km, the present motors' deadzone and backlash, and the floor's rolling
+  resistance are unmeasured. The logged encoder position is inferred to be
+  mirrored relative to the model; in the simulated loop the corrected model
+  holds the base in either frame only with a floor rolling resistance (about 2%
+  of the weight not mirrored, about 6% mirrored), so the closed loop does not
+  decide the frame, which is not yet confirmed by hand.
 
 ## Regenerating results
 

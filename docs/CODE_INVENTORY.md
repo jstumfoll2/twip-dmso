@@ -144,17 +144,17 @@ Found while building the corrected baseline (details in [`BASELINE.md`](BASELINE
     The switch-on transients (encoder vs. tilt, with the accelerometer agreeing) indicate that the
     firmware's logged position is the mirror image, `pos = -(x + r*theta)`, so `x = -pos - r*theta`
     (`scripts/validate_plant.py`, thesis Section 5.3.3); the Section 8.4 hardware replay uses this frame.
-    It is not yet confirmed in closed loop: in simulation the corrected model reproduces the v9 runs in
-    this frame only if the floor's rolling resistance is at least about 4% of the weight (2% unmirrored
-    or with the tilt gains alone). Bench check: motors off, lean the robot so the logged tilt is positive
+    The closed loop does not decide it: in simulation the corrected model holds the base of the v9 runs
+    only if the floor resists rolling, in either frame (about 6% of the weight mirrored, 2% unmirrored or
+    with the tilt gains alone). Bench check: motors off, lean the robot so the logged tilt is positive
     and roll it toward the lean; the logged position rises if the encoder is mirrored.
 17. **The thesis's discrete backlash engages one step late** (it tests the previous input).
 18. **The firmware's compiled-in LQR gains were overridden by potentiometers** on the robot. The gains
     actually used, recovered from the logs by least squares (RMS residual <= 2.4 mV,
     `scripts/validate_plant.py`), are, in the firmware frame, v8 `[-0.22, -0.38, K3, 2.61]` with
     `K3` = 26.9 (test 1) or 72.5 (test 2), and v9 `[-5.49, -5.86, 118.4, 0.90]`. The v9 gains balanced
-    the robot for 12.6 s and 21.2 s, although none of these gain sets is linearly stable on any
-    candidate model.
+    the robot for 12.6 s and 21.2 s, although, in the mirrored frame, none of these gain sets is
+    linearly stable on any candidate model (unmirrored, only the test-2 gains on the thesis model are).
 19. **Motor reaction torque has the wrong sign.** The thesis pendulum moment balance has
     `-(C_L + C_R)`; the torque that turns the wheels clockwise reacts on the body
     counterclockwise, so it is `+(C_L + C_R)`. This flips the back-EMF and input terms of the

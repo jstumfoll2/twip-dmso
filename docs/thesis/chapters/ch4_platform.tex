@@ -47,10 +47,11 @@ balanced the hardware differ from the LQR gains computed from
 Table~\ref{tab:phys}, but much of that difference is in the position and
 velocity gains, whose sign the firmware's encoder frame affects
 (Section~\ref{sec:gaintest}), so it does not measure the parameter error. The
-recorded runs show the error nonetheless: at switch-on the tilt input gain is 8
-to 26\% above the model (Section~\ref{sec:voltagetest}), and the accelerometer
-points to an $I_p$ above the lumped-mass estimate
-(Section~\ref{sec:momtest}). This is the motivation for the uncertainty
+recorded runs give only indications of that error: at switch-on the response
+bounds the tilt input gain of the model to within about 40\%
+(Section~\ref{sec:voltagetest}), and the accelerometer gives an axle
+coefficient 20 to 50\% above the model, which may point to an $I_p$ above the
+lumped-mass estimate (Section~\ref{sec:momtest}). This is the motivation for the uncertainty
 estimation problem rather than an incidental nuisance;
 Appendix~\ref{app:validation} describes a pendulum-swing procedure for
 measuring $I_p$ and $l$ directly.}
@@ -337,20 +338,23 @@ inaccurately measured parameters. The model is also not entirely accurate to the
 pendulum is modeled as a point mass attached by a thin beam to the motor axis,
 whereas the mounting plates create more complex interactions than this.
 \rev{Once the gains were retuned the robot balanced, for up to \SI{21}{s},
-although none of the recorded gain sets is linearly stable on any candidate
-model (Table~\ref{tab:gaintest}).}
+although in the encoder frame inferred from the logs none of the recorded gain
+sets is linearly stable on any candidate model (Table~\ref{tab:gaintest});
+with the encoder not mirrored only the test~2 gains are, and only on M3.}
 \rev{The logs point to a more specific cause (Section~\ref{sec:gaintest}). The
 switch-on transients indicate that the firmware's encoder position is mirrored
 relative to the model. In that frame, position and velocity gains entered with
 the signs of the LQR design act with the opposite sign on the robot, and the
 position and velocity potentiometers, which the firmware maps to $[-15,0]$,
-could not set the signs the design requires. Both v9 runs balanced on the tilt
-gains, with the base held within a few millimeters; in the two v8 runs the base
-drove away until the robot was switched off (test~1) or until a chatter ended
-the run (test~2). In closed-loop simulation the corrected model reproduces the
-v9 runs in that frame only if the floor resisted rolling by a few percent of
-the weight, so the frame is not yet confirmed. Either way, the modification of
-the gains is not evidence of parameter error alone.}
+could not set the signs the design requires. Both v9 runs balanced with the
+base held within a few millimeters; in the two v8 runs the base drove away
+until the robot was switched off (test~1) or until a chatter ended the run
+(test~2). In closed-loop simulation the corrected model holds the base of the
+v9 runs only if the floor resisted rolling, by about 2\% of the weight with
+the encoder not mirrored and about 6\% in the mirrored frame, so the closed
+loop does not decide the frame, which rests on the switch-on transients alone
+until it is checked by hand. Either way, the modification of the gains is not
+evidence of parameter error alone.}
 
 \rev{\begin{remark}[These are the case for the work]
 Three of the observations above are the empirical case for

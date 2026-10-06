@@ -660,9 +660,11 @@ def hardware():
     Q = Gw @ np.diag([1.0, 5.0**2]) @ Gw.T + 1e-10 * np.eye(4)
 
     # The encoders count wheel rotation relative to the body, x / r + theta (twip.sensors).
-    # The firmware's tilt has the sign of theta, but its position is mirrored:
-    # pos = -(x + r theta) (scripts/validate_plant.py, frame_evidence and the input-free
-    # tests).  So x = -pos - r * tilt in the model frame the estimators use.
+    # The firmware's tilt has the sign of theta; its position is inferred to be mirrored,
+    # pos = -(x + r theta), from the switch-on transients (scripts/validate_plant.py
+    # frame_evidence, with the accelerometer agreeing).  Not confirmed in closed loop
+    # (scripts/validate_closed_loop.py).  So x = -pos - r * tilt in the model frame the
+    # estimators use.
     pos_sign = -1.0
 
     def to_model(pos, vel, tilt, rate):

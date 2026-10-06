@@ -16,8 +16,8 @@ convention:
   :mod:`twip.dynamics`).  Velocity is the firmware's backward difference
   ``(pos - pos_prev) / dt``.  The firmware's own logged position is the mirror
   image, ``-(x + r * theta)``, as inferred from the switch-on transients in
-  ``scripts/validate_plant.py`` (thesis Section 5.3.3); that frame is not yet
-  confirmed in closed loop (see ``docs/BASELINE.md``).
+  ``scripts/validate_plant.py`` (thesis Section 5.3.3); the closed loop does not
+  decide that frame, so it is not yet confirmed (see ``docs/BASELINE.md``).
 
 Noise levels are from the thesis's Allan-variance analysis (``allandata.mat``,
 recomputed in :mod:`twip.analysis`).  Each inertial sensor gets white noise plus

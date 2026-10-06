@@ -392,9 +392,10 @@ simulation shows that the equations are implemented as written, not that they
 describe the robot, so this section tests the model against the robot's
 recorded data. Each test is stated with the value every candidate model
 predicts. A candidate is called contradicted by a test when its prediction
-misses the measurement by several times the error of the best candidate; by
-that rule some measured coefficients contradict M1 as well, and they are
-reported.}
+misses the measurement by several times the error of the best candidate, or,
+for a fitted coefficient, lies well outside the bootstrap interval of the
+measurement; by the second rule some measured coefficients contradict M1 as
+well, and they are reported.}
 
 \subsection{Candidate Models}
 \label{sec:candidates}
@@ -417,8 +418,11 @@ rate $\dot x/r$, and the values $k_e=\SI{0.00361}{V.s/rad}$ and
 $I_p=\SI{0.025}{kg.m^2}$ used in revision~7.
 \end{description}
 Table~\ref{tab:candidates} lists the predictions used below. Both input gains
-are positive in every candidate, so a positive voltage pushes the base forward
-and turns the body backward in all three. The sign question therefore does not
+are positive in every candidate at the parameters used here, so a positive
+voltage pushes the base forward and turns the body backward in all three. (For
+M2 and M3, $\mathcal{B}_4$ changes sign below $l\approx\SI{0.06}{m}$, inside the
+range searched in Section~\ref{sec:gaintest}; the M2 plants there fall with
+either sign of the command.) The sign question therefore does not
 show up as a reversed response. It shows up in the magnitudes: per volt, M1
 turns the body seven to ten times faster than M2 and M3, and it moves the
 base much less per unit of body rotation.}
@@ -542,16 +546,21 @@ stabilizes the body only if the logged command and tilt have the signs of $V$
 and $\phi$, because $\mathcal{B}_4>0$ in every candidate. The second is that of
 the encoder relative to the tilt. Each v9 run starts with the robot leaning
 (\SI{24.8}{\degree} in test~4, \SI{15.7}{\degree} in test~5) and the command
-saturated at \SI{-10}{V}. Within \SI{100}{ms} the logged tilt falls by
-\SI{15.1}{\degree} in both runs while the logged position rises by
-\SI{51}{mm}. Since $c_1>0$ in every candidate, \eqref{eq:momenc} below requires
-$p=x+r\phi$ to fall with the tilt, so the logged position is mirrored: it
-equals $-p$. The encoder tests below use this same transient, so their positive
-$c_1$ is not an independent check of the mirror. The accelerometer is, because
-its sign is fixed by gravity through the tilt: in this frame it gives an axle
-coefficient of the same sign and size as the encoder. The mirror is inferred
-from the v9 runs and assumed for v8, and Section~\ref{sec:gaintest} shows that
-it is not yet consistent with the v9 runs in closed loop.}
+saturated at \SI{-10}{V}. Within \SI{100}{ms} the gyroscope shows the body
+turning back at \SIrange{178}{193}{\degree/s} while the logged position rises
+by \SI{51}{mm}, whereas every candidate, driven by the logged \SI{-10}{V},
+predicts $p=x+r\phi$ to fall by 33 to \SI{58}{mm}. The same holds from
+\SIrange{0.1}{0.8}{s}, after any contact with the support has ended: since
+$c_1>0$ in every candidate, \eqref{eq:momenc} below requires $p$ to fall with
+the tilt, and the encoder fit there gives $c_1=+0.20$ only if the logged
+position is mirrored. So the logged position is mirrored: it equals $-p$. The
+encoder tests below use this same transient, so their positive $c_1$ is not an
+independent check of the mirror. The accelerometer is, because its sign is
+fixed by gravity through the tilt: in this frame it gives an axle coefficient
+of the same sign as the encoder (0.19 and 0.24, against 0.16 and 0.16 from the
+encoder). The mirror is inferred from these two v9 transients alone and assumed
+for v8. The closed loop of Section~\ref{sec:gaintest} does not decide it, and
+a hand check would (Section~\ref{sec:valresults}).}
 
 \subsection{Input-Free Angular Momentum Test}
 \label{sec:momtest}
@@ -606,9 +615,10 @@ with the initial position and velocity and a constant offset fitted per window.
 Figure~\ref{fig:pvtransient} shows the result for the v9 runs, and
 Table~\ref{tab:momtest} lists all four runs. M1 has the smallest error in every
 run and on both sensors, by a factor of 2.5 to 10 against M2 and 3 to 16
-against M3. Only tests~4 and~5 are diagnostic, however. In tests~1 and~2 the
-encoder moves \SI{5.7}{mm} and \SI{8.2}{mm}, a few backlash widths, and there
-the candidate with the smallest predicted coupling wins by default.
+against M3. Only tests~4 and~5 are diagnostic on the encoder, however: in
+tests~1 and~2 the encoder moves only \SI{5.7}{mm} and \SI{8.2}{mm}, and there
+stick-slip in the gearbox can let the candidate with the smallest predicted
+coupling win by default. The accelerometer is not behind the gearbox.
 
 Fitting $c_1$ freely, instead of taking it from a candidate, gives $c_1=0.205$
 (bootstrap interval 0.12 to 0.25) in test~4 and 0.203 (0.15 to 0.26) in test~5,
@@ -619,14 +629,21 @@ not. The accelerometer, which the correction does not affect, gives the axle
 coefficient $c_1-r=0.189$ (0.169 to 0.210) and 0.242 (0.208 to 0.274) in
 tests~4 and~5 (M1: 0.159; M2: 0.741; M3: 1.037). These values are far from
 the $-T$ models, but they are 20 to 50\% above M1 with intervals that exclude
-it, and in test~5 they exceed the encoder's 0.158. Within M1 the axle
-coefficient depends mainly on $I_p$, and these values correspond to
-$I_p\approx\SI{0.022}{kg.m^2}$ and \SI{0.032}{kg.m^2} at the nominal $l$,
-against the \SI{0.0169}{kg.m^2} of Table~\ref{tab:phys}. In tests~1 and~2 the
-fits are inconclusive: test~1 gives $c_1=0.09$ ($-0.01$ to 0.20) on the
-encoder, and test~2 gives $c_1-r=-0.10$ ($-0.20$ to 0.01) on the
-accelerometer. The gravity coefficient $c_2$ is not identified in the v9
-encoder fits, and where a free fit does identify it (the test~5
+it, and in test~5 the value lies above the whole encoder interval ($c_1-r=0.158$,
+0.101 to 0.211). Within M1 the axle coefficient depends mainly on $I_p$, and
+the test~4 value corresponds to $I_p\approx\SI{0.023}{kg.m^2}$ at the nominal
+$l$, against the \SI{0.0169}{kg.m^2} of Table~\ref{tab:phys}. The test~5 value
+is not converted, because the same fit gives a gravity coefficient of $+43$ (28
+to 59), which no candidate allows. A rolling resistance of the floor would not
+explain the excess: in simulation it biases the coefficient low
+(Section~\ref{sec:gaintest}). In tests~1 and~2 the fits are mixed: the test~1
+accelerometer gives $c_1-r=0.18$ (0.13 to 0.22) and the test~2 encoder
+$c_1=0.19$ (0.13 to 0.25), both consistent with M1 and far from M2 and M3,
+while the test~1 encoder gives $c_1=0.09$ ($-0.01$ to 0.20) and the test~2
+accelerometer $c_1-r=-0.10$ ($-0.20$ to 0.01), a sign no candidate allows. The
+test~1 accelerometer is the only accelerometer interval that contains M1, and
+it comes from a third event. The gravity coefficient $c_2$ is not identified in
+the v9 encoder fits, and where a free fit does identify it (the test~5
 accelerometer, the test~1 accelerometer, the test~2 encoder) it is positive,
 the wrong sign for every candidate.}
 
@@ -653,7 +670,8 @@ Test 2 & 0.5 & 1.7 & 2.1 & 0.8 & 2.0 & 2.5 \\
 \includegraphics[width=0.9\textwidth]{pv_transient}
 \caption{Input-free test on the switch-on transients of tests~4 and~5, plotted
 over \SIrange{0.1}{1.5}{s} (Table~\ref{tab:momtest} uses
-\SIrange{0.1}{0.8}{s}, where the errors of M1 are smaller). Top: the logged
+\SIrange{0.1}{0.8}{s}; over the longer window the errors of M1 stay near 1.5
+and \SI{1.2}{mm} in test~4 but grow to 5.5 and \SI{4.1}{mm} in test~5). Top: the logged
 encoder position and each candidate's prediction from the measured tilt
 history. Bottom: residual of the doubly integrated accelerometer against each
 candidate.}
@@ -661,8 +679,8 @@ candidate.}
 \end{figure}
 
 \rev{\paragraph{Steady balancing.} After the first second the robot is in a
-stick-slip limit cycle: the encoder stays frozen for \SIrange{0.3}{0.8}{s}
-while the body sways, then jumps by about a backlash width. During those
+stick-slip limit cycle: the encoder stays frozen for several tenths of a second
+while the body sways, then jumps by a few counts. During those
 intervals $p$ does not follow the wheel, and \eqref{eq:momenc} fails for every
 candidate ($R^2$ of 0.05 to 0.11 for the filtered encoder fit). The
 accelerometer, which sees the axle directly, gives a $\ddot\phi$ coefficient of
@@ -672,9 +690,13 @@ accelerometer, which sees the axle directly, gives a $\ddot\phi$ coefficient of
 both runs (11.6 to 19.6 and 11.6 to 17.8), contradicts all three, which predict
 $c_2+g=4.2$ for M1 and $-28.9$ for M2 and M3. Gear stiction cannot cause this,
 because it acts between body and wheels and drops out of \eqref{eq:momtest}
-like the motor torque. An external force is needed, such as the rolling
-resistance of the floor, which Section~\ref{sec:gaintest} also points to, or an
-error in the integrated tilt or in $l$. The frequency response from the
+like the motor torque. An external force is needed, or an error in the
+integrated tilt or in $l$. Rolling resistance of the floor is a candidate, but
+it has not been shown to fit: in the simulated v9 loop, the 6 to 10\% of the
+weight that holds the base in the mirrored frame (Section~\ref{sec:gaintest})
+gives a $\phi$ coefficient of 6 to 9 and lowers the $\ddot\phi$ coefficient to
+0.05 to 0.10, against 14.1 and 0.16 to 0.17 measured; with the encoder not
+mirrored the $\ddot\phi$ coefficient is no higher. The frequency response from the
 gyroscope to the encoder rate does not discriminate either, because a
 simulated M2 plant with backlash reproduces the low values measured.
 
@@ -694,12 +716,13 @@ they use the same IMU height as the analysis. The M2 runs move 300 to
 \SI{760}{mm} in the window, against 39 to \SI{96}{mm} on the robot. Over the
 longer window \SIrange{0.1}{1.5}{s} the free fit returned $c_1=-0.36$ and 0.27
 for the M2 plants with friction, far from their true 0.79, although the ranking
-was still right, and the accelerometer fit is up to 12\% low in every simulated
-run. The bootstrap intervals quoted here are therefore not calibrated 95\%
-intervals. With a rolling resistance of 6\% or 10\% of the weight (simulated by
-the script of Section~\ref{sec:gaintest}), M1 plants are still ranked first,
-with $c_1$ biased low at 10\%; M2 plants with that much resistance do not
-balance at all. The stick-slip of the robot is stronger
+was still right, and on \SIrange{0.1}{0.8}{s} the accelerometer fit is 3 to
+12\% low in seven of the eight simulated runs (and unbiased in the eighth). The
+bootstrap intervals quoted here are therefore not calibrated 95\% intervals.
+With a rolling resistance of 6\% or 10\% of the weight (simulated by the script
+of Section~\ref{sec:gaintest}), M1 plants are still ranked first, with the
+accelerometer coefficient 6 to 8\% low at 6\% and 25 to 52\% low at 10\%; M2
+plants with that much resistance do not balance at all. The stick-slip of the robot is stronger
 than the simulated backlash and friction produce, which is why the steady-state
 encoder fit works in simulation and not on the logs.}
 
@@ -721,42 +744,61 @@ exclude M1; none includes M2 or M3.}
 \rev{The switch-on transient also tests the input gain, because for at least
 the first \SI{60}{ms} the command is saturated at a known \SI{-10}{V} and the
 motion is large. It is a consistency check rather than a clean test: the robot
-may still have been touching the hand or stand that held it, the models start
-from rest at the logged lean, and the tilt compared is the on-board filtered
-tilt, which during these accelerations carries part of the accelerometer's
-$\ddot x/g$ error. Each candidate is simulated open loop with the logged
-voltages (Figure~\ref{fig:pvstartup}). After \SI{100}{ms} the measured tilt has
-fallen by \SI{15.1}{\degree} in both runs. M1 predicts \SI{-12.7}{\degree} and
-\SI{-14.3}{\degree}. M2 predicts \SI{+4.6}{\degree} and \SI{+1.7}{\degree}, and
-M3 \SI{+2.8}{\degree} and \SI{+0.6}{\degree}: with their tilt input gain,
-\SI{10}{V} is too weak to overcome gravity at these angles, and the robot keeps
-falling. With the command reversed they fall faster still. Scaling $k_m$ to
-fit the first \SI{100}{ms}, M1 needs a factor of 1.26 and 1.08 (an in-situ
-$\mathcal{B}_4$ of \SIrange{12.6}{14.7}{rad/s^2} per volt, against 11.67); a
-battery above the nominal \SI{11.1}{V} assumed by the PWM scaling accounts for
-up to 1.14 of that. M3 needs a factor of 8 to 10 and then misses the encoder
-by \SIrange{180}{250}{mm}, and M2 does not fit at any factor up to the end of
-the search at~32. Freeing $I_p$ (\SIrange{0.008}{0.030}{kg.m^2}), $l$
-(\SIrange{0.05}{0.15}{m}) and $k_m$ (0.5 to 5 times) together does not rescue
-M2 in test~4, with the command held at \SI{-10}{V}: its best joint fit reaches
-\SI{-9.1}{\degree} and \SI{-84}{mm} at \SI{100}{ms}, against
-\SI{-15.1}{\degree} and \SI{-51}{mm} measured, and matching the tilt alone
-needs $k_m$ 4.5 times larger and predicts \SI{-124}{mm}. The encoder alone does
-not discriminate here, since the encoder prediction of M3 is about as close as
-that of M1; the discrimination is in the tilt. This test shares its two events
+may still have been touching the hand or stand that held it, and the models
+start from rest at the logged lean. Each candidate is simulated open loop with
+the logged voltages (Figure~\ref{fig:pvstartup}). The cleanest measured
+quantity is the body rate from the gyroscope, because the on-board filtered
+tilt carries part of the accelerometer's $\ddot x/g$ error during these
+accelerations: at \SI{50}{ms} the filtered tilt has fallen by
+\SI{5.5}{\degree} and \SI{5.4}{\degree}, while the gyroscope rate,
+\SI{-98}{\degree/s} and \SI{-110}{\degree/s}, implies about \SI{2.5}{\degree}.
+
+At \SI{50}{ms} the body is therefore already turning back. M1 predicts
+\SI{-139}{\degree/s} and \SI{-168}{\degree/s}. M2 predicts \SI{+44}{\degree/s}
+and \SI{+13}{\degree/s}, and M3 \SI{+28}{\degree/s} and \SI{+5}{\degree/s}:
+with their tilt input gain, \SI{10}{V} does not overcome gravity at these
+angles, and the body is still falling forward. With the command reversed they
+fall faster still. At \SI{100}{ms} the measured rate is \SI{-193}{\degree/s}
+and \SI{-178}{\degree/s}, against \SI{-206}{\degree/s} and
+\SI{-130}{\degree/s} for M1, while M2 and M3 are still turning the wrong way.
+The direction excludes the $-T$ models only for $k_m$ near its data-sheet
+value, however: at nominal $I_p$ and $l$, M3 turns the body back within
+\SI{50}{ms} from 2.5 times that $k_m$ in test~4 and 1.5 times in test~5, and
+M2 from twice in test~5 (in test~4 not up to five times). Reaching the
+measured rate in both runs needs more than five times.
+
+The size of the response fixes the tilt input gain of M1 only loosely. Scaling
+$k_m$ to fit the filtered tilt over the first \SI{100}{ms} needs a factor of
+1.26 and 1.08, but fitting the gyroscope rate at \SI{50}{ms} needs 0.73 and
+0.64. The switch-on response therefore bounds the tilt input gain of M1 only to
+within about 40\%, in either direction, and contact with the support would slow
+the measured rotation further. With $I_p$, $l$ and $k_m$ freed (\SIrange{0.008}{0.030}{kg.m^2},
+\SIrange{0.05}{0.15}{m}, and 0.5 to 5 times) and the command held at
+\SI{-10}{V}, M2 can match the filtered tilt at \SI{100}{ms}, but only with
+$k_m$ three to five times the data-sheet value and $l$ of 0.12 to
+\SI{0.15}{m}, and it then predicts the base to move 113 to
+\SI{128}{mm}, against \SI{51}{mm} measured. That discrimination is the
+input-free relation \eqref{eq:momenc} applied to the first \SI{100}{ms}, so it
+is not independent of Section~\ref{sec:momtest}; what this section adds is that
+$k_m$ would have to be several times its data-sheet value. At nominal
+parameters the encoder does not discriminate on its own, since the encoder
+prediction of M3 (\SI{-47}{mm} and \SI{-48}{mm}) is closer than that of M1
+(\SI{-58}{mm}) to the measured \SI{-51}{mm}. This test shares its two events
 with Section~\ref{sec:momtest} and with the frame of
 Section~\ref{sec:datatests}.
 
-This is how the sign error shows in the voltages: not as a reversed response,
-but as a tilt authority seven to twelve times smaller than the robot showed at
-switch-on. The authority the logs show is close to that of M1.}
+This is how the sign error shows in the voltages: not as a reversed response
+to the voltage, but as a tilt authority too small to turn the body back against
+gravity within the first \SI{50}{ms}, which the robot did.}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.9\textwidth]{pv_startup}
-\caption{The first \SI{150}{ms} after switch-on at \SI{-10}{V}: measured tilt
-and encoder position, and each candidate simulated open loop from rest at the
-logged initial tilt with the logged voltages.}
+\caption{The first \SI{150}{ms} after switch-on at \SI{-10}{V}: the on-board
+filtered tilt and the encoder position, and each candidate simulated open loop
+from rest at the logged initial tilt with the logged voltages. The filtered
+tilt overstates the fall during these accelerations; the gyroscope rates
+quoted in the text are the cleaner comparison.}
 \label{fig:pvstartup}
 \end{figure}
 
@@ -775,9 +817,13 @@ test~1 and 72.5 in test~2. In the mirrored frame of
 Section~\ref{sec:datatests} the position and velocity gains change sign, so all
 four runs fed back position and velocity with the opposite sign to the LQR
 gains designed for this plant, $K=[-0.30,\ -13.4,\ 22.1,\ 3.12]$ on M1 and
-$[-0.30,\ -0.90,\ 74.9,\ 11.9]$ on M3. They are small, however: at the few
-millimeters the base moves near upright they contribute tens of millivolts,
-against about \SI{2}{V} per degree of tilt.
+$[-0.30,\ -0.90,\ 74.9,\ 11.9]$ on M3. They contribute little to the tilt
+loop: at the few millimeters the base moves near upright they contribute tens
+of millivolts, against about \SI{2}{V} per degree of tilt in v9 (0.5 and
+\SI{1.3}{V} in v8). They set the slow base mode, however: with the v9 gains M1
+has a mode at \SI{0.9}{s^{-1}} in the mirrored frame and \SI{0.04}{s^{-1}}
+with the encoder not mirrored (without the estimator,
+Table~\ref{tab:gaintest}).
 
 Table~\ref{tab:gaintest} gives the least stable mode of each loop on each
 candidate. Test~1 drove away for \SI{3}{s}, growing at \SI{1.49}{s^{-1}}, until
@@ -788,11 +834,13 @@ tilt gain, not by the frame. Without the estimator, the rate of M1 is
 \SI{1.35}{s^{-1}} with the encoder not mirrored; that of M2 stays above
 \SI{5.4}{s^{-1}} in every case, while that of M3 falls to \SI{1.48}{s^{-1}}
 with the encoder not mirrored. So test~1 contradicts M2 but separates M1 from
-M3 only in the mirrored frame. The rate also depends on $k_e$: with the value
-of the motor sweeps M1 predicts \SI{2.0}{s^{-1}}.
-Test~2 drifted at \SI{1.6}{s^{-1}}, between M1 and M3 (0.65 and 0.75) and M2
-(3.89), and ended in a chatter at the \SI{38}{Hz} Nyquist frequency of its loop,
-at \SI{\pm10}{V}, which no linear model predicts.
+M3 only in the mirrored frame. The rate also depends on $k_e$: with the values
+of the motor sweeps (0.49 to \SI{0.57}{V.s/rad}) M1 predicts 2.0 to
+\SI{2.2}{s^{-1}}. Test~2 drifted at \SI{1.6}{s^{-1}}, between M1 and M3 (0.65
+and 0.75) and M2 (3.89), so M1 and M2 miss it by similar factors; with the
+encoder not mirrored the test~2 loop on M3 is stable. The run ended in a
+chatter at the \SI{38}{Hz} Nyquist frequency of its loop, at \SI{\pm10}{V},
+which no linear model predicts.
 
 With the v9 gains every candidate is linearly unstable, and no input-gain
 multiplier between 0.1 and 10 stabilizes any of them, yet the robot balanced
@@ -804,28 +852,40 @@ sets ($I_p$ from 0.008 to \SI{0.030}{kg.m^2}, $l$ from 0.05 to \SI{0.15}{m},
 $k_m$ from 0.5 to 4 times and $k_e$ from 1 to 1.7 times nominal), clean and
 with gearbox friction, backlash and rolling resistance, with the encoder
 mirrored, not mirrored, and with the tilt gains alone
-(Table~\ref{tab:v9sim}). No M2 plant stayed up longer than \SI{5.3}{s}.
-M3 stayed up only with the encoder not mirrored, and then drove at least
-\SI{1.9}{m} away. M1 balanced with the base held in 61 of the 160 sets with
-the encoder not mirrored and in 115 with the tilt gains alone, but in only 2
-in the mirrored frame, where its \SI{0.9}{s^{-1}} mode drives the base off.
-The rolling resistance of the floor changes that. For the nominal M1 in the
-mirrored frame, a resistance of 4\% of the weight holds the base within
-\SI{28}{mm} over the last \SI{10}{s}, and 6\% within \SI{8}{mm}, while M2 and
-M3 fall within \SI{3}{s} at every level from 0 to 15\% in every frame. The
-floor the robot ran on was not recorded. The simulation, from
+(Table~\ref{tab:v9sim}). No M2 plant stayed up longer than \SI{5.3}{s}. This
+does not rest on the complementary filter: with the gyroscope alone
+($\alpha=1$), the nominal M2 loop falls within 0.7 to \SI{5.5}{s} in every
+frame, clean or with friction and backlash. M3 stayed up only with the encoder
+not mirrored, and then drove at least \SI{1.9}{m} away. With gearbox friction,
+backlash and 2\% rolling resistance, M1 balanced with the base held in 61 of
+the 160 sets with the encoder not mirrored and in 115 with the tilt gains
+alone, but in only 2 in the mirrored frame, where its \SI{0.9}{s^{-1}} mode
+drives the base off. Clean, it held the base in none of the 160 sets in any
+frame. M1 therefore holds its base only if the floor resists rolling, in
+either frame. For the nominal M1 in the mirrored frame, a resistance of 4\% of
+the weight keeps it up with the base wandering \SIrange{23}{28}{mm} over the
+last \SI{10}{s}, and 6\% holds the base within \SI{8}{mm}; with the encoder not
+mirrored, 2\% holds it within 6 to \SI{10}{mm}. M2 and M3 fall within \SI{3}{s} at
+every level from 0 to 15\% in every frame. The frame thus sets how much floor
+resistance the v9 runs require, not whether they require it. The floor the
+robot ran on was not recorded. The simulation, from
 \texttt{scripts/validate\_closed\_loop.py}, writes its results to
 \texttt{generated/plant\_closedloop.json}.
 
 This is how the sign error shows in the controller results. With the gains the
-robot actually ran, a plant with the revision~7 sign falls within a few seconds
-whatever its parameters or the encoder frame, while the robot balanced for
-\SI{21}{s}. Only M1 balances, and in the frame inferred from the switch-on
-transients it needs the floor to resist rolling by a few percent of the
-weight, the kind of external force the steady-balancing coefficients also
-call for. Which of the two holds the base, the frame or the floor, is the one
-question about the v9 runs that the logs leave open; two bench checks settle
-it (Section~\ref{sec:valresults}).
+robot actually ran, no plant with the revision~7 sign balances with its base
+held over the parameter range tried: M2 falls within \SI{5.3}{s} in every set
+and frame, and M3 stays up only with the encoder not mirrored, where it drives
+at least \SI{1.9}{m} away, while the robot balanced for \SI{21}{s} with its
+base held within a few millimeters. Only M1 balances with its base held, and
+only if the floor resists rolling, by about 2\% of the weight with the encoder
+not mirrored and about 6\% in the frame inferred from the switch-on transients.
+In the simulated loop that resistance does not reproduce the steady-balancing
+coefficients of Section~\ref{sec:momtest}, so the two do not yet support each
+other. The closed loop therefore confirms the sign but does not decide the
+frame. The floor resistance and the encoder frame are what the logs leave open
+about how the v9 runs held their base; two bench checks settle them
+(Section~\ref{sec:valresults}).
 
 A last consistency check concerns the tilt measurement. In closed loop, the
 base acceleration needed to balance an M2 plant makes the accelerometer read
@@ -873,9 +933,10 @@ Encoder frame & M1 & M2 & M3 \\
 Mirrored (Section~\ref{sec:datatests}) & 2 & 0 & 0 \\
 Not mirrored & 61 & 0 & 0 \\
 Tilt gains only & 115 & 0 & 0 \\
-Longest up, any set or frame & \SI{21}{s} & \SI{5.3}{s} & \SI{21}{s}, drives off \\
+Any frame, clean (no friction, backlash or floor) & 0 & 0 & 0 \\
+Longest up, any set or frame, clean or not & \SI{21}{s} & \SI{5.3}{s} & \SI{21}{s}, drives off \\
 \midrule
-Nominal, mirrored, floor 4, 6, 10\% & held; 28, 8, \SI{4}{mm} & falls & falls \\
+Nominal, mirrored, floor 4, 6, 10\%: base range & 28, 8, \SI{4}{mm} & falls & falls \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -886,9 +947,11 @@ Nominal, mirrored, floor 4, 6, 10\% & held; 28, 8, \SI{4}{mm} & falls & falls \\
 \rev{Regressing $\ddot\phi$ on the states and the voltage over the switch-on
 transients does not settle $\mathcal{B}_4$. With the command acting in the same
 loop, tests~1, 2, 4 and~5 give 8.2, 1.2, 2.5 and 9.5 per volt; with the command
-acting in the next loop they give $-0.3$, 2.8, 4.2 and 6.7. Two runs point
-toward M1 and two toward M2. Test~1 with the command in the same loop also
-gives a negative ratio $\mathcal{B}_p/\mathcal{B}_4$, which no candidate
+acting in the next loop they give $-0.3$, 2.8, 4.2 and 6.7. With the
+same-loop timing two runs point toward M1 and two toward M2; with the next-loop
+timing three are nearer M2 and the fourth lies midway. Tests~1 and~2 with the
+command in the same loop also give a negative ratio
+$\mathcal{B}_p/\mathcal{B}_4$ ($-0.09$ and $-0.42$), which no candidate
 allows. The bootstrap has only about three blocks per window, and several
 estimates fall outside their own intervals, so no interval is quoted. $k_e$ is
 not identifiable from the back-EMF term. The regression is confined to the
@@ -902,10 +965,15 @@ for M2, 9.2 and 27.4 for M3, and 9.9 and 18.5 for holding the state. In the v8
 runs, with a few millimeters of motion, M2 is better (\SI{0.54}{mm} and
 \SI{1.14}{mm} against 0.80 and 1.83 in test~1; 1.50 and 3.95 against 2.11 and
 5.05 in test~2), and in steady balancing M2 predicts the base better than M1 in
-both v9 runs. For the tilt, holding the state beats every candidate. In steady
-balancing M2 and M3 predict the tilt about three times better than M1 in
-test~5 (\SI{0.22}{\degree} and \SI{0.20}{\degree} against \SI{0.61}{\degree} at
-\SI{100}{ms}). A likely reason is that small commands barely move the wheels
+both v9 runs. These comparisons do not discriminate, however: there the base
+barely moves, M2 predicts less base motion per volt, and holding the state or
+extrapolating at constant velocity does about as well or better (in test~2,
+holding the state gives \SI{1.15}{mm} and \SI{1.44}{mm}). For the tilt,
+holding the state beats every candidate. In steady balancing M2 and M3 predict
+the tilt about three times better than M1 in test~5 (\SI{0.22}{\degree} and
+\SI{0.20}{\degree} against \SI{0.61}{\degree} at \SI{100}{ms}); in test~4 M3
+is slightly better than M1 and M2 slightly worse (0.61, 0.65 and
+\SI{0.65}{\degree}). A likely reason is that small commands barely move the wheels
 through the backlash and stiction, so the larger input gain of M1 overstates
 their effect; this has not been tested.
 
@@ -915,44 +983,71 @@ fitted deadzones of \SIrange{1.9}{2.4}{V} and, for one motor,
 $R=\SI{2.4}{\ohm}$ (the fitted $R$ of the other motor is negative). They were
 recorded on the earlier 34:1 gearmotors, and no torque was logged, so $k_m$
 cannot be found from them. Scaled by the gear ratio they still exceed the
-$k_e$ of M1, \SI{0.307}{V.s/rad}, by 40 to 60\%. Since the motors differ, they
+$k_e$ of M1, \SI{0.307}{V.s/rad}, by 40 to 65\%. Since the motors differ, they
 confirm only the order of magnitude of $k_e$ in M1 and M2; the value
 \SI{0.00361}{V.s/rad} of M3 is two orders too small.}
 
 \subsection{Conclusions and Remaining Measurements}
 \label{sec:valresults}
 
-\rev{Table~\ref{tab:verdict} summarizes the tests. Three of them decide the
-sign. On the two v9 switch-on transients, M1 predicts the motion 3 to 16 times
-better than M2 and M3 on both the encoder and the accelerometer. The tilt
-response to the saturated \SI{-10}{V} at switch-on is one that M2 cannot
-produce for any $I_p$, $l$ and $k_m$ tried. And with the gains the robot ran,
-no plant with the revision~7 sign stays up for more than a few seconds over
-the whole parameter range, while the robot balanced for \SI{21}{s}. This
-confirms the reaction sign of \eqref{eq:pendm} by measurement, independently
-of the momentum argument of Remark~\ref{rem:momentum}. The first two tests
-share the same two switch-on events, and the third rests on the simulator; the
-26 unanalysed v7 logs are the natural replication.
+\rev{Would the sign error show in the voltages and in the controller results?
+Not as a reversed response: in all three candidates a positive voltage pushes
+the base forward and turns the body backward. It shows in the size of the
+response, and the logs measure it in three places
+(Table~\ref{tab:verdict}). First, at switch-on, with the command saturated at
+\SI{-10}{V}, the gyroscope reads \SI{-98}{\degree/s} and \SI{-110}{\degree/s}
+after \SI{50}{ms}: the body is already turning back. M1 predicts
+\SI{-139}{\degree/s} and \SI{-168}{\degree/s}, while M2 and M3 have the body
+still falling forward (\SI{+44}{\degree/s} and \SI{+13}{\degree/s},
+\SI{+28}{\degree/s} and \SI{+5}{\degree/s}) and turn it back only with $k_m$
+well above its data-sheet value. Second, per unit of body rotation, the base
+moved as M1 predicts and about three to five times less than M2 and M3
+predict, on the encoder and on the accelerometer, in a relation that involves
+neither the voltage nor the motor constants; on the two v9 switch-on
+transients M1 predicts the motion 4 to 16 times better than M2 and M3. Third,
+with the test~1 gains the base drove away at \SI{1.49}{s^{-1}}; M1 predicts
+1.48 (2.0 to 2.2 with the $k_e$ of the motor sweeps) and M2 more than 5.4 in
+every encoder frame, although the \SI{1.6}{s^{-1}} drift of test~2 is missed
+by M1 and M2 by similar factors. The first two come from the same two
+switch-on events, the third from a third run, on which the accelerometer also
+gives an axle coefficient close to that of M1. With the v9 gains no linear
+model is stable, so those runs speak only through the simulated loop, where no
+plant with the revision~7 sign balances with its base held over the parameter
+range tried: M2 falls within \SI{5.3}{s}, and M3 stays up only with the encoder
+not mirrored, then driving at least \SI{1.9}{m} away, while the robot balanced
+for \SI{21}{s} with its base held within a few millimeters. This confirms the
+reaction sign of \eqref{eq:pendm} by measurement, independently of the
+momentum argument of Remark~\ref{rem:momentum}. The 26 unanalysed v7 logs are
+the natural further replication.
 
 The tests do not validate M1 quantitatively:
 \begin{itemize}[leftmargin=*]
 \item the axle coefficient measured by the accelerometer exceeds that of M1 by
-20 to 50\%, with intervals that exclude it, which points to an $I_p$ above the
-lumped-mass estimate;
-\item the steady-balancing coefficients contradict all three models;
-\item in the encoder frame inferred from the switch-on transients, M1
-reproduces the v9 runs only if the floor resisted rolling by at least about
-4\% of the weight, which was not measured;
-\item M2 or M3 predict the base in tests~1 and~2, and the tilt near upright,
-better than M1;
-\item the tilt input gain of M1 agrees with the switch-on response to within
-8\% in test~5 and 26\% in test~4, of which a full battery explains up to 14\%,
-and all of which lies within the 35\% spread of the data-sheet $k_m$.
+20 to 50\%, with intervals that exclude it; in test~4 this corresponds to an
+$I_p$ of about \SI{0.023}{kg.m^2}, but the test~5 fit also has a gravity
+coefficient of the wrong sign, so the excess may come from an unmodelled force
+rather than from $I_p$;
+\item the steady-balancing coefficients contradict all three models, and the
+floor resistance that the closed loop needs does not reproduce them;
+\item in the simulated loop M1 holds the base of the v9 runs (range under
+\SI{10}{mm}) only if the floor resisted rolling, by about 6\% of the weight in
+the encoder frame inferred from the switch-on transients and about 2\% with
+the encoder not mirrored; the resistance was not measured, so the closed loop
+does not decide the frame;
+\item the switch-on response bounds the tilt input gain of M1 only to within
+about 40\%: the gyroscope rate at \SI{50}{ms} asks for 0.64 to 0.73 times the
+data-sheet $k_m$, the filtered tilt for 1.08 to 1.26 times;
+\item M2 and M3 predict the tilt near upright better than M1 in test~5,
+although no candidate beats holding the state; M2 also predicts the base
+better than M1 in tests~1 and~2 and in steady balancing, but there the base
+barely moves and holding the state or extrapolating at constant velocity does
+about as well, so these comparisons do not discriminate;
+\item the drift of test~2 is missed by M1 and M2 by similar factors.
 \end{itemize}
 
 The same data show the limits of all three linear models. Near upright the
-robot is dominated by gear backlash and stick-slip, by friction with the floor,
-and possibly by a motor deadzone (about \SI{2}{V} on the earlier gearmotors,
+robot is dominated by gear backlash and stick-slip, by an external force such
+as friction with the floor, and possibly by a motor deadzone (about \SI{2}{V} on the earlier gearmotors,
 not measured on the present ones), none of which the models contain. These
 effects are what the uncertainty terms $d_1$ and $d_2$ of \eqref{eq:plantform}
 must absorb on the real robot, and they bound how well any model-based
@@ -964,10 +1059,14 @@ from a lumped-mass idealization, and $k_m$ from data sheet values that differ by
 $I_p\in[0.010,0.025]\,\si{kg.m^2}$ and $l\in[0.065,0.085]\,\si{m}$, the $c_1$ of
 M1 stays between 0.16 and 0.25, while that of M2 stays above 0.40. The $c_1$ of
 M2 falls with larger $l$, to 0.29 at $I_p=\SI{0.010}{kg.m^2}$ and
-$l=\SI{0.12}{m}$, and to 0.24, inside the v9 encoder intervals, only at
-$I_p=\SI{0.005}{kg.m^2}$, less than a third of the lumped-mass value. The
-switch-on tilt response and the closed loop exclude M2 over the whole range
-tried. A few bench measurements would complete the validation
+$l=\SI{0.12}{m}$, outside the v9 encoder intervals but with an axle
+coefficient, 0.25, inside the test~5 accelerometer interval, and to 0.24,
+inside the v9 encoder intervals, only at $I_p=\SI{0.005}{kg.m^2}$, less than a
+third of the lumped-mass value. The switch-on response, tilt and encoder
+together, and the closed loop exclude M2 over the whole range tried; the
+direction of the body rate at \SI{50}{ms} alone excludes the $-T$ models, at
+nominal $I_p$ and $l$, only for $k_m$ below about 1.5 to 2.5 times its
+data-sheet value. A few bench measurements would complete the validation
 (Table~\ref{tab:benchtests}). The swing period of the body with the wheels
 clamped gives $I_p$ at a measured $l$. Free-run and locked-rotor tests give
 $k_e$, $k_m$, $R$ and the reflected armature inertia. Blocking the wheels and
@@ -982,23 +1081,23 @@ together they decide how the v9 runs held their base.}
 \caption{Validation summary. The switch-on rows share the same two events.}
 \label{tab:verdict}
 \small
-\begin{tabular}{p{0.37\textwidth}p{0.18\textwidth}p{0.16\textwidth}p{0.16\textwidth}}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.33\textwidth}>{\raggedright\arraybackslash}p{0.2\textwidth}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.17\textwidth}}
 \toprule
 Test & M1 & M2 & M3 \\
 \midrule
 Simulation checks (Table~\ref{tab:simchecks}) & pass & pass & pass \\
 Input-free, switch-on, error (tests 4, 5) & best & contradicted & contradicted \\
 Input-free, switch-on, fitted coefficient & encoder agrees; accelerometer 20--50\% high & contradicted & contradicted \\
-Input-free, switch-on, tests 1, 2 & no decision & no decision & no decision \\
+Input-free, switch-on, tests 1, 2 & two of four fits agree & no fit agrees & no fit agrees \\
 Input-free, steady balancing & contradicted & contradicted & contradicted \\
-Tilt response to \SI{-10}{V} at switch-on & consistent ($k_m\times$1.08--1.26) & contradicted & contradicted \\
-Drive-away rate with the test~1 gains & consistent & contradicted & depends on frame \\
-Drift rate with the test~2 gains & 2.5$\times$ too slow & 2.4$\times$ too fast & 2.2$\times$ too slow \\
-Balancing \SI{21}{s} with the v9 gains (simulated loop) & consistent; needs floor resistance in the mirrored frame & contradicted & contradicted \\
+Body rate \SI{50}{ms} after switch-on at \SI{-10}{V} & turning back, as measured; gain within about 40\% & still falling at nominal $k_m$ & still falling at nominal $k_m$ \\
+Drive-away rate with the test~1 gains & consistent (2.0--2.2 with the swept $k_e$) & contradicted & depends on frame \\
+Drift rate with the test~2 gains & 2.5$\times$ too slow & 2.4$\times$ too fast & 2.2$\times$ too slow; stable if not mirrored \\
+Balancing \SI{21}{s} with the v9 gains (simulated loop) & consistent if the floor resists rolling (2\% not mirrored, 6\% mirrored) & contradicted (falls) & contradicted (falls or drives off) \\
 Complementary filter in the loop & consistent & weakly against & not tested \\
 Input regression, $\mathcal{B}_4$ & no decision & no decision & no decision \\
-Prediction, base & best in tests 4, 5 & best in tests 1, 2 and steady & \\
-Prediction, tilt near upright & worst; all worse than holding & better than M1 & better than M1 \\
+Prediction, base & best in tests 4, 5 & better than M1 in tests 1, 2 and steady, as is holding the state & \\
+Prediction, tilt near upright & worse than M3, and than M2 in test 5; all worse than holding & better than M1 in test 5, not in test 4 & better than M1 \\
 Motor sweeps (earlier motors), $k_e$ & order of magnitude & order of magnitude & contradicted \\
 \bottomrule
 \end{tabular}

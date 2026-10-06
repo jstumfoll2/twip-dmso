@@ -149,19 +149,23 @@ The corrected baseline is checked against physics:
 Against hardware data, `scripts/validate_plant.py` tests the plant on the robot's logged
 balancing runs, and `scripts/validate_closed_loop.py` simulates the v9 firmware loop with
 the gains recovered from those logs (thesis Section 5.3; results in
-`docs/thesis/generated/plant_validation.json` and `plant_closedloop.json`). Three tests
-decide the motor reaction sign in favour of the corrected `+T` model: the input-free
-angular-momentum test on the two v9 switch-on transients, the tilt response to the
-saturated -10 V at switch-on, and the closed loop, where a simulated `-T` plant falls
-within 5.3 s for every parameter set tried while the robot balanced for 12.6 s and 21.2 s.
+`docs/thesis/generated/plant_validation.json` and `plant_closedloop.json`). The sign error
+shows not as a reversed response but in its size, and the logs decide it in favour of the
+corrected `+T` model in three places: at switch-on under a saturated -10 V the gyro shows
+the body turning back within 50 ms, as `+T` predicts, while the `-T` models at the
+data-sheet motor constant still have it falling; the input-free angular-momentum test on
+the two v9 switch-on transients; and the drive-away rate of the v8 test 1 (1.49 /s
+measured, `+T` 1.48, `-T` above 5.4). In the simulated loop with the v9 gains, a `-T` plant
+with the corrected parameters falls within 5.3 s for every parameter set tried, and the
+thesis model never holds the base, while the robot balanced for 12.6 s and 21.2 s.
 Not every test favours `+T` (some predictions in the short v8 runs and of the tilt near
 upright favour the `-T` models), and the corrected model is **not** validated
 quantitatively: `Ip`, `l`, `km`, the motors' deadzone and backlash, and the floor's
-rolling resistance are unmeasured. The logs indicate that the firmware's encoder position
-is mirrored relative to the model, but in closed-loop simulation that frame reproduces the
-v9 runs only with a rolling resistance of at least about 4% of the weight, so it is not
-yet confirmed. See [`docs/BASELINE.md`](docs/BASELINE.md) for the evidence and suggested
-bench tests.
+rolling resistance are unmeasured. The switch-on transients indicate that the firmware's
+encoder position is mirrored relative to the model. The closed loop does not decide that:
+in simulation the corrected model holds the base only if the floor resists rolling, by
+about 6% of the weight in the mirrored frame and 2% unmirrored. See
+[`docs/BASELINE.md`](docs/BASELINE.md) for the evidence and suggested bench tests.
 
 ## Not ported
 

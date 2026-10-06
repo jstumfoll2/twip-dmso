@@ -167,8 +167,10 @@ Section~\ref{sec:simchecks} is lightly rather than strongly damped. The
 recorded balancing runs confirm the sign (Section~\ref{sec:modelsim}): the
 switch-on transients contradict the revision~7 input vector and are far closer
 to the corrected one, although several measured coefficients differ from it
-beyond their intervals, and with the gains the robot ran a plant with the
-revision~7 sign falls within seconds. The
+beyond their intervals, and with the gains the robot ran no plant with the
+revision~7 sign balances with its base held in the simulated loop: M2 falls
+within seconds, and M3 stays up only with the encoder not mirrored, driving off
+by metres. The
 remaining
 three are in Section~\ref{sec:simmodel}: the back-EMF acts on the wheel rate
 relative to the body, $\dot x/r+\dot\phi$; $k_e=\SI{0.307}{V.s/rad}$ from the
@@ -212,6 +214,7 @@ switch-on transients indicate that the firmware's encoder position is mirrored
 relative to the model, $\mathrm{pos}=-(x+r\phi)$, and the hardware replays of
 Section~\ref{sec:implresults} use that frame. In that frame the position and
 velocity gains used on the robot have the opposite sign to the LQR design
-(Section~\ref{sec:gaintest}), and the corrected model reproduces the v9 runs
-only if the floor resisted rolling by a few percent of the weight, so the frame
-is not yet confirmed in closed loop.}
+(Section~\ref{sec:gaintest}). In the simulated loop the corrected model holds
+the base of the v9 runs only if the floor resisted rolling, by about 2\% of the
+weight with the encoder not mirrored and about 6\% mirrored, so the closed loop
+does not decide the frame, which rests on the switch-on transients.}

@@ -442,8 +442,10 @@ Controller & C1 & C2 & C3 & C4 \\
 \rev{The hardware results replay the LQR run logged in
 \texttt{implementationtest5.txt}, recorded with firmware v9 at a
 \SI{10}{ms} loop. The replays use the corrected model and the frame
-established from the same logs in Section~\ref{sec:datatests}: the logged
-position is mirrored relative to the model, so the estimators receive
+inferred from the switch-on transients of the same logs in
+Section~\ref{sec:datatests}, which the closed loop of
+Section~\ref{sec:gaintest} does not decide: the logged position is taken as
+mirrored relative to the model, so the estimators receive
 $x=-\mathrm{pos}-r\phi$, and the on-board estimates are mapped the same way for
 plotting. Figure~\ref{fig:hw} compares the measured states, the
 estimates computed on board by the v9 DMSO (which the replay reproduces to
@@ -500,7 +502,8 @@ tilt-rate channel has RMS $1.8\times10^{-2}$, against $1.24\times10^{-2}$ for
 the true uncertainty of the simulated case O2, and the velocity channel
 $2.5\times10^{-3}$. The model error on the physical robot is therefore somewhat
 larger than the simulated perturbation, which is consistent with the gear
-backlash and stick-slip and the friction with the floor found in
-Section~\ref{sec:modelsim}, and possibly a motor deadzone (about \SI{2}{V} on
+backlash and stick-slip found in Section~\ref{sec:modelsim}, with the external
+force, possibly rolling resistance of the floor, that its steady-balancing
+coefficients call for, and possibly with a motor deadzone (about \SI{2}{V} on
 the earlier gearmotors, not measured on the present ones); none of these is in
 the nominal model.}

@@ -54,10 +54,11 @@ runs indicate the frame of firmware v9 (Section~\ref{sec:datatests}): the
 logged tilt and command have the signs of $\phi$ and $V$, and the logged
 position is mirrored, $\mathrm{pos}=-(x+r\phi)$, so the estimators and the
 replays of Section~\ref{sec:implresults} use $x=-\mathrm{pos}-r\phi$. In closed
-loop the corrected model reproduces the v9 runs in that frame only with a floor
-resistance of a few percent of the weight (Section~\ref{sec:gaintest}), so the
-frame should be confirmed by hand, and rechecked after any change to the
-firmware. Hold the wheels on the ground and rotate the body in the positive
+loop the corrected model holds the base of the v9 runs in either frame only
+with a floor resistance (about 2\% of the weight with the encoder not mirrored,
+about 6\% mirrored; Section~\ref{sec:gaintest}), so the closed loop does not
+decide the frame, and it should be confirmed by hand, and rechecked after any
+change to the firmware. Hold the wheels on the ground and rotate the body in the positive
 sense of $\phi$ (counterclockwise in Figure~\ref{fig:fbdpend}, center of
 gravity moving toward $-x$). The logged tilt should increase. Since the
 encoders read $x/r+\phi$, the logged position should then fall if it is
