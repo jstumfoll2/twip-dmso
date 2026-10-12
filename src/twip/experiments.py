@@ -25,7 +25,7 @@ from .control import c2d_zoh
 from .dynamics import accelerations, derivative, linear_model
 from .integrators import rk4
 from .legacy.dynamics import uncert_extra_terms
-from .observers import B_MSO, DMSO, KalmanPredictor, LegacyDMSOPredictor, TanhBasis, kalman_injection_gain
+from .observers import B_MSO, DMSO, DMSO2020, KalmanPredictor, LegacyDMSOPredictor, TanhBasis, kalman_injection_gain
 from .params import CORRECTED, RobotParams
 from .sensors import DEG, SensorConfig, SensorSuite
 
@@ -132,8 +132,12 @@ def make_truth(case: ObserverCase) -> Truth:
     return Truth(np.arange(N + 1) * DT, x, u, y, B_MSO.T @ d, F, G.ravel())
 
 
-def make_estimators(truth: Truth, noise: bool) -> dict[str, object]:
-    """The five estimators of Table 8.2, all on the nominal corrected model."""
+def make_estimators(truth: Truth, noise: bool, acc2020: bool = False) -> dict[str, object]:
+    """The estimators of Table 8.2, all on the nominal corrected model.
+
+    ``acc2020=True`` adds the DMSO of the 2020 ACC paper (:class:`DMSO2020`, with the
+    paper's ``Km = I`` and ``alpha = 0.01``) as ``"DMSO (ACC 2020)"``.
+    """
     F, G = truth.F, truth.G
     s = SensorConfig()
     if noise:
@@ -145,7 +149,7 @@ def make_estimators(truth: Truth, noise: bool) -> dict[str, object]:
     Gw = np.array([[DT**2 / 2, 0], [DT, 0], [0, DT**2 / 2], [0, DT]])
     Q_nom = Gw @ np.diag([0.05**2, 0.2**2]) @ Gw.T + 1e-12 * np.eye(4)  # sensor-noise level only
     Q_inf = Gw @ np.diag([2.0**2, 10.0**2]) @ Gw.T + 1e-10 * np.eye(4)  # inflated for parameter error
-    return {
+    ests = {
         "KF, nominal Q": KalmanPredictor(F, G, Q_nom, R),
         "KF, inflated Q": KalmanPredictor(F, G, Q_inf, R),
         "Augmented-state KF": KalmanPredictor(F, G, Q_nom, R, augmented=True, q_f=1e-7),
@@ -154,6 +158,9 @@ def make_estimators(truth: Truth, noise: bool) -> dict[str, object]:
         "DMSO (rev. 8) + sigma-mod": DMSO(F, G, kappa=0.1),
         "DMSO (rev. 8), Kalman-gain injection": _kalman_injected_dmso(F, G, Q_nom, R),
     }
+    if acc2020:
+        ests["DMSO (ACC 2020)"] = DMSO2020(F, G)
+    return ests
 
 
 def _kalman_injected_dmso(F, G, Q, R) -> DMSO:

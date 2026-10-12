@@ -57,6 +57,14 @@ uv run python scripts/validate_plant.py
 uv run python scripts/validate_closed_loop.py
 ```
 
+The DMSO of the 2020 ACC paper (Stumfoll, Yao and Balakrishnan) against the revision-8
+DMSO, on the paper's own case study, the Chapter 8 observer cases and the v9 log
+(assessment in [`docs/dmso2020/README.md`](docs/dmso2020/README.md)):
+
+```bash
+uv run python scripts/compare_dmso2020.py
+```
+
 Thesis reproductions and data replays:
 
 ```bash
@@ -79,6 +87,7 @@ uv run python scripts/run_data_replays.py firmware
 | `run_data_replays.py` | `filters`, `implementation` (`--thesis-r-bug`), `firmware`, `allan` |
 | `validate_plant.py` | `--quick`; needs the thesis data folder; writes `docs/thesis/generated/plant_validation.json` and `docs/thesis/figures/pv_*.pdf` |
 | `validate_closed_loop.py` | `--quick`; needs no robot data; writes `docs/thesis/generated/plant_closedloop.json` |
+| `compare_dmso2020.py` | `--only paper/matrix/gamma/hardware`; `hardware` needs the thesis data folder; writes `docs/dmso2020/results.json` and PNGs |
 
 The other scripts in the table take `--out DIR` to save PNGs instead of opening windows.
 
@@ -91,9 +100,9 @@ The other scripts in the table take `--out DIR` to save PNGs instead of opening 
 | `twip.sensors` | accelerometer kinematics, gyro, relative encoders, noise from the Allan analysis |
 | `twip.actuators` | firmware voltage path (`Actuator`), saturation, deadzone, play-operator backlash |
 | `twip.baseline` | `design_lqr`, `KalmanEstimator`, `ComplementaryEstimator`, `simulate`, metrics |
-| `twip.observers` | thesis revision 8: corrected DMSO (Ch. 3), the three Kalman baselines (Ch. 7), revision-7 DMSO adapter |
+| `twip.observers` | thesis revision 8: corrected DMSO (Ch. 3), the three Kalman baselines (Ch. 7), revision-7 DMSO adapter; `DMSO2020`, the DMSO of the 2020 ACC paper (optional) |
 | `twip.controllers` | thesis revision 8: LQR tracking, revision-7 two-step extra control, command-filtered backstepping (Ch. 6) |
-| `twip.experiments` | the Chapter 8 test matrix (observer cases O1-O4, control cases C1-C4) |
+| `twip.experiments` | the Chapter 8 test matrix (observer cases O1-O4, control cases C1-C4); `make_estimators(..., acc2020=True)` adds `DMSO2020` |
 | `twip.estimators` | linear Kalman, tilt/gyro-bias Kalman, complementary filter |
 | `twip.control` | `c2d`, `lqr`, `dlqr`, `lqrd` (Control System Toolbox replacements) |
 | `twip.integrators` | fixed-step RK4 (`RK4.m`) |
