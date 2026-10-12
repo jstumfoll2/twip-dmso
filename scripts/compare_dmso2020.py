@@ -13,7 +13,7 @@ is :class:`twip.observers.DMSO2020`.  Four steps:
 * ``matrix``: the observer cases O1-O4 of thesis Chapter 8 (corrected plant), with the
   paper's observer next to the revision-8 DMSO and the augmented-state Kalman filter.
 * ``gamma``: the paper's leakage condition (10), ``0 < Gamma < 2``, near its upper end.
-* ``hardware``: the v9 balancing log ``implementationtest5.txt`` replayed through both
+* ``hardware``: the v9 balancing logs ``implementationtest4/5.txt`` replayed through both
   observers.  Needs the thesis data folder (``TWIP_THESIS_ROOT``); skipped without it.
 
 Writes ``docs/dmso2020/results.json`` and PNG figures next to it.
@@ -332,19 +332,26 @@ def gamma():
 
 
 def hardware():
-    """Replay ``implementationtest5.txt`` (v9) through both observers.
+    """Replay the two v9 balancing logs (``implementationtest4/5.txt``) through both observers.
 
     There is no truth on hardware, so each observer is scored by its one-step
     prediction residual ``y_{k+1} - xhat_{k+1|k}`` and by the consistency of its tilt
     with the gyro, ``rms(d tilt/dt - gyro)``.  The frame is the one the thesis
     replays use (``scripts/thesis_rev8.py``, ``hardware``): the logged position is
-    taken as mirrored, ``x = -pos - r * tilt``.
+    taken as mirrored, ``x = -pos - r * tilt``.  Scoring starts four samples after
+    the motor command first goes nonzero (sample 310 of test 5, as in the thesis).
     """
-    path = thesis_path("Thesis", "Thesis Programs", "Implementation", "implementationtest5.txt")
-    if not path.exists():
-        print("  skipped: thesis data folder not found (set TWIP_THESIS_ROOT)")
-        return
-    L = load_log(path, IMPLEMENTATION_COLUMNS)
+    out = {}
+    for n_test in (4, 5):
+        path = thesis_path("Thesis", "Thesis Programs", "Implementation", f"implementationtest{n_test}.txt")
+        if not path.exists():
+            print("  skipped: thesis data folder not found (set TWIP_THESIS_ROOT)")
+            return
+        out[f"test{n_test}"] = _replay(load_log(path, IMPLEMENTATION_COLUMNS))
+    results["hardware"] = out
+
+
+def _replay(L: dict) -> dict:
     r = CORRECTED.r
     th, w = L["pitchc"] * DEG, L["gy"] * DEG
     u = np.trunc(L["control"]) / 5904.5
@@ -352,7 +359,7 @@ def hardware():
     F, G = c2d_zoh(*linear_model(), dt)
     G = G.ravel()
     y = np.vstack([-L["x"] - r * th, -L["xdot"] - r * w, th, w])
-    s0 = 310  # balancing starts (as in lqrkalmantest1v2.m)
+    s0 = int(np.flatnonzero(L["control"])[0]) + 4  # balancing starts
 
     def gyro_consistency(tilt: np.ndarray) -> float:  # as in thesis_rev8.hardware, deg/s
         d = np.diff(tilt[s0:]) / L["dt"][s0:-1]
@@ -366,7 +373,7 @@ def hardware():
         return out
 
     n = y.shape[1]
-    out = {"samples_scored": n - s0}
+    out = {"first_sample_scored": s0, "samples_scored": n - s0}
     for name, est in (("DMSO (rev. 8)", DMSO(F, G)), ("DMSO (ACC 2020)", DMSO2020(F, G))):
         est.initialize(y[:, 0])
         xt = y.copy()
@@ -383,7 +390,7 @@ def hardware():
     xt[:, 1:] = onboard[:, :-1]
     out["on-board v9 DMSO"] = score(xt, None)
     out["measurement"] = {"gyro_consistency_dps": gyro_consistency(th)}
-    results["hardware"] = out
+    return out
 
 
 def main():

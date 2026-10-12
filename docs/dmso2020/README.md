@@ -28,6 +28,9 @@ The paper's observer is `twip.observers.DMSO2020`. Every number below comes from
   sufficient.** With all three of the paper's conditions satisfied, the weights diverge
   for `Gamma >= 1.98`. Gains anyone would use (`Gamma` much smaller than `alpha`) are not
   affected.
+- **On the robot's two v9 logs neither observer wins outright.** The paper's predicts the
+  next measurement better, and revision 8's tilt agrees with the gyro 1.5 times better.
+  This is the same trade as in simulation, and the logs have no truth to settle it.
 - **The case study runs on revision 7's model** (motor-torque sign error included), starts
   at 10 rad of tilt with up to 540 V of unsaturated input, and its figures match a 1 ms
   step rather than the stated 10 ms (inferred from the figures). Nothing in the paper runs
@@ -40,7 +43,7 @@ The paper's observer is `twip.observers.DMSO2020`. Every number below comes from
 | Basis input | estimate `xhat_k` | measurement `y_k` | measurement `y_k` |
 | Basis | `[1, tanh(xhat)]` | `[1, tanh(y)]`, "normalized" (how is not stated) | `[1, tanh(y / s)]`, `s = (1, 1, 0.2, 1)` |
 | Error in the update | differs by script | `e_{k+1}` | `e_{k+1}` |
-| Leakage | none | `-Gamma ||I - alpha phi phi^T|| W_k` | none (sigma-mod is an option) |
+| Leakage | none | `-Gamma \|\|I - alpha phi phi^T\|\| W_k` | none (sigma-mod is an option) |
 | Error injection | `K = I` | `K = I` | `K = F - 0.5 I`, so `A = 0.5 I` |
 | Learning rate | 0.1 | `alpha = 0.01` | `Gamma = 0.01`, a tenth of the bound |
 | Leakage gain | | not reported | `kappa = 0.1` on the sigma-mod row |
@@ -194,11 +197,38 @@ The paper has no hardware results, and its remark that the DMSO "can be used in 
 systems easily" is not tested there. The robot did run a close relative in 2015: the v9
 firmware DMSO had `K = I`, `gamma = 0.05`, no leakage and the basis on the estimate.
 
-The `hardware` step replays `implementationtest5.txt` through both observers and the
-on-board estimates. It scores the one-step residual, the tilt's consistency with the gyro,
-and the RMS of `fhat`, in the frame the thesis replays use. It needs the thesis data
-folder and **has not been run yet**: the computer with the logs was not reachable from
-this session. There is no truth on hardware, so it would show consistency, not accuracy.
+The `hardware` step replays the two v9 balancing logs (`implementationtest4.txt`, 12.6 s,
+and `implementationtest5.txt`, 21.2 s) through both observers on the corrected model. It
+uses the frame of the thesis replays (logged position mirrored) and scores from four
+samples after switch-on (sample 310 of test 5, as in the thesis). There is no truth on
+hardware. Each observer is scored against the next measurement, and its tilt against the
+gyro, `rms(d tilt/dt - gyro)`.
+
+| Test 4 / test 5 | One-step residual: velocity (mm/s) | tilt (mrad) | tilt rate (mrad/s) | Tilt vs gyro (deg/s) | RMS `fhat`, tilt rate (x1e-3) |
+|---|---|---|---|---|---|
+| Measurement (complementary tilt) | | | | 18.4 / 9.9 | |
+| DMSO rev. 8 | 20.9 / 15.9 | 3.47 / 2.25 | 229 / 147 | 9.5 / 5.9 | 21 / 18 |
+| DMSO ACC 2020 | 22.3 / 12.0 | 3.07 / 1.85 | 218 / 113 | 14.2 / 8.3 | 44 / 26 |
+| On-board v9 DMSO (logged) | 36.2 / 23.5 | 3.68 / 2.25 | 233 / 110 | 18.1 / 10.6 | |
+
+The logs show the same trade as the simulations, and neither observer wins outright:
+
+- **The paper's observer predicts the next measurement better.** Its tilt and tilt-rate
+  residuals are smaller in both logs, and its velocity residual is smaller in test 5.
+- **Revision 8's tilt is smoother.** Its tilt agrees with the gyro 1.5 times better in both
+  logs, and both observers are smoother than the measurement.
+
+That is what `K = I` does: it follows the measurement, noise included. On a robot whose
+tilt measurement carries the accelerometer's acceleration error (thesis Section 8.4), the
+smoother estimate is the more useful one. That is a judgment, though, since the logs have
+no truth to settle it.
+
+The paper's tilt-rate uncertainty estimate is 1.4 to 2 times larger. Without truth, the
+logs cannot say how much of it is model error and how much is noise. In simulation (O3)
+the larger estimate was mostly noise.
+
+The revision-8 numbers for test 5 match the thesis: 5.9 deg/s against the gyro, and an
+`fhat` RMS of 2.5e-3 and 1.8e-2 (Section 8.4).
 
 ## 6. What was added to the code
 
