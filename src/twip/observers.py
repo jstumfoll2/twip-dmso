@@ -1,5 +1,6 @@
 """Observers from thesis revision 8: the corrected DMSO (Chapter 3) and the three
-Kalman baselines (Section 7, "Three Baselines").
+Kalman baselines (Section 7, "Three Baselines").  :class:`DMSO2020` is the DMSO of
+the 2020 ACC paper, kept as an alternative to the revision-8 DMSO.
 
 All observers here use the thesis's full-state measurement ``y_k`` (``y = x`` plus
 noise), and are compared on the same information set: after processing ``y_k``
@@ -129,6 +130,142 @@ class DMSO:
         A = self.F - self.Km
         return DMSOConditions(
             float(np.linalg.norm(A, 2)), self.basis.phi_max2, self._phi2_seen, self.gamma, self.gamma_max
+        )
+
+
+@dataclass
+class DMSO2020Conditions:
+    """Conditions (9)-(11) of Theorem 1 of the ACC 2020 paper, with ``||phi_k||^2`` at
+    its realized maximum and ``Q = I - A^T A`` (``lambda_min(Q) = 1 - sigma_max(A)^2``).
+    """
+
+    sigma_max_A: float
+    alpha: float
+    gamma: float
+    phi_max2_design: float
+    phi_max2_realized: float
+    leak_norm_max: float  # largest ||I - alpha phi phi^T|| along the run
+
+    @property
+    def eta(self) -> float:
+        """Eq. (34), worst case over the realized ``||phi_k||^2``."""
+        a, p2 = self.alpha, self.phi_max2_realized
+        if not 0 < a * p2 < 1:
+            return float("inf")
+        return p2 + (a * p2 + self.gamma * self.leak_norm_max) ** 2 / (a * (1 - a * p2))
+
+    @property
+    def paper_conditions(self) -> tuple[bool, bool, bool]:
+        """(9) ``alpha ||phi||^2 < 1``, (10) ``0 < Gamma < 2``,
+        (11) ``lambda_min(Q) - alpha sigma_max(A)^2 eta > 0``."""
+        c9 = self.alpha * self.phi_max2_realized < 1
+        c10 = 0 < self.gamma < 2
+        s2 = self.sigma_max_A**2
+        c11 = c9 and (1 - s2) - self.alpha * s2 * self.eta > 0
+        return c9, c10, c11
+
+    @property
+    def satisfied(self) -> bool:
+        return all(self.paper_conditions)
+
+    @property
+    def weights_contractive(self) -> bool:
+        """``Gamma ||M|| + alpha ||phi||^2 < 2``, ``M = I - alpha phi phi^T``.
+
+        With the regressor frozen, the weight error evolves as
+        ``((1 - Gamma ||M||) I - alpha phi phi^T) W~`` plus forcing, whose
+        eigenvalues are ``1 - Gamma ||M||`` and ``1 - Gamma ||M|| - alpha ||phi||^2``.
+        This condition is necessary for the weights to stay bounded, and (9)-(11)
+        do not imply it: they admit ``Gamma`` up to 2 regardless of ``alpha ||phi||^2``.
+        """
+        g = self.gamma * self.leak_norm_max
+        return 0 < g and g + self.alpha * self.phi_max2_realized < 2
+
+
+class DMSO2020:
+    """DMSO of Stumfoll, Yao and Balakrishnan, "Neural Network Based Discrete Time
+    Modified State Observer: Stability Analysis and Case Study", ACC 2020, pp. 2484-2489.
+
+    ``xhat_{k+1} = F xhat_k + G u_k + Bm W_k^T phi(y_k) + Km (y_k - xhat_k)``    (3), (5)
+    ``W_{k+1} = W_k + alpha phi(y_k) e_{k+1}^T Bm - Gamma ||I - alpha phi phi^T|| W_k``  (6)
+
+    Defaults follow the paper's TWIP case study (Section IV): ``Km = I``,
+    ``alpha = 0.01``, ``phi = [1, tanh(y)]`` and uncertainty assigned to the velocity
+    and tilt-rate rows only (``Bm``; the theory of Section II has ``Bm = I``).
+    The paper does not report ``Gamma`` or how it normalized the basis.  The default
+    ``gamma = 1e-3`` makes the leakage per step equal to that of the revision-8 DMSO
+    with sigma-modification (``Gamma kappa = 0.01 * 0.1``), and the basis is unscaled.
+
+    ``leak_norm`` picks the matrix norm in (6), which the paper does not define.
+    In the induced 2-norm ``||I - alpha phi phi^T|| = 1`` whenever
+    ``alpha ||phi||^2 <= 2``, so the law is the revision-8 sigma-modification
+    ``W_{k+1} = (1 - Gamma_8 kappa) W_k + Gamma_8 phi e_{k+1}^T Bm`` with
+    ``Gamma_8 = alpha`` and ``kappa = Gamma / alpha``.  With ``"fro"`` the norm is
+    ``sqrt(l - 1 + (1 - alpha ||phi||^2)^2)``, about 2.2 for ``l = 5``.
+
+    The interface (``initialize``, ``step``, ``fhat``, ``conditions``) matches :class:`DMSO`.
+    """
+
+    def __init__(
+        self,
+        F: np.ndarray,
+        G: np.ndarray,
+        alpha: float = 0.01,
+        gamma: float = 1e-3,
+        Km: np.ndarray | None = None,
+        basis: TanhBasis | None = None,
+        Bm: np.ndarray = B_MSO,
+        leak_norm: str = "2",
+    ):
+        if leak_norm not in ("2", "fro"):
+            raise ValueError("leak_norm must be '2' or 'fro'")
+        n = F.shape[0]
+        self.F, self.G, self.Bm = F, G.reshape(n), Bm
+        self.Km = np.eye(n) if Km is None else Km
+        self.basis = basis or TanhBasis(scales=(1.0,) * n)
+        self.alpha, self.gamma, self.leak_norm = alpha, gamma, leak_norm
+        self.W = np.zeros((len(self.basis.scales) + 1, Bm.shape[1]))
+        self.xhat: np.ndarray | None = None
+        self._phi_prev: np.ndarray | None = None
+        self._phi2_seen = 0.0
+        self._leak_seen = 0.0
+        self.fhat = np.zeros(Bm.shape[1])
+
+    def initialize(self, x0: np.ndarray) -> None:
+        self.xhat = np.asarray(x0, float).copy()
+
+    def leak_factor(self, phi: np.ndarray) -> float:
+        """``||I - alpha phi phi^T||``: its eigenvalues are 1 (``l - 1`` times) and
+        ``1 - alpha ||phi||^2``."""
+        a2 = self.alpha * float(phi @ phi)
+        if self.leak_norm == "2":
+            return max(1.0, abs(1 - a2))
+        return float(np.sqrt(len(phi) - 1 + (1 - a2) ** 2))
+
+    def step(self, y: np.ndarray, u: float) -> np.ndarray:
+        """Process ``y_k`` and ``u_k``; return ``xhat_{k+1}``."""
+        if self.xhat is None:
+            self.xhat = y.copy()
+        e = y - self.xhat  # e_k, available now
+        if self._phi_prev is not None:  # W_k from phi_{k-1}, e_k and W_{k-1}  (eq. 6)
+            m = self.leak_factor(self._phi_prev)
+            self._leak_seen = max(self._leak_seen, m)
+            self.W = (1 - self.gamma * m) * self.W + self.alpha * np.outer(self._phi_prev, e @ self.Bm)
+        phi = self.basis(y)
+        self._phi2_seen = max(self._phi2_seen, float(phi @ phi))
+        self.fhat = self.W.T @ phi
+        self.xhat = self.F @ self.xhat + self.G * u + self.Bm @ self.fhat + self.Km @ e
+        self._phi_prev = phi
+        return self.xhat.copy()
+
+    def conditions(self) -> DMSO2020Conditions:
+        return DMSO2020Conditions(
+            float(np.linalg.norm(self.F - self.Km, 2)),
+            self.alpha,
+            self.gamma,
+            self.basis.phi_max2,
+            self._phi2_seen,
+            self._leak_seen or self.leak_factor(np.ones(len(self.basis.scales) + 1)),
         )
 
 
