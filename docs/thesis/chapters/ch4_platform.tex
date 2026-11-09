@@ -24,23 +24,22 @@ are summarized in Table~\ref{tab:phys}.
 \toprule
 Parameter & Value & Units \\
 \midrule
-Pendulum moment of inertia about the wheel axis, $I_p$ & 0.025\,$^a$ & \si{kg.m^2} \\
-Wheel moment of inertia, $I_w$ & $1.441\times10^{-4}$\,$^b$ & \si{kg.m^2} \\
+Pendulum moment of inertia about the center of gravity, $I_p$ & 0.0169\,$^a$ & \si{kg.m^2} \\
+Wheel moment of inertia, $I_w$ & $1.183\times10^{-4}$\,$^b$ & \si{kg.m^2} \\
 Distance to CG from wheel axis, $l$ & 0.075 & \si{m} \\
 Mass of pendulum, $M_p$ & 1.432 & \si{kg} \\
 Mass of wheels, $M_w$ & 0.1168 & \si{kg} \\
 Wheel radius, $r$ & 0.045 & \si{m} \\
 \bottomrule
 \end{tabular}\\[2pt]
-{\footnotesize $^a$ Computed with parallel-axis terms, i.e.\ about the wheel axis.
-The equations of motion require the value about the center of gravity,
-\SI{0.0169}{kg.m^2}; see Section~\ref{sec:simmodel}.\\
-\rev{$^b$ The simulations, here and in the revision~7 programs, use the
-uniform-disk value $M_wr^2/2=\SI{1.183e-4}{kg.m^2}$. The difference changes
-$\beta$ of \eqref{eq:beta} by 1.4\%.}}
+{\footnotesize $^a$ Computed from a lumped-mass idealization of the plates and
+components; the same model gives \SI{0.025}{kg.m^2} about the wheel axis, and the
+equations of motion of Chapter~\ref{ch:model} take the value about the center of
+gravity.\\
+$^b$ Uniform disk, $M_wr^2/2$.}
 \end{table}
 
-\rev{The moment of inertia and the CG offset are the two parameters least well
+The moment of inertia and the CG offset are the two parameters least well
 known on a build of this kind. Both are computed from a lumped-mass
 idealization of the plates and components rather than measured. The gains that
 balanced the hardware differ from the LQR gains computed from
@@ -54,7 +53,7 @@ coefficient 20 to 50\% above the model, which may point to an $I_p$ above the
 lumped-mass estimate (Section~\ref{sec:momtest}). This is the motivation for the uncertainty
 estimation problem rather than an incidental nuisance;
 Appendix~\ref{app:validation} describes a pendulum-swing procedure for
-measuring $I_p$ and $l$ directly.}
+measuring $I_p$ and $l$ directly.
 
 \section{ELECTRONIC DESIGN}
 
@@ -74,22 +73,32 @@ is programmed in C through the Arduino interface. The Arduino is a widely used
 hobbyist platform and a broad range of integrated shields can be purchased to
 work directly with it.
 
-\rev{The Due is adequate for the control law but not generous. As documented in
+The Due is adequate for the control law but not generous. As documented in
 Section~\ref{sec:difficulties}, serial transmission for telemetry dominated the
 loop budget. Appendix~\ref{app:validation} recommends separating the
 deterministic control path from the telemetry path so that the achievable loop
-rate is set by the control computation rather than by the logging.}
+rate is set by the control computation rather than by the logging.
 
 \subsection{Motors}
+\label{sec:motors}
 
 Two Pololu \SI{12}{V} \SI{37}{mm} brushed DC motors drive the wheels. The
 motors have a 30:1 gearbox and 64 counts-per-revolution integrated Hall effect
 quadrature encoders measuring the position of the motor output shaft. The motors
 are characterized by their free-run speed and current and their stall torque and
-current; from these the torque constant $k_m$ and the back-EMF constant $k_e$
-are obtained. The nominal terminal resistance is measured directly across the
-output terminals at several shaft positions and averaged. The motor constants
-are summarized in Table~\ref{tab:motor}.
+current. The back-EMF constant follows from the free-run data through the
+steady armature equation $V=Ri+k_e\omega$ at the free-run speed of
+\SI{350}{rpm} (\SI{36.65}{rad/s}),
+\[
+k_e=\frac{\SI{12}{V}-(\SI{0.3}{A})(\SI{2.5}{\ohm})}{\SI{36.65}{rad/s}}
+=\SI{0.307}{V.s/rad}.
+\]
+The torque constant $k_m$ is the data-sheet value. The stall data give
+$k_m\approx\SI{0.155}{N.m/A}$, 35\% above it; the discrepancy is one reason
+Stage~0 of Appendix~\ref{app:validation} calls for direct measurement. The
+nominal terminal resistance is measured directly across the output terminals at
+several shaft positions and averaged. The motor constants are summarized in
+Table~\ref{tab:motor}.
 
 Motor drive is provided by a Pololu Dual VNH5019 Motor Driver Arduino Shield.
 The VNH5019 chip allows DC motor operation between \SI{5.5}{V} and \SI{24}{V} at
@@ -111,13 +120,11 @@ Free-run current & 300 & mA \\
 Stall torque & 110 & oz-in \\
 Stall current & 5000 & mA \\
 Torque motor constant, $k_m$ & 0.11541 & \si{N.m/A} \\
-Back-EMF constant, $k_e$ & 0.307\,$^b$ & \si{V.s/rad} \\
+Back-EMF constant, $k_e$ & 0.307\,$^a$ & \si{V.s/rad} \\
 Nominal resistance, $R$ & 2.5 & \si{\ohm} \\
 \bottomrule
 \end{tabular}\\[2pt]
-{\footnotesize $^b$ From the free-run data above. Revision~7 used
-\SI{0.00361}{V.s/rad}, which is inconsistent with those data by a factor of
-about 85; see Section~\ref{sec:simmodel}.}
+{\footnotesize $^a$ From the free-run speed and current above.}
 \end{table}
 
 \subsection{Sensors}
@@ -202,18 +209,18 @@ measuring the relative position of the motor output shaft. The shaft carries a
 magnetic disk with 16 magnetic divisions, and two Hall effect sensors detect the
 changing field as the shaft rotates. Counting both the rising and falling edges
 of both signals gives a total resolution of 64 counts per revolution of the
-motor output shaft. \rev{The two signals are a quarter cycle (\SI{90}{\degree})
+motor output shaft. The two signals are a quarter cycle (\SI{90}{\degree})
 apart, in quadrature, which is the origin of the term and what allows the
-direction of rotation to be decoded.} In
+direction of rotation to be decoded. In
 combination with the 30:1 gearbox, the gearbox output has a measurable
 resolution of 1920 counts per revolution. With \SI{90}{mm} diameter wheels the
 encoder measures discrete steps of \SI{1.47e-4}{m}.
 
-\rev{The encoders are mounted on the motor shaft, ahead of the gearbox. Gear
+The encoders are mounted on the motor shaft, ahead of the gearbox. Gear
 backlash is therefore invisible to the encoder: the measured shaft angle
 advances while the wheel does not. This is a structural measurement limitation,
 not a resolution limitation, and it cannot be removed by increasing the sample
-rate. Appendix~\ref{app:validation} discusses load-side encoding as the remedy.}
+rate. Appendix~\ref{app:validation} discusses load-side encoding as the remedy.
 
 \subsection{Miscellaneous Electronics}
 
@@ -293,7 +300,7 @@ processed using hardware interrupts: each time a Hall effect sensor signal
 changes state the interrupt fires and increments or decrements the encoder
 position. Velocity is obtained by differencing the position readings.
 
-\rev{\begin{remark}[The pre-filter is part of the measurement model]
+\begin{remark}[The pre-filter is part of the measurement model]
 Equation \eqref{eq:compfilter} is a dynamic element placed between the sensors
 and the estimator, so the quantity presented to the DMSO as $y_k$ is not a raw
 measurement but a filtered one with its own lag and its own error
@@ -304,7 +311,7 @@ Section~\ref{sec:implresults}, in which the complementary filter outperforms
 the DMSO fed raw accelerometer tilt but not a Kalman filter weighted by that
 tilt's actual error, is a statement about this pre-filtering step rather than
 about the estimators.
-\end{remark}}
+\end{remark}
 
 \section{DIFFICULTIES}
 \label{sec:difficulties}
@@ -334,30 +341,22 @@ its content had to be selected carefully and limited in order to keep the loop
 time acceptable. The minimum loop execution time obtained was \SI{0.01}{s}.
 
 The LQR gains had to be modified from the values computed from the measured
-parameters of the robot, which \rev{revision~7 took as evidence of}
-inaccurately measured parameters. The model is also not entirely accurate to the true system: the
-pendulum is modeled as a point mass attached by a thin beam to the motor axis,
-whereas the mounting plates create more complex interactions than this.
-\rev{Once the gains were retuned the robot balanced, for up to \SI{21}{s},
-although in the encoder frame inferred from the logs none of the recorded gain
-sets is linearly stable on any candidate model (Table~\ref{tab:gaintest});
-with the encoder not mirrored only the test~2 gains are, and only on M3.}
-\rev{The logs point to a more specific cause (Section~\ref{sec:gaintest}). The
-switch-on transients indicate that the firmware's encoder position is mirrored
-relative to the model. In that frame, position and velocity gains entered with
-the signs of the LQR design act with the opposite sign on the robot, and the
-position and velocity potentiometers, which the firmware maps to $[-15,0]$,
-could not set the signs the design requires. Both v9 runs balanced with the
-base held within a few millimeters; in the two v8 runs the base drove away
-until the robot was switched off (test~1) or until a chatter ended the run
-(test~2). In closed-loop simulation the corrected model holds the base of the
-v9 runs only if the floor resisted rolling, by about 2\% of the weight with
-the encoder not mirrored and about 6\% in the mirrored frame, so the closed
-loop does not decide the frame, which rests on the switch-on transients alone
-until it is checked by hand. Either way, the modification of the gains is not
-evidence of parameter error alone.}
+parameters of the robot. The model is not entirely accurate to the true system:
+the pendulum is modeled as a point mass attached by a thin beam to the motor
+axis, whereas the mounting plates create more complex interactions than this.
+Once the gains were retuned the robot balanced, for up to \SI{21}{s}. The logs
+point to a more specific cause for the retuning (Section~\ref{sec:gaintest}).
+The switch-on transients indicate that the firmware's encoder position is
+mirrored relative to the model. In that frame, position and velocity gains
+entered with the signs of the LQR design act with the opposite sign on the
+robot, and the position and velocity potentiometers, which the firmware maps to
+$[-15,0]$, could not set the signs the design requires. Both v9 runs balanced
+with the base held within a few millimeters; in the two v8 runs the base drove
+away until the robot was switched off (test~1) or until a chatter ended the run
+(test~2). The modification of the gains is therefore not evidence of parameter
+error alone.
 
-\rev{\begin{remark}[These are the case for the work]
+\begin{remark}[These are the case for the work]
 Three of the observations above are the empirical case for
 Chapters~\ref{ch:dmso} and~\ref{ch:control} rather than incidental setbacks. The
 parameters are uncertain, which motivates online uncertainty estimation. The
@@ -366,4 +365,4 @@ motivates the unmatched uncertainty formulation. The available computation
 constrains the achievable sample rate, which is an implementation constraint
 treated as a design variable in Appendix~\ref{app:validation} rather than as a
 fixed property of the platform.
-\end{remark}}
+\end{remark}

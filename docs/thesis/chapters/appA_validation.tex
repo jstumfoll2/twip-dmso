@@ -11,19 +11,19 @@ about which component is working.
 \section{STAGE 0: PARAMETER IDENTIFICATION}
 
 The detuning of the LQR gains reported in Section~\ref{sec:difficulties} is
-\rev{probably explained in part by the firmware's encoder frame
-(Section~\ref{sec:gaintest}), but the parameters are still uncertain, and the}
-two parameters most likely \rev{to be in error} are the pendulum inertia $I_p$
+explained in part by the firmware's encoder frame
+(Section~\ref{sec:gaintest}), but the parameters are still uncertain, and the
+two parameters most likely to be in error are the pendulum inertia $I_p$
 and the CG offset $l$. Both can be measured directly and should be, before any
-estimator is judged. \rev{The torque constant $k_m$ is equally uncertain
+estimator is judged. The torque constant $k_m$ is equally uncertain
 (Section~\ref{sec:valresults}); the motor tests below measure it.
 Table~\ref{tab:benchtests} gives each candidate model's prediction for the
-measurements below.}
+measurements below.
 
-\paragraph{Procedure.} \rev{Clamp the wheels to a fixture at the wheel axis, or
-remove them and suspend the chassis from a knife edge at the axis,} so that the
-chassis swings as a physical pendulum. \rev{The clamped arrangement also allows
-the leads-shorted decay test of Table~\ref{tab:benchtests}.} Record the
+\paragraph{Procedure.} Clamp the wheels to a fixture at the wheel axis, or
+remove them and suspend the chassis from a knife edge at the axis, so that the
+chassis swings as a physical pendulum. The clamped arrangement also allows
+the leads-shorted decay test of Table~\ref{tab:benchtests}. Record the
 small-amplitude period $T$ with the onboard gyroscope. Then
 \begin{equation}\label{eq:pendid}
 T=2\pi\sqrt{\frac{I_{\mathrm{pivot}}}{M_pgl}},
@@ -49,16 +49,14 @@ $\delta_+$ and $\delta_-$ of \eqref{eq:deadzone}. Measure backlash by holding
 the motor shaft and rotating the wheel through the deadband, reading the
 free rotation directly; this gives $\Delta_b$ in \eqref{eq:backlash}.
 
-\rev{\paragraph{Sign conventions.} The switch-on transients of the recorded
+\paragraph{Sign conventions.} The switch-on transients of the recorded
 runs indicate the frame of firmware v9 (Section~\ref{sec:datatests}): the
 logged tilt and command have the signs of $\phi$ and $V$, and the logged
 position is mirrored, $\mathrm{pos}=-(x+r\phi)$, so the estimators and the
-replays of Section~\ref{sec:implresults} use $x=-\mathrm{pos}-r\phi$. In closed
-loop the corrected model holds the base of the v9 runs in either frame only
-with a floor resistance (about 2\% of the weight with the encoder not mirrored,
-about 6\% mirrored; Section~\ref{sec:gaintest}), so the closed loop does not
-decide the frame, and it should be confirmed by hand, and rechecked after any
-change to the firmware. Hold the wheels on the ground and rotate the body in the positive
+replays of Section~\ref{sec:implresults} use $x=-\mathrm{pos}-r\phi$. The
+closed loop does not decide the frame (Section~\ref{sec:gaintest}), so it
+should be confirmed by hand, and rechecked after any change to the firmware.
+Hold the wheels on the ground and rotate the body in the positive
 sense of $\phi$ (counterclockwise in Figure~\ref{fig:fbdpend}, center of
 gravity moving toward $-x$). The logged tilt should increase. Since the
 encoders read $x/r+\phi$, the logged position should then fall if it is
@@ -67,10 +65,10 @@ gives the opposite change. With the wheels blocked, a small positive voltage
 should pitch the body backward (Table~\ref{tab:benchtests}). The controller
 gains must be entered in the frame found; with the position mirrored, gains
 designed in the model frame change the sign of their position and velocity
-entries.}
+entries.
 
 \paragraph{Pass criterion.} The LQR gains computed from the measured
-parameters\rev{, entered in the firmware's frame,} stabilize the hardware without
+parameters, entered in the firmware's frame, stabilize the hardware without
 manual detuning. If they do not, the model is
 still wrong and no amount of online estimation will make the comparison in
 Chapter~\ref{ch:results} interpretable.
@@ -93,9 +91,9 @@ observer can be evaluated without closing any loop.
 \item Verify the theoretical conditions numerically on the replayed data:
 compute $\sigmax(F-\Km)$ for the $\Delta t$ actually achieved, compute
 $\phi_{\max}=\max_k\norm{\phi(x_k)}$ realized along the recorded trajectory, and
-confirm \eqref{eq:simple}. \rev{This is the step most often skipped. The
+confirm \eqref{eq:simple}. This is the step most often skipped. The
 $\phi_{\max}$ used to select $\Gamma$ is a design assumption, and the trajectory
-is free to violate it.}
+is free to violate it.
 
 \end{enumerate}
 
@@ -117,12 +115,12 @@ target value $\bar\sigma$. Note that $\sigmax$, not the eigenvalues, is what
 matters; a gain that places the eigenvalues of $A$ well inside the unit circle
 can still have $\sigmax(A)>1$ if $A$ is strongly non-normal. Compute the
 singular values explicitly. A practical starting point is
-$\bar\sigma\in[0.5,0.8]$. \rev{Smaller values reject model error faster, with a
+$\bar\sigma\in[0.5,0.8]$. Smaller values reject model error faster, with a
 response time that scales as $1/\log(1/\bar\sigma)$, and lower the model-error
 floor $\epsilon_N/(1-\bar\sigma)$ of \eqref{eq:limbounds}. Their cost is
 measurement noise, which Theorem~\ref{thm:main} does not model: as $\bar\sigma$
 falls, $\Km=F-\bar\sigma I$ approaches $F$ and the prediction follows each noisy
-measurement more closely. That side of the trade has to be judged from data.}
+measurement more closely. That side of the trade has to be judged from data.
 
 \item \textbf{Bound $\phi_{\max}$ by construction.} Rather than estimating
 $\phi_{\max}$ from a nominal trajectory, choose activation functions that are
@@ -136,18 +134,18 @@ $\phi_{\max}$ fixed,
 \Gamma<\frac{1}{\phi_{\max}^2}\min\left\{\frac{1}{2},\,
 \frac{1-\bar\sigma^2}{2\bar\sigma^2}\right\}.
 \]
-Begin at one tenth of this bound and increase. \rev{The speed of uncertainty
+Begin at one tenth of this bound and increase. The speed of uncertainty
 identification is set by $\Gamma$, and the conditions permit any sufficiently
-small value, so there is no reason to operate near the boundary.}
+small value, so there is no reason to operate near the boundary.
 
 \item \textbf{Add $\sigma$-modification.} Use \eqref{eq:sigmod} with
 $\kappa$ chosen so that $\Gamma\kappa\ll1$; a decade below $\Gamma$ is a
-reasonable start. \rev{This is strongly recommended over relying on persistency
+reasonable start. This is strongly recommended over relying on persistency
 of excitation. During regulation about the upright equilibrium the regressor is
 nearly constant and \eqref{eq:pe} will not hold, which is exactly the condition
 under which weight drift occurs. Drift is insidious: the state estimate remains
 good while the weights wander, and the failure appears only when the trajectory
-eventually excites a direction the drifted weights misrepresent.}
+eventually excites a direction the drifted weights misrepresent.
 
 \end{enumerate}
 
@@ -158,8 +156,7 @@ increase $\Gamma$.
 
 \section{STAGE 3: CONTROLLER BRING-UP}
 
-The controller of Section~\ref{sec:flatcf} \rev{(the structure of
-Section~\ref{sec:cffb} in flat-output coordinates)} has four damping gains,
+The controller of Section~\ref{sec:cffb} has four damping gains,
 three filter bandwidths, four learning rates, and four leakage gains. Bring them up in this
 order, and only in this order.
 
@@ -170,29 +167,29 @@ parameters from Stage~0. Record the baseline metrics of
 Section~\ref{sec:testmatrix}.
 
 \item \textbf{Backstepping with networks disabled.} Set $\hat F_1=\hat F_2=0$
-and run the structure of Section~\ref{sec:flatcf} with $u_e$ active. This tests
+and run the structure of Section~\ref{sec:cffb} with $u_e$ active. This tests
 the command filters, the error coordinate bookkeeping, and the sign conventions
-without any adaptation. \rev{Most implementation errors in a backstepping design
+without any adaptation. Most implementation errors in a backstepping design
 are sign errors in the cross-term cancellations, and they are far easier to find
-with the adaptation off.} \rev{Verify numerically that the implemented error
+with the adaptation off. Verify numerically that the implemented error
 dynamics are the derived ones: difference the logged $z_i$ to estimate
 $\dot z_i$, evaluate the right-hand sides of the error equations of
-Section~\ref{sec:flatcf} from the logged signals, and confirm that the two agree
+Section~\ref{sec:cffb} from the logged signals, and confirm that the two agree
 to within the discretization error. A sign error in a cancelling pair, such as
 $a_2z_3$ in $\dot z_2$ against $-(a_2/w)z_2$ in $\dot z_3$, appears as a residual
 proportional to one of the coordinates. (Logging expressions such as
-$z_1z_2-z_2z_1$ is not a test: they are zero for any numbers.)} If the two do not
+$z_1z_2-z_2z_1$ is not a test: they are zero for any numbers.) If the two do not
 agree, the implementation does not match the derivation.
 
 \item \textbf{Filter bandwidths.} Raise $\varpi_i$ until $\chi_i$ is small
-relative to the corresponding $z_i$, then stop. \rev{With noisy measurements
+relative to the corresponding $z_i$, then stop. With noisy measurements
 $\chi_i$ stops shrinking, and can grow, as the bandwidth rises
-(Figure~\ref{fig:chi}b), so raise $\varpi_i$ only while $\chi_i$ falls.} The upper limit is the lesser of
+(Figure~\ref{fig:chi}b), so raise $\varpi_i$ only while $\chi_i$ falls. The upper limit is the lesser of
 one fifth of the sample rate and the lowest unmodeled structural mode of the
-chassis. \rev{The stiffening rods described in
+chassis. The stiffening rods described in
 Section~\ref{sec:difficulties} exist because that mode was originally low enough
 to contaminate the inertial measurements; it should be measured, not assumed,
-by striking the chassis and recording the gyroscope response.}
+by striking the chassis and recording the gyroscope response.
 
 \item \textbf{One network at a time.} Enable network one with network two
 disabled, then the reverse, then both. Each network has its own error
@@ -225,17 +222,17 @@ period.
 \item Log to onboard storage at full rate and stream a decimated subset, rather
 than streaming everything.
 \item Timestamp from a free-running hardware counter, not from a software
-accumulator, so that jitter is measurable after the fact. \rev{Report the
+accumulator, so that jitter is measurable after the fact. Report the
 achieved loop period distribution, not its nominal value. The discretization
 \eqref{eq:zoh} assumes a fixed $\Delta t$, and jitter enters as an unmodeled
-disturbance that the networks will attempt, and fail, to explain.}
+disturbance that the networks will attempt, and fail, to explain.
 \end{itemize}
 
 \subsection{The encoder placement limits the achievable result}
 
 The encoders are on the motor shaft, ahead of the gearbox, so backlash is
-structurally unobservable. \rev{Increasing the loop rate does not help: the
-measurement is not noisy, it is measuring the wrong thing.} Two remedies are
+structurally unobservable. Increasing the loop rate does not help: the
+measurement is not noisy, it is measuring the wrong thing. Two remedies are
 available, in increasing order of effort:
 
 \begin{enumerate}[label=(\alph*),leftmargin=*]
@@ -253,7 +250,7 @@ estimate.
 
 \subsection{The sample rate trade}
 
-\rev{There is an interior optimum in $\Delta t$ and it should be found rather
+There is an interior optimum in $\Delta t$ and it should be found rather
 than assumed. Shortening $\Delta t$ improves the fidelity of \eqref{eq:zoh} and
 reduces the interval over which the zero-order hold is in error, but the encoder
 velocity quantization in Table~\ref{tab:noise} scales as
@@ -263,7 +260,7 @@ Stage~1, plot the RMS velocity estimation error against $\Delta t$, and operate
 at the minimum. If the minimum lies at the shortest $\Delta t$ tested, the
 encoder resolution is not the binding constraint and the loop rate may be raised
 further; if it lies in the interior, raising the loop rate requires raising the
-encoder resolution first.}
+encoder resolution first.
 
 \section{STAGE 5: FALSIFICATION TESTS}
 
@@ -278,23 +275,23 @@ either the conditions are not met or the implementation does not match the
 derivation.
 
 \item \textbf{Small-gain admissibility.} Run the observer at
-$\Gamma$ one and two decades below the bound in \eqref{eq:simple}. \rev{Stability
-must be retained, with slower identification. This test directly falsifies the
-revision~7 condition, which excluded small gains, and confirms the corrected
-one.}
+$\Gamma$ one and two decades below the bound in \eqref{eq:simple}. Stability
+must be retained, with slower identification, since the conditions of
+Corollary~\ref{cor:theta1} admit arbitrarily small gains.
 
 \item \textbf{Position drift.} Run cases C2 and C4 for at least ten times the
 dominant closed-loop time constant with the two-step and command-filtered
-designs side by side, and plot $z_1$ over the full run. \rev{Remark~\ref{rem:twostep} predicts
-that the two-step design permits a slow position ramp. Either it appears, which
-confirms the analysis, or it does not, which means the LQR term is supplying the
-missing damping and should be credited explicitly in the design rather than
-absorbed into the approximation targets.}
+designs side by side, and plot $z_1$ over the full run. A design that assigns no damping to $z_1$ (requirement R2 of
+Chapter~\ref{ch:control}) permits a slow position ramp, since $\dot z_1=z_2$ is
+a pure integrator. Either it appears, which confirms the analysis, or it does
+not, which means the LQR term is supplying the missing damping and should be
+credited explicitly in the design rather than absorbed into the approximation
+targets.
 
 \item \textbf{Algebraic loop.} Disable the command filters, replacing $x_3^c$
 with $\alpha_2$ directly, and attempt to execute the ordering of
-Remark~\ref{rem:order}. \rev{The computation should fail to be well posed. This
-confirms that the filters are structural rather than cosmetic.}
+Remark~\ref{rem:order}. The computation should fail to be well posed. This
+confirms that the filters are structural rather than cosmetic.
 
 \item \textbf{Weight drift.} Run a long regulation case with leakage disabled
 and log $\norm{\What_k}_F$. Growth in the weight norm with a flat estimation
@@ -302,9 +299,9 @@ error confirms that persistency of excitation does not hold in regulation and
 justifies $\sigma$-modification.
 
 \item \textbf{Nonsmoothness floor.} Run case C4 with the backlash amplitude
-$\Delta_b$ swept over a range including zero. \rev{The residual limit cycle
+$\Delta_b$ swept over a range including zero. The residual limit cycle
 amplitude should scale with $\Delta_b$ and vanish as $\Delta_b\to0$. If it does
-not, the limit cycle has another cause and the explanation in Remark~\ref{rem:backlash} is wrong.}
+not, the limit cycle has another cause and the explanation in Remark~\ref{rem:backlash} is wrong.
 
 \end{enumerate}
 

@@ -24,14 +24,14 @@ a number of researchers
 Kim and Kwon developed a feedforward controller based on the state dependent
 Riccati equation \cite{kim2013nonlinear}.
 
-\rev{Two observations about this body of work bear on the present development.
+Two observations about this body of work bear on the present development.
 First, every one of these designs depends on the physical parameters being known
 accurately, since the gains are computed from them; the sensitivity of the
 closed loop to parameter error is the practical limitation rather than the
 linearization itself. Second, Grasser et al.\ treat backlash as something to be
 filtered out of the measurement rather than compensated in the control, which is
 a reasonable engineering choice but leaves the nonlinearity in the loop. Both
-points recur in Chapter~\ref{ch:platform}.}
+points recur in Chapter~\ref{ch:platform}.
 
 The work above is based on linearization of the equations of motion. Nonlinear
 control of two wheeled inverted pendulums is a current topic of research. Kim et
@@ -39,12 +39,12 @@ al.\ investigated the exact dynamics of a two wheeled inverted pendulum robot,
 examining stability on an inclined plane and in turning motion
 \cite{kim2005dynamic}. Pathak et al.\ used the full nonlinear equations obtained
 by the Euler-Lagrange method and applied partial feedback linearization to
-control velocity and position \cite{pathak2005twip}. \rev{This last is worth
+control velocity and position \cite{pathak2005twip}. This last is worth
 singling out: the partial feedback linearization decomposition makes explicit
 that the actuated and unactuated subsystems must be treated differently, and
 that the tilt state rather than the motor voltage is the effective control
 authority available to the position loop. That observation is the structural
-basis for the virtual control used in Chapter~\ref{ch:control}.} Askari et al.\
+basis for the virtual control used in Chapter~\ref{ch:control}. Askari et al.\
 implemented a form of model predictive control and studied performance under
 input disturbances \cite{askari2009model}. Shibayama et al.\ implemented an
 observer-based robust controller to counteract unknown disturbances, permitting
@@ -90,7 +90,7 @@ Applications of the wheeled inverted pendulum configuration extend beyond the
 laboratory; Neugebauer et al.\ describe mobile systems of this type used for
 machining large work pieces \cite{neugebauer2012mobile}.
 
-\rev{The common difficulty across all of the nonlinear and adaptive work above,
+The common difficulty across all of the nonlinear and adaptive work above,
 for the TWIP specifically, is underactuation. A single input drives both
 acceleration equations, so an uncertainty appearing in the tilt acceleration
 cannot be cancelled by the same signal that cancels an uncertainty in the
@@ -102,21 +102,21 @@ This matters here because backlash is not smooth and therefore falls outside the
 function class covered by the universal approximation property. A network can
 approximate such a nonlinearity only in an averaged sense, and the residual
 appears as a floor on the achievable tracking error rather than as something
-further adaptation can remove; see Remark~\ref{rem:backlash}.}
+further adaptation can remove; see Remark~\ref{rem:backlash}.
 
-\rev{\subsection{Command Filtering}
+\subsection{Command Filtering}
 
 Classical backstepping requires analytic differentiation of each virtual control
 law, which produces an expanding chain of terms and, when the virtual control
 contains an online function estimate, requires differentiating the weight update
-law itself. Command filtering, introduced by Farrell et al.\
-\cite{farrell2009command} and developed as dynamic surface control by Swaroop et
-al.\ \cite{swaroop2000dsc}, replaces analytic differentiation with a
-bandwidth-limited filter and compensates for the resulting filter error within
+law itself. Command filtering, in the form of Farrell et al.\ \cite{farrell2009command},
+and the closely related dynamic surface control of Swaroop et al.\
+\cite{swaroop2000dsc}, replace analytic differentiation with a
+bandwidth-limited filter and compensate for the resulting filter error within
 the stability argument. This device is used in Chapter~\ref{ch:control}, where
 it serves a second purpose beyond avoiding the explosion of terms: it breaks the
 algebraic dependence that would otherwise exist between the two neural networks'
-approximation targets, as detailed in Remark~\ref{rem:order}.}
+approximation targets, as detailed in Remark~\ref{rem:order}.
 
 \section{MODIFIED STATE OBSERVER}
 
@@ -165,7 +165,7 @@ training \cite{lewis1999neural}; the present work differs in the weight update
 law and in the observer structure, and requires substantially fewer tunable
 parameters, which simplifies both the design and the tuning effort.
 
-\rev{\subsection{Method Notes}
+\subsection{Method Notes}
 
 Three points of technique motivate the proof given in Chapter~\ref{ch:dmso}.
 
@@ -186,10 +186,10 @@ Third, weight drift in the absence of persistent excitation is a long-standing
 concern in adaptive control, and $\sigma$-modification was introduced by Ioannou
 and Kokotovi\'c \cite{ioannou1983adaptive,ioannou1984sigma} precisely to address
 it. The device is used twice in this work: on the controller networks in
-Chapter~\ref{ch:control}, as in the previous revision, and additionally on the
-observer network in Section~\ref{sec:sigmod}. Applying it in both places makes
+Chapter~\ref{ch:control} and on the observer network in
+Section~\ref{sec:sigmod}. Applying it in both places makes
 the two stability arguments structurally consistent and removes reliance on an
-excitation condition that regulation about an equilibrium does not supply.}
+excitation condition that regulation about an equilibrium does not supply.
 
 \section{SUPPORTING MATERIAL}
 

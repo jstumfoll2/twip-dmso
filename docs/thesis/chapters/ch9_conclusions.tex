@@ -2,7 +2,7 @@
 \label{ch:conclusions}
 
 The Modified State Observer has been extended to discrete time and its stability
-established by Lyapunov analysis. \rev{The proof evaluates the first difference
+established by Lyapunov analysis. The proof evaluates the first difference
 of the Lyapunov function exactly, which exposes the cancellations that the
 adaptation law was constructed to produce. The resulting conditions are
 $\sigmax(F-\Km)<1$ together with an upper bound on the adaptation gain, both
@@ -12,62 +12,60 @@ state estimation error and the functional approximation error
 $\Wt_k^T\phi_k$ in mean square without further assumptions, and uniformly once
 the weight estimate is bounded, which $\sigma$-modification of the update law
 provides directly and persistency of excitation provides with an additional
-argument.}
+argument.
 
-\rev{The robot model used for the results corrects the sign of the motor's
-reaction torque on the body, an error carried over from revision~7 that the
-angular momentum about the wheel contact point exposes
-(Remark~\ref{rem:momentum}). The robot's recorded balancing runs confirm the
-correction independently (Section~\ref{sec:modelsim}). At switch-on, with the
+The robot model was tested against the robot's recorded balancing runs
+(Section~\ref{sec:modelsim}). The runs fix the sign with which the motor's
+reaction torque enters the body's moment balance, independently of the
+angular-momentum argument of Remark~\ref{rem:momentum}. At switch-on, with the
 command saturated at \SI{-10}{V}, the body was turning back toward upright at
-about \SI{100}{\degree/s} within \SI{50}{ms}, the direction the corrected model
-predicts, while the models with the revision~7 sign at the data-sheet motor
-constant have the body still falling further into its lean. Per unit of body
-rotation the base moved three to five times less than the models with the
-revision~7 sign predict, in a relation that does not involve the motor, and
-the drive-away of an early run matched the corrected model's rate. With the gains
-the robot ran, a simulated plant with the revision~7 sign either falls within
-\SI{5.3}{s} or drives the base metres away, while the robot balanced for
-\SI{21}{s} with its base held. The same runs do not validate the model
-quantitatively, and their switch-on transients indicate, without confirming,
-that the firmware's encoder position is mirrored relative to the model. In simulation on the corrected model, the observer
-satisfies its conditions with margin, stays inside the predicted ultimate bound,
-and under deterministic parameter error identifies the uncertainty 1.6 to 4
-times more accurately than an augmented-state Kalman filter, with more
-available from a larger adaptation gain inside the proven region. With
-realistic sensor noise the augmented-state filter identifies the uncertainty
-better, and the observer's advantage over the unaugmented filters is confined to
-the velocity channel. The diagonal error
+about \SI{100}{\degree/s} within \SI{50}{ms}, as the model predicts, while a
+model with the reaction reversed, at the data-sheet motor constant, has the body
+still falling further into its lean. Per unit of body rotation the base moved
+three to five times less than the reversed-sign models predict, in a relation
+that does not involve the motor, and the drive-away of an early run matched the
+model's rate. With the gains the robot ran, a simulated reversed-sign plant
+either falls within \SI{5.3}{s} or drives the base metres away, while the robot
+balanced for \SI{21}{s} with its base held. The same runs do not validate the
+model quantitatively, and their switch-on transients indicate, without
+confirming, that the firmware's encoder position is mirrored relative to the
+model. In simulation, the observer satisfies its conditions with margin, stays
+inside the predicted ultimate bound, and under deterministic parameter error
+identifies the uncertainty 1.6 to 4 times more accurately than an
+augmented-state Kalman filter, with more available from a larger adaptation gain
+inside the proven region. With realistic sensor noise the augmented-state
+filter identifies the uncertainty better, and the observer's advantage over the
+unaugmented filters is confined to the velocity channel. The diagonal error
 injection that makes the proof simplest cannot use the model to reject the
 structured error of the accelerometer-derived tilt, which a Kalman-gain
-injection recovers empirically.}
+injection recovers empirically.
 
-\rev{A command-filtered neural backstepping controller has been developed for
+A command-filtered neural backstepping controller has been developed for
 the two-wheeled inverted pendulum, an underactuated system with unmatched
 uncertainty. The design assigns damping to every error coordinate, retains and
 explicitly cancels the coupling between the position and attitude error
 subsystems, and uses command filtering so that each network approximates a
-function of measured state and reference alone. As first formulated, with the
-position $x_1$ as the tracked output, the design inverts the right-half-plane
-zero of $x_1(s)/u(s)$ and cannot be stabilized for any gains. Recast on the flat
-output $y=x_1-b\,x_3$, with the attitude coordinates weighted by $a_2^2$ in the
-Lyapunov function, the same construction is realizable, and the control enters
-only at the last step. In simulation it balanced in every run and reduced the
-RMS position tracking error relative to the LQR by factors of 4 to 22, at 22\%
-to 137\% more RMS control effort and with peak voltages near the \SI{10}{V}
-limit. Most of that gain comes from the corrected structure. The networks
+function of measured state and reference alone. It tracks the flat output
+$y=x_1-b\,x_3$ of the linearized robot rather than the position itself, because
+the transfer function from voltage to position has a right-half-plane zero that
+a recursion on the position would have to invert; on the flat output the
+control enters only at the last step, and the attitude coordinates are weighted
+by $a_2^2$ in the Lyapunov function. In simulation it balanced in every run and
+reduced the RMS position tracking error relative to the LQR by factors of 4 to
+22, at 22\% to 137\% more RMS control effort and with peak voltages near the
+\SI{10}{V} limit. Most of that gain comes from the structure. The networks
 contribute measurably only under deadzone and backlash, in part because the
 parameter error acts on the input gain, which the networks are not given the
-information to learn.}
+information to learn.
 
-\rev{Five} directions follow naturally from this work.
+Five directions follow naturally from this work.
 
-\paragraph{Input-gain uncertainty.} \rev{A parameter error in the motor
+\paragraph{Input-gain uncertainty.} A parameter error in the motor
 constants changes $B_2$, so part of the residual the networks must absorb is
 proportional to the control. Giving the second network the previous control as
 an input, or estimating $B_2$ directly as in adaptive feedback linearization,
 would bring that error within the approximation hypothesis. At present,
-robustness to it comes from the feedback gains alone.}
+robustness to it comes from the feedback gains alone.
 
 \paragraph{Output feedback.} The present development assumes full state
 measurement, so the DMSO is properly a filter and uncertainty identifier. The
@@ -84,17 +82,17 @@ pursuing: an explicit deadzone- and backlash-inverse placed ahead of the plant,
 or a discontinuous term in the control law that is robust to the deadband rather
 than attempting to estimate it.
 
-\paragraph{Bench identification.} \rev{The recorded runs fix the sign of the
+\paragraph{Bench identification.} The recorded runs fix the sign of the
 motor reaction but not the parameters. $I_p$, $l$, $k_m$, the deadzone and
 backlash of the present motors and the rolling resistance of the floor are
 unmeasured, and near upright the robot is dominated by stick-slip that no
 linear model contains. The bench tests of Table~\ref{tab:benchtests}, with a
 check of the encoder frame, would complete the validation, after which the LQR
-design could be tested on the robot as designed.}
+design could be tested on the robot as designed.
 
-\paragraph{Deterministic timing.} \rev{The achievable sample rate on the
+\paragraph{Deterministic timing.} The achievable sample rate on the
 platform was set by telemetry rather than by the control computation, and the
 encoder velocity quantization scales inversely with the sample period. Both are
 implementation choices rather than properties of the algorithm, and both bound
 what any estimator can deliver. Appendix~\ref{app:validation} treats the loop
-rate as a design variable and gives the trade.}
+rate as a design variable and gives the trade.

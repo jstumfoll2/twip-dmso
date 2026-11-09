@@ -4,16 +4,15 @@
 The Discrete-Time Modified State Observer (DMSO) is an extension of the Modified
 State Observer of Rajagopal et al.\ \cite{rajagopal2009mso} to discrete time.
 This chapter states the problem, gives the observer and its adaptation law, and
-establishes \rev{a mean-square bound on, and, with bounded weights, uniform
-ultimate boundedness of,} the state estimation error and the functional
+establishes a mean-square bound on, and, with bounded weights, uniform
+ultimate boundedness of, the state estimation error and the functional
 approximation error by Lyapunov analysis.
 
-\rev{The derivation evaluates the Lyapunov first difference exactly before any
+The derivation evaluates the Lyapunov first difference exactly before any
 bounding is performed. This is not a stylistic preference. The adaptation law is
 constructed so that the cross terms coupling the weight error to the state
 estimation error and to the network reconstruction error cancel identically, and
-a term-by-term bound applied in advance destroys those cancellations. The
-consequences are recorded in Appendix~\ref{app:errata}.}
+a term-by-term bound applied in advance would destroy those cancellations.
 
 \section{NOTATION}
 
@@ -21,10 +20,10 @@ $\norm{\cdot}$ denotes the Euclidean norm on vectors and the induced $2$-norm on
 matrices; $\norm{\cdot}_F$ denotes the Frobenius norm, $\norm{M}_F^2=\Tr(M^TM)$.
 For square $M$, $\sigmax(M)$ is the largest singular value and $\rho(M)$ the
 spectral radius. Recall $\rho(M)\le\sigmax(M)=\norm{M}$, with equality when
-$M$ is normal \cite{horn2013matrix}\rev{; the converse does not hold, since a
+$M$ is normal \cite{horn2013matrix}; the converse does not hold, since a
 non-normal $M$ with a dominant normal block, such as
 $\operatorname{diag}\bigl(1,\bigl[\begin{smallmatrix}0&1/2\\0&0\end{smallmatrix}\bigr]\bigr)$,
-also attains equality}. $\lmin(\cdot)$ and $\lmax(\cdot)$ denote
+also attains equality. $\lmin(\cdot)$ and $\lmax(\cdot)$ denote
 extreme eigenvalues of a symmetric matrix. Properties of semi-orthogonal
 matrices and of the Frobenius norm follow Abadir and Magnus
 \cite{abadir2005matrix}.
@@ -63,9 +62,9 @@ f(x_k)=W^T\phi(x_k)+\epsilon_k,\qquad
 \norm{\epsilon_k}\le\epsilon_N,\qquad
 \norm{\phi(x_k)}\le\phi_{\max},
 \end{equation}
-$\epsilon_N$ and $\phi_{\max}$ known and finite\rev{, and the plant trajectory
+$\epsilon_N$ and $\phi_{\max}$ known and finite, and the plant trajectory
 $x_k$ remains in that set for all $k\ge0$ (for the TWIP, because a controller
-keeps it there)}. Write $\phi_k:=\phi(x_k)$. The
+keeps it there). Write $\phi_k:=\phi(x_k)$. The
 universal approximation property of two-layer networks is due to Hornik et al.\
 \cite{hornik1989multilayer}; Sadegh \cite{sadegh1993nonlinear} extended it to the
 single-layer functional link form used here, in which one layer suffices provided
@@ -154,10 +153,8 @@ Take the Lyapunov candidate
 V_k=e_k^Te_k+\frac{1}{\Gamma}\Tr\bigl(\Wt_k^T\Wt_k\bigr)
    =\norm{e_k}^2+\frac{1}{\Gamma}\norm{\Wt_k}_F^2\;\ge\;0 .
 \end{equation}
-\rev{The adaptation gain $\Gamma$ itself serves as the weighting. No independent
-Lyapunov constant is introduced; introducing one and then tying it to $\Gamma$
-by a later choice is what places the argument of revision~7 on the boundary of
-its own admissibility condition.}
+The adaptation gain $\Gamma$ itself serves as the weighting; no independent
+Lyapunov constant is introduced.
 
 \subsection{The Exact First Difference}
 
@@ -212,14 +209,14 @@ $\zeta_k=\psi_k+\epsilon_k$,
 Substituting gives \eqref{eq:exact}.
 \end{proof}
 
-The mechanism is now visible. \rev{Outside the adaptation term
-$\gamma_k\norm{a_k+\zeta_k}^2$,} every cross term between $\psi_k$ and
+The mechanism is now visible. Outside the adaptation term
+$\gamma_k\norm{a_k+\zeta_k}^2$, every cross term between $\psi_k$ and
 $\epsilon_k$, and every cross term between $\psi_k$ and $a_k$, cancels exactly.
 The negative term $-\norm{\psi_k}^2$ is produced by the adaptation law and is
 not an artifact of any inequality. The only price paid for adaptation is the
 single term $\gamma_k\norm{a_k+\zeta_k}^2$, which is small when $\Gamma$ is
-small. Small adaptation gains must therefore be admissible on structural
-grounds, and a condition that excludes them indicates an error upstream.
+small. Small adaptation gains are therefore admissible on structural grounds, and
+the conditions below reflect this.
 
 \subsection{Main Result}
 
@@ -254,7 +251,7 @@ and $\Delta V_k<0$ whenever
 \qquad\text{or}\qquad
 \norm{\psi_k}>b_\psi:=\epsilon_N\sqrt{\frac{c_1}{c_2\bigl(1-\mu^2\bigr)}} .
 \end{equation}
-\rev{Consequently:
+Consequently:
 \begin{enumerate}[label=(\alph*),leftmargin=*]
 \item without any further assumption, the time averages of the errors satisfy
 \begin{equation}\label{eq:msbound}
@@ -270,7 +267,7 @@ The thresholds $b_e$ and $b_\psi$ are referred to below as the ultimate bounds.
 Strictly, the bound that the Lyapunov argument delivers in (b) is the largest
 value of $\norm{e_k}$ on the smallest level set of $V$ containing the region
 where $\Delta V_k\ge0$, which can be larger; $b_e$ is the level beyond which the
-error is always driven down.}
+error is always driven down.
 \end{theorem}
 
 \begin{proof}
@@ -310,7 +307,7 @@ g(t^\star)=c_1\epsilon_N^2+\frac{c_1^2\bar\sigma^2\epsilon_N^2}{1-\mu^2}
 Hence $\Delta V_k\le g(\norm{e_k})-c_2w_k^2<0$ whenever
 $c_2w_k^2>c_1\epsilon_N^2/(1-\mu^2)$, which is $\norm{\psi_k}>b_\psi$.
 
-\rev{For (a), split the cross term in \eqref{eq:master} as
+For (a), split the cross term in \eqref{eq:master} as
 $c_1(\bar\sigma\norm{e_k}+\epsilon_N)^2\le\tfrac{1+\mu^2}{2}\norm{e_k}^2
 +c_1\epsilon_N^2\tfrac{1+\mu^2}{1-\mu^2}$, which is Young's inequality with
 weight $(1-\mu^2)/(2\mu^2)$ (for $\mu=0$ it holds trivially). Then
@@ -328,7 +325,7 @@ $\psi_k$ unchanged, so the standard Lyapunov extension theorem for
 discrete-time systems \cite{lewis1999neural,jagannathan2006neural} does not apply
 to it directly. With $\Wt_k$ confined to a bounded set its intersection with
 that set is compact, and the theorem gives uniform ultimate boundedness; see also
-Khalil \cite{khalil2002nonlinear} for the continuous-time counterpart.}
+Khalil \cite{khalil2002nonlinear} for the continuous-time counterpart.
 \end{proof}
 
 \begin{corollary}[Simple sufficient conditions]\label{cor:theta1}
@@ -368,10 +365,10 @@ so for any $\bar\gamma<1$, completing the square on the $\psi_k$ terms gives
 \[
 \Delta V_k\le-\norm{e_k}^2+\frac{\epsilon_N^2}{1-\bar\gamma},
 \]
-\rev{so the time average of $\norm{e_k}^2$ is asymptotically at most
+so the time average of $\norm{e_k}^2$ is asymptotically at most
 $\epsilon_N^2/(1-\bar\gamma)$ and, with $\Wt_k$ bounded as in
 Theorem~\ref{thm:main}(b), $\norm{e_k}$ is driven down whenever it exceeds
-$\epsilon_N/\sqrt{1-\bar\gamma}$.} No
+$\epsilon_N/\sqrt{1-\bar\gamma}$. No
 condition on $A$ is required and the restriction on $\Gamma$ relaxes to
 $\bar\gamma<1$.
 \end{corollary}
@@ -391,12 +388,12 @@ is the correct limiting answer.
 If $A$ is Schur but $\sigmax(A)\ge1$, Theorem~\ref{thm:main} does not apply in
 the Euclidean norm. Since $\rho(A)<1$, for any $\delta>0$ there is a nonsingular
 $T$ with $\norm{TAT^{-1}}\le\rho(A)+\delta<1$. Repeating the derivation with
-$V_k=e_k^TT^TTe_k+\Gamma^{-1}\norm{\Wt_k}_F^2$ \rev{preserves the cancellations of
+$V_k=e_k^TT^TTe_k+\Gamma^{-1}\norm{\Wt_k}_F^2$ preserves the cancellations of
 Proposition~\ref{prop:exact} only if the adaptation law is weighted by the same
 matrix, $\What_{k+1}=\What_k+\Gamma\phi_ke_{k+1}^TT^TT\Bm$. With that law the
 exact difference has the form \eqref{eq:exact}, with $\psi_k$ and $\epsilon_k$
 measured in the norm weighted by $M:=\Bm^TT^TT\Bm\succ0$ and $a_k$ replaced by
-$\Bm^TT^TTAe_k$; no normalization $M=I$ is needed. The conclusions are the same}
+$\Bm^TT^TTAe_k$; no normalization $M=I$ is needed. The conclusions are the same
 with $\bar\sigma$ replaced by $\norm{TAT^{-1}}$, at the cost of factors depending
 on $\kappa(T)$ and on the extreme eigenvalues of $M$ in the bounds. Since $\Km$ is fully free here, it is simpler in
 practice to place $A$ so that $\sigmax(A)$ is directly small. Note that
@@ -404,12 +401,12 @@ $\lmax(A)$ is not an upper bound for $\norm{A}$ unless $A$ is normal, and may be
 complex.
 \end{remark}
 
-\section{BOUNDEDNESS OF THE WEIGHT ESTIMATES}
+\section[BOUNDEDNESS OF THE WEIGHT ESTIMATES]{BOUNDEDNESS OF THE WEIGHT\\ESTIMATES}
 \label{sec:weightbound}
 
-\rev{Without a bound on $\Wt_k$, Theorem~\ref{thm:main} gives only the
+Without a bound on $\Wt_k$, Theorem~\ref{thm:main} gives only the
 mean-square bound (a) on $e_k$ and $\psi_k=\Wt_k^T\phi_k$, and nothing on
-$\Wt_k$ itself.} This is the correct statement: the negative term in \eqref{eq:master} acts only along
+$\Wt_k$ itself. This is the correct statement: the negative term in \eqref{eq:master} acts only along
 $\phi_k$, so components of $\Wt_k$ orthogonal to the regressor direction are
 unconstrained by \eqref{eq:master} and may drift. Two standard remedies apply.
 
@@ -438,7 +435,7 @@ $-\Gamma\phi_k(a_k+\epsilon_k)^T$ is bounded whenever $e_k$ is bounded, $\Wt_k$
 is bounded.
 \end{lemma}
 
-\rev{Lemma~\ref{lem:pe2} bounds $\Wt_k$ given a bound on $e_k$, while
+Lemma~\ref{lem:pe2} bounds $\Wt_k$ given a bound on $e_k$, while
 Theorem~\ref{thm:main}(b) bounds $e_k$ given a bound on $\Wt_k$. Under
 \eqref{eq:pe} the two are combined by a windowed Lyapunov or small-gain
 argument, which is standard but not reproduced here.
@@ -449,9 +446,9 @@ The condition $0<\Gamma\norm{\phi_k}^2<2$ required here is exactly the
 condition $\gamma_k<2$ that renders the $\psi_k$ coefficient in \eqref{eq:wdiff}
 negative. In the present derivation it is not an independent assumption but a
 consequence of the same inequality that drives Theorem~\ref{thm:main}, and
-Corollary~\ref{cor:theta1} implies it.}
+Corollary~\ref{cor:theta1} implies it.
 
-\subsection{$\sigma$-Modification}
+\subsection{\texorpdfstring{$\sigma$}{sigma}-Modification}
 \label{sec:sigmod}
 
 Persistency of excitation is not always available, particularly during
