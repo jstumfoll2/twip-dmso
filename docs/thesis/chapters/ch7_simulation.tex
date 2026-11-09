@@ -61,7 +61,7 @@ appears in $x_1$ and must be stabilized through the tilt.
 \toprule
 Quantity & Value \\
 \midrule
-$\mathcal{A}_{22},\ \mathcal{A}_{24}$ (\si{s^{-1}}, --) & $-12.65,\ -0.569$ \\
+$\mathcal{A}_{22},\ \mathcal{A}_{23},\ \mathcal{A}_{24}$ (\si{s^{-1}}, \si{m.s^{-2}}, \si{m.s^{-1}}) & $-12.65,\ 3.43,\ -0.569$ \\
 $\mathcal{A}_{42},\ \mathcal{A}_{43},\ \mathcal{A}_{44}$ (\si{rad.m^{-1}.s^{-1}}, \si{s^{-2}}, \si{s^{-1}}) & $-79.6,\ 57.0,\ -3.58$ \\
 $\mathcal{B}_2,\ \mathcal{B}_4$ (\si{m.s^{-2}.V^{-1}}, \si{rad.s^{-2}.V^{-1}}) & $1.86,\ 11.67$ \\
 Unstable pole (\si{rad/s}) & 5.953 \\
@@ -264,7 +264,7 @@ an unmodeled input nonlinearity rather than as a measurable state discrepancy.
 Second, \eqref{eq:backlash} is not smooth and therefore violates the smoothness
 assumption underlying Assumption~\ref{as:nn}. The networks can approximate it
 only in an averaged sense, and the residual appears in $\epsilon_N$ and in
-$w_{i0}$. This is the explanation for the persistent oscillation in the
+$\delta_{i0}$. This is the explanation for the persistent oscillation in the
 uncertainty estimates reported in Chapter~\ref{ch:results}: the limit cycle is
 the signature of a nonsmooth input nonlinearity that no smooth approximator can
 cancel, not a tuning failure.

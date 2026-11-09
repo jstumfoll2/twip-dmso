@@ -114,16 +114,18 @@ direction; equations \eqref{eq:wheelm}, \eqref{eq:noslip} and the back-EMF term 
 drawn in the opposite sense.) The motor stator is fixed to the pendulum body, so
 the shaft rate $\omega$ in \eqref{eq:isimple} is the rate of the wheel relative to
 the body. With the pendulum angle $\theta$ of the next section taken
-counterclockwise, that relative rate is $\dot\theta_w+\dot\theta$. Starting from
-the motor shaft equation \eqref{eq:shaft} and substituting \eqref{eq:isimple}, the
-motor torque delivered to either wheel is
+counterclockwise, that relative rate is $\dot\theta_w+\dot\theta$. The armature
+inertia is neglected along with $L$ and $k_f$, so that in \eqref{eq:shaft} the
+torque delivered to the wheel equals the electromagnetic torque $\tau_m$.
+Substituting \eqref{eq:isimple}, and writing $V$ for the terminal voltage $V_a$,
+the motor torque delivered to either wheel is
 \begin{equation}\label{eq:CL}
-C_L=C_R=\tau_m=-\frac{k_mk_e}{R}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{R}V_a .
+C_L=C_R=\tau_m=-\frac{k_mk_e}{R}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{R}V .
 \end{equation}
 Using \eqref{eq:CL} in \eqref{eq:wheelm} and rearranging gives the friction
 reaction force,
 \begin{equation}\label{eq:HfL}
-H_{fL}=-\frac{k_mk_e}{Rr}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{Rr}V_a
+H_{fL}=-\frac{k_mk_e}{Rr}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{Rr}V
 -\frac{I_w}{r}\ddot\theta_w .
 \end{equation}
 Substituting \eqref{eq:HfL} into \eqref{eq:wheelx} gives the equation of motion
@@ -229,7 +231,7 @@ Section~\ref{sec:modelsim} tests it against the robot's recorded motion.
 Combining \eqref{eq:CL}, \eqref{eq:Hsum}, \eqref{eq:Psum}, and \eqref{eq:pendm},
 \begin{equation}\label{eq:combined}
 \begin{aligned}
-\left(-\frac{2k_mk_e}{R}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)+\frac{2k_m}{R}V_a\right)
+\left(-\frac{2k_mk_e}{R}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)+\frac{2k_m}{R}V\right)
 &-\Bigl(M_p\bigl(\ddot x+\ddot\theta l\cos\theta-\dot\theta^2l\sin\theta\bigr)\Bigr)l\cos\theta\\
 &-\Bigl(M_pg+M_p\bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\bigr)\Bigr)l\sin\theta
 =I_p\ddot\theta .
@@ -377,9 +379,11 @@ nominal model leaves out.
 Two features of \eqref{eq:plantform} drive everything that follows. First,
 $B_1$ and $B_2$ are both nonzero and the input is scalar, so the system is
 underactuated and no choice of $u$ cancels both $d_1$ and $d_2$: the uncertainty
-is unmatched. Second, $A_2\neq0$, so the tilt state enters the translational
-acceleration directly. This is what makes $x_3$ usable as a virtual control for
-the position subsystem, and it is also the term that couples the two error
+is unmatched. Second, the tilt drives the translational motion. With the input
+eliminated between the two acceleration equations, the tilt enters with the gain
+$a_2=A_2-(B_1/B_2)A_4=-M_pgl/(r\beta+M_pl)$, which is nonzero for any $l>0$
+(Section~\ref{sec:flatcf}). This is what makes $x_3$ usable as a virtual control
+for the position subsystem, and it is also the term that couples the two error
 subsystems in the backstepping design. It must be retained; see
 Section~\ref{sec:cffb}.
 \end{remark}

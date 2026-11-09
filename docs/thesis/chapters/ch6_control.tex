@@ -155,10 +155,10 @@ of the position subsystem is therefore $a_2$.
 \begin{remark}[Choice of the tracked output]\label{rem:output}
 The position $x_1$ is not used as the tracked output. The transfer function from
 $u$ to $x_1$ has a right-half-plane zero at $\sqrt{M_pgl/(I_p+M_pl^2+M_plr)}$,
-which is \SI{5.95}{rad/s} at the parameters of Table~\ref{tab:linvals}, and a
-backstepping recursion that drives $x_1$ and its three derivatives to a
-reference inverts that transfer function, which places a closed-loop pole at the
-zero. A recursion on $x_1$ also puts the control into the second step, since
+which is \SI{5.95}{rad/s} at the parameters of Table~\ref{tab:linvals}. A
+backstepping recursion on $x_1$ drives every error coordinate to zero, so it
+makes $x_1$ follow its reference by inverting that transfer function, and the
+inversion places a closed-loop pole at the zero. A recursion on $x_1$ also puts the control into the second step, since
 $u$ enters $\dot x_2$ through $B_1$, so the virtual control $\alpha_2$ would
 contain $B_1u$ and, through $u$, the filter states, and the premise of
 Assumption~\ref{as:filt} that $\alpha_i$ and $\dot\alpha_i$ are bounded would
@@ -173,9 +173,10 @@ step.
 
 Let $x_{1d}(t)$ be the position reference, assumed twice continuously
 differentiable with bounded derivatives, and let $y_d$ be the corresponding
-reference for the flat output; for a constant velocity command
-$y_d=x_{1d}-b\,x_3^{\mathrm{ss}}$, with $x_3^{\mathrm{ss}}$ the steady-state tilt
-that holds that velocity in the nominal model. Write
+reference for the flat output. For a constant velocity command $y_d=x_{1d}$:
+the nominal model holds a constant velocity at zero tilt, because
+$\dot\eta=a_2x_3$ must then vanish, and the voltage $k_e\dot x_{1d}/r$ only
+balances the back-EMF. Write
 $u=u_{\mathrm{nom}}+u_e$ as in Section~\ref{sec:lqr}. The constant $w>0$ that
 appears at Step~3 weights the attitude coordinates in the Lyapunov function of
 Section~\ref{sec:ctrlstability}.
@@ -286,7 +287,11 @@ $\sigma_{i1},\sigma_{i2}$ bounded activation functions. The estimates are
 Network inputs are taken as
 $P_1=\bigl[x_2,\ x_3,\ \dot\eta^c,\ 1\bigr]^T$ and
 $P_2=\bigl[x_2,\ x_3,\ x_4,\ \dot x_4^c,\ 1\bigr]^T$; by construction neither
-contains a control signal or an adaptive parameter.
+contains a control signal or an adaptive parameter. The target of network one,
+$D_1$, also depends on $x_4$, through the nonlinear terms and, under parameter
+error, through a term $r$ times its $x_2$ term (coefficients 0.04 and 0.93 in
+case C2 of Chapter~\ref{ch:results}). That part is not available to the network
+and remains in $\varepsilon_1$.
 
 Writing $\Wt_{ij}:=W_{ij}-\What_{ij}$ and expanding the hidden-layer activation
 about $\What_{i1}^T\hat\sigma_{i1}$ in the standard manner
@@ -295,19 +300,19 @@ about $\What_{i1}^T\hat\sigma_{i1}$ in the standard manner
 F_i-\hat F_i
 =\Wt_{i2}^T\Bigl(\hat\sigma_{i2}-\hat\sigma_{i2}'\What_{i1}^T\hat\sigma_{i1}\Bigr)
 +\What_{i2}^T\hat\sigma_{i2}'\,\Wt_{i1}^T\hat\sigma_{i1}
-+w_i ,
++\delta_i ,
 \end{equation}
 where $\hat\sigma_{i2}'$ is the Jacobian of $\sigma_{i2}$ evaluated at the
-estimate and $w_i$ collects $\varepsilon_i$ with the higher-order Taylor
-residual. That residual contains the weight errors, so $w_i$ is not bounded
+estimate and $\delta_i$ collects $\varepsilon_i$ with the higher-order Taylor
+residual. That residual contains the weight errors, so $\delta_i$ is not bounded
 by a constant. Because the activations and their derivatives are bounded and the
 ideal weights satisfy $\norm{W_{ij}}_F\le W_{ijm}$, it satisfies, on the compact
 operating set,
 \begin{equation}\label{eq:wbound}
-\abs{w_i}\le w_{i0}+w_{i1}\norm{\Wt_i}_F,
+\abs{\delta_i}\le\delta_{i0}+\delta_{i1}\norm{\Wt_i}_F,
 \qquad \norm{\Wt_i}_F^2:=\norm{\Wt_{i1}}_F^2+\norm{\Wt_{i2}}_F^2,
 \end{equation}
-with constants $w_{i0},w_{i1}\ge0$ \cite{lewis1999neural}.
+with constants $\delta_{i0},\delta_{i1}\ge0$ \cite{lewis1999neural}.
 Equation \eqref{eq:nnerr} is the form that makes both layers' weight errors
 appear explicitly and linearly, which is what allows the first-layer update law
 to be matched term by term in the stability analysis below.
@@ -347,8 +352,8 @@ c_1>\tfrac{1}{2},\qquad
 c_2>1,\qquad
 c_3>\tfrac{1}{2},\qquad
 c_4>\tfrac{1}{2},\qquad
-\kappa_{1j}>2w_{11}^2,\qquad
-\kappa_{2j}>2w\,w_{21}^2 ,
+\kappa_{1j}>2\delta_{11}^2,\qquad
+\kappa_{2j}>2w\,\delta_{21}^2 ,
 \end{equation}
 the first four after the cross terms are absorbed as below, the last two so
 that the leakage dominates the weight-error part of \eqref{eq:wbound}. Then
@@ -390,7 +395,7 @@ effective second-layer regressor, the approximation terms become
 \varrho_i^T\bigl(F_i-\hat F_i\bigr)
 =\varrho_i^T\Wt_{i2}^T\Lambda_i
 +\varrho_i^T\What_{i2}^T\hat\sigma_{i2}'\Wt_{i1}^T\hat\sigma_{i1}
-+\varrho_i^Tw_i .
++\varrho_i^T\delta_i .
 \end{equation}
 Each of the first two is a scalar and may be written as a trace,
 \begin{align}
@@ -413,7 +418,7 @@ $\dot{\Wt}_{ij}=-\dot{\What}_{ij}$ and \eqref{eq:upd2}--\eqref{eq:upd1},
 Comparing \eqref{eq:tr1} with \eqref{eq:wdot2} and \eqref{eq:tr2} with
 \eqref{eq:wdot1}, every explicit term containing both a weight error and an
 error coordinate appears exactly twice with opposite sign and cancels. (The
-residual $w_i$ still depends on the weight errors through \eqref{eq:wbound};
+residual $\delta_i$ still depends on the weight errors through \eqref{eq:wbound};
 it is handled with the leakage below.) This pairwise cancellation is the
 purpose of the specific regressors chosen in \eqref{eq:upd2}--\eqref{eq:upd1},
 and it is available because \eqref{eq:nnerr} keeps both layers' weight errors
@@ -432,15 +437,15 @@ together with the filter-error and residual cross terms. Hence
 \dot{\mathcal{V}}\le{}&
 -c_1z_1^2-c_2z_2^2-wc_3z_3^2-wc_4z_4^2
 -\sum_{i,j}\frac{\kappa_{ij}}{2}\norm{\Wt_{ij}}_F^2\\
-&+z_1\chi_1+a_2z_2\chi_2+w\,z_3\chi_3+z_2w_1+w\,z_4w_2
+&+z_1\chi_1+a_2z_2\chi_2+w\,z_3\chi_3+z_2\delta_1+w\,z_4\delta_2
 +\sum_{i,j}\frac{\kappa_{ij}}{2}W_{ijm}^2 .
 \end{aligned}
 \]
 Applying $ab\le\tfrac12a^2+\tfrac12b^2$ to each filter cross term, and for the
 residuals
-$z_2w_1\le\tfrac12z_2^2+\tfrac12\bigl(w_{10}+w_{11}\norm{\Wt_1}_F\bigr)^2
-\le\tfrac12z_2^2+w_{10}^2+w_{11}^2\norm{\Wt_1}_F^2$ and
-$w\,z_4w_2\le\tfrac{w}{2}z_4^2+w\,w_{20}^2+w\,w_{21}^2\norm{\Wt_2}_F^2$,
+$z_2\delta_1\le\tfrac12z_2^2+\tfrac12\bigl(\delta_{10}+\delta_{11}\norm{\Wt_1}_F\bigr)^2
+\le\tfrac12z_2^2+\delta_{10}^2+\delta_{11}^2\norm{\Wt_1}_F^2$ and
+$w\,z_4\delta_2\le\tfrac{w}{2}z_4^2+w\,\delta_{20}^2+w\,\delta_{21}^2\norm{\Wt_2}_F^2$,
 \begin{equation}\label{eq:Vdotfinal}
 \begin{aligned}
 \dot{\mathcal{V}}\le{}&
@@ -448,15 +453,15 @@ $w\,z_4w_2\le\tfrac{w}{2}z_4^2+w\,w_{20}^2+w\,w_{21}^2\norm{\Wt_2}_F^2$,
 -\Bigl(c_2-1\Bigr)z_2^2
 -w\Bigl(c_3-\tfrac12\Bigr)z_3^2
 -w\Bigl(c_4-\tfrac12\Bigr)z_4^2\\
-&-\sum_{j}\Bigl(\frac{\kappa_{1j}}{2}-w_{11}^2\Bigr)\norm{\Wt_{1j}}_F^2
--\sum_{j}\Bigl(\frac{\kappa_{2j}}{2}-w\,w_{21}^2\Bigr)\norm{\Wt_{2j}}_F^2
+&-\sum_{j}\Bigl(\frac{\kappa_{1j}}{2}-\delta_{11}^2\Bigr)\norm{\Wt_{1j}}_F^2
+-\sum_{j}\Bigl(\frac{\kappa_{2j}}{2}-w\,\delta_{21}^2\Bigr)\norm{\Wt_{2j}}_F^2
 +\mathcal{C},
 \end{aligned}
 \end{equation}
 where
 \[
 \mathcal{C}:=\tfrac12\bar\chi_1^2+\tfrac12a_2^2\bar\chi_2^2
-+\tfrac{w}{2}\bar\chi_3^2+w_{10}^2+w\,w_{20}^2
++\tfrac{w}{2}\bar\chi_3^2+\delta_{10}^2+w\,\delta_{20}^2
 +\sum_{i,j}\frac{\kappa_{ij}}{2}W_{ijm}^2 .
 \]
 Under \eqref{eq:gaincond} every coefficient in \eqref{eq:Vdotfinal} is
@@ -471,8 +476,9 @@ The residual $\mathcal{C}$ has three distinct contributions, and they can be
 reduced independently. The filter terms $\bar\chi_i^2$ shrink as the filter
 bandwidths $\varpi_i$ are raised, limited by the sample rate, by the
 unmodeled structural modes of the chassis, and by the measurement noise
-(Section~\ref{sec:assumptions}). The network residuals $w_{i0}^2$ shrink with
-the richness of the basis. The leakage terms $\kappa_{ij}W_{ijm}^2$ shrink with
+(Section~\ref{sec:assumptions}). The network residuals $\delta_{i0}^2$ shrink with
+the richness of the basis, down to the part of each target that the network
+inputs do not determine (Section~\ref{sec:nn}). The leakage terms $\kappa_{ij}W_{ijm}^2$ shrink with
 $\kappa_{ij}$, at the cost of weaker protection against weight drift. This
 decomposition gives the tuning order recommended in
 Appendix~\ref{app:validation}.
@@ -509,9 +515,24 @@ from \num{0.005} to \num{0.18} over the bandwidths tested. The bandwidth
 therefore trades filter lag against noise transmission, and $\bar\chi_i$ in the
 bound has a floor set by the sensors.
 
-One modeling limitation remains. A parameter error in $k_m$ or $R$ changes the
-true $B_2$, so the residual $F_2-\hat F_2$ contains $(B_2^{\mathrm{true}}-B_2)u$.
-That residual depends on the control, and neither network is given the control
+The analysis is in continuous time. In Chapter~\ref{ch:results} the
+controller runs at the \SI{10}{ms} loop period of the robot,
+with the command filters discretized exactly for a held input and the weight
+updates integrated by forward Euler (Chapter~\ref{ch:simulation}).
+Theorem~\ref{thm:control} describes that sampled loop only to the extent that
+the sample period is short compared with the time constants of the loop. The
+fastest command filter, at \SI{60}{rad/s}, turns through 0.6~rad per sample, so
+the stability of the implemented loop rests on the simulations of
+Chapter~\ref{ch:results} rather than on the theorem.
+
+One modeling limitation remains. A parameter error changes the input gains, so
+the residuals contain terms proportional to the control:
+$(B_2^{\mathrm{true}}-B_2)u$ in $F_2-\hat F_2$ and, when the error changes $b$,
+as an error in the masses does, $(B_1^{\mathrm{true}}-b\,B_2^{\mathrm{true}})u$
+in $F_1-\hat F_1$ (in case C2, $-0.14$ against
+$B_1^{\mathrm{true}}=\SI{1.65}{m.s^{-2}.V^{-1}}$). An error in $k_m$ or $R$
+alone scales $B_1$ and $B_2$ together and leaves the second term zero. These
+residuals depend on the control, and neither network is given the control
 as an input. The approximation hypothesis therefore does not cover input-gain
 error; robustness to it comes from the gains. It does not depend on a narrow
 choice of them: in the closed-loop sweep of Section~\ref{sec:ctrlresults}, 63 of
