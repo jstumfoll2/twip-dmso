@@ -1137,6 +1137,7 @@ def startup_gain_fit(run: Run, n: int = 10) -> dict:
 
 
 MODEL_STYLE = {"+T": {"color": "C0"}, "-T": {"color": "C3"}, "rev7": {"color": "C2", "ls": "--"}}
+MODEL_LABEL = {"+T": "M1", "-T": "M2", "rev7": "M3"}  # names used in thesis Section 5.3
 
 
 def fig_transient(integral: dict) -> None:
@@ -1153,7 +1154,7 @@ def fig_transient(integral: dict) -> None:
         ax = axs[0, j]
         ax.plot(t, it["encoder"]["meas"] * 1e3, "k", lw=1.8, label="measured")
         for mname, pred in it["encoder"]["pred"].items():
-            ax.plot(t, pred * 1e3, lw=1.0, label=f"{mname} ({it['encoder']['models'][mname]['rms_mm']:.1f} mm rms)", **MODEL_STYLE[mname])
+            ax.plot(t, pred * 1e3, lw=1.0, label=f"{MODEL_LABEL[mname]} ({it['encoder']['models'][mname]['rms_mm']:.1f} mm rms)", **MODEL_STYLE[mname])
         ax.set(title=name, ylabel="Encoder $P$ (mm)")
         ax.legend(fontsize=6)
         if "accelerometer" in it:
@@ -1161,7 +1162,7 @@ def fig_transient(integral: dict) -> None:
             q = it["accelerometer"]
             for mname, pred in q["pred"].items():
                 ax.plot(
-                    t, (q["meas"] - pred) * 1e3, lw=1.0, label=f"{mname} ({q['models'][mname]['rms_mm']:.1f} mm rms)", **MODEL_STYLE[mname]
+                    t, (q["meas"] - pred) * 1e3, lw=1.0, label=f"{MODEL_LABEL[mname]} ({q['models'][mname]['rms_mm']:.1f} mm rms)", **MODEL_STYLE[mname]
                 )
             ax.axhline(0, color="k", lw=0.5)
             ax.set(xlabel="Time after switch-on (s)", ylabel="Accelerometer residual (mm)")
@@ -1188,7 +1189,7 @@ def fig_startup(runs: list[Run]) -> None:
                 X = _rk4_open_loop(X, run.u[k] * run.gain_eff, p, be, run.dt)
                 th.append(X[2])
                 P.append(X[0] + r * (X[2] - run.th[0]))
-            axs[0, j].plot(t, np.array(th) * R2D, lw=1.0, label=name, **MODEL_STYLE[name])
+            axs[0, j].plot(t, np.array(th) * R2D, lw=1.0, label=MODEL_LABEL[name], **MODEL_STYLE[name])
             axs[1, j].plot(t, np.array(P) * 1e3, lw=1.0, **MODEL_STYLE[name])
         axs[0, j].set(title=f"{run.name}: -10 V from {run.th[0] * R2D:.0f} deg", ylabel="Tilt (deg)")
         axs[1, j].set(xlabel="Time after switch-on (ms)", ylabel="Encoder $P$ (mm)")
@@ -1211,7 +1212,7 @@ def fig_frequency(tfs: dict, mt: dict) -> None:
         om2 = (2 * np.pi * f) ** 2
         for mname, row in mt.items():
             c1, c2 = row["s=+1"]["c1"], row["s=+1"]["c2"]
-            axs[0, j].semilogx(f, c1 - c2 / om2, lw=1.0, label=mname, **MODEL_STYLE[mname])
+            axs[0, j].semilogx(f, c1 - c2 / om2, lw=1.0, label=MODEL_LABEL[mname], **MODEL_STYLE[mname])
         axs[0, j].set(ylim=(-0.6, 2.5), title=name)
         axs[1, j].semilogx(f, coh, "k", lw=0.8)
         axs[1, j].set(xlabel="Frequency (Hz)", ylim=(0, 1))
@@ -1231,7 +1232,7 @@ def fig_coefficients(rows: list[tuple[str, float, list[float], str]], mt: dict) 
         mk = {"data": "ko", "sim +T": "C0s", "sim -T": "C3s"}[kind]
         ax.errorbar(val, y, xerr=[[val - lohi[0]], [lohi[1] - val]] if lohi else None, fmt=mk, ms=4, capsize=2, lw=0.8)
     for mname, row in mt.items():
-        ax.axvline(row["s=+1"]["c1"], lw=1.0, label=f"{mname}: {row['s=+1']['c1']:.2f}", **MODEL_STYLE[mname])
+        ax.axvline(row["s=+1"]["c1"], lw=1.0, label=f"{MODEL_LABEL[mname]}: {row['s=+1']['c1']:.2f}", **MODEL_STYLE[mname])
     ax.set_yticks(range(len(rows), 0, -1))
     ax.set_yticklabels([q[0] for q in rows], fontsize=7)
     ax.set(xlabel=r"$c_1$ (encoder) or $a + r$ (accelerometer)", xlim=(-0.3, 1.4))

@@ -10,8 +10,8 @@ voltage law \cite{desilva2004mechatronics},
 \begin{equation}\label{eq:circuit}
 L\frac{\dd i}{\dd t}+Ri+k_e\omega=V_a ,
 \end{equation}
-where $i$ is the armature current and $\omega=\dot\vartheta$ the shaft rate.
-Rearranging,
+where $i$ is the armature current and $\omega=\dot\vartheta$ the shaft rate
+relative to the stator. Rearranging,
 \begin{equation}\label{eq:circuit2}
 \frac{\dd i}{\dd t}=\frac{V_a}{L}-\frac{R}{L}i-\frac{k_e}{L}\omega .
 \end{equation}
@@ -107,35 +107,38 @@ Summing moments about the center of the wheel,
 I_w\ddot\theta_w=C_L-H_{fL}r ,
 \end{equation}
 where $I_w$ is the wheel moment of inertia and $\ddot\theta_w$ the wheel angular
-acceleration. \rev{The wheel angle $\theta_w$ and the motor torque $C_L$ are both taken
+acceleration. The wheel angle $\theta_w$ and the motor torque $C_L$ are both taken
 clockwise, the sense in which a wheel turns when the robot rolls in the positive $x$
-direction. Equations \eqref{eq:wheelm}, \eqref{eq:noslip} and the back-EMF term of
-\eqref{eq:CL} require this; the $\theta_w$ arrow in Figure~\ref{fig:fbdwheel} is
-drawn the other way.} Starting from the motor shaft equation \eqref{eq:shaft} and
-substituting \eqref{eq:isimple}, the motor torque delivered to either wheel is
+direction; equations \eqref{eq:wheelm}, \eqref{eq:noslip} and the back-EMF term of
+\eqref{eq:CL} require this. (The $\theta_w$ arrow in Figure~\ref{fig:fbdwheel} is
+drawn in the opposite sense.) The motor stator is fixed to the pendulum body, so
+the shaft rate $\omega$ in \eqref{eq:isimple} is the rate of the wheel relative to
+the body. With the pendulum angle $\theta$ of the next section taken
+counterclockwise, that relative rate is $\dot\theta_w+\dot\theta$. The armature
+inertia is neglected along with $L$ and $k_f$, so that in \eqref{eq:shaft} the
+torque delivered to the wheel equals the electromagnetic torque $\tau_m$. Both
+$k_m$ and $k_e$ are referred to the gearbox output shaft, with the losses of
+the gear train lumped into $k_m$ (Section~\ref{sec:motors}).
+Substituting \eqref{eq:isimple}, and writing $V$ for the terminal voltage $V_a$,
+the motor torque delivered to either wheel is
 \begin{equation}\label{eq:CL}
-C_L=C_R=\tau_m=-\frac{k_mk_e}{R}\dot\theta_w+\frac{k_m}{R}V_a .
+C_L=C_R=\tau_m=-\frac{k_mk_e}{R}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{R}V .
 \end{equation}
-\rev{In \eqref{eq:CL}, $\dot\theta_w$ must be read as the wheel rate relative to
-the motor stator, which is fixed to the pendulum body. The development below
-follows revision~7 in substituting the absolute rate $\dot x/r$, which drops a
-tilt-rate term; the correction used for the results is given in
-Section~\ref{sec:simmodel}.}
 Using \eqref{eq:CL} in \eqref{eq:wheelm} and rearranging gives the friction
 reaction force,
 \begin{equation}\label{eq:HfL}
-H_{fL}=-\frac{k_mk_e}{Rr}\dot\theta_w+\frac{k_m}{Rr}V_a
+H_{fL}=-\frac{k_mk_e}{Rr}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{Rr}V
 -\frac{I_w}{r}\ddot\theta_w .
 \end{equation}
 Substituting \eqref{eq:HfL} into \eqref{eq:wheelx} gives the equation of motion
 for the left wheel,
 \begin{equation}\label{eq:wheelL}
-M_w\ddot x=-\frac{k_mk_e}{Rr}\dot\theta_w+\frac{k_m}{Rr}V
+M_w\ddot x=-\frac{k_mk_e}{Rr}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{Rr}V
 -\frac{I_w}{r}\ddot\theta_w-H_L ,
 \end{equation}
 and an identical development for the right wheel gives
 \begin{equation}\label{eq:wheelR}
-M_w\ddot x=-\frac{k_mk_e}{Rr}\dot\theta_w+\frac{k_m}{Rr}V
+M_w\ddot x=-\frac{k_mk_e}{Rr}\bigl(\dot\theta_w+\dot\theta\bigr)+\frac{k_m}{Rr}V
 -\frac{I_w}{r}\ddot\theta_w-H_R .
 \end{equation}
 
@@ -146,16 +149,16 @@ linear motion,
 \end{equation}
 Applying \eqref{eq:noslip} to \eqref{eq:wheelL} and \eqref{eq:wheelR},
 \begin{align}
-M_w\ddot x&=-\frac{k_mk_e}{Rr^2}\dot x+\frac{k_m}{Rr}V
+M_w\ddot x&=-\frac{k_mk_e}{Rr}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)+\frac{k_m}{Rr}V
 -\frac{I_w}{r^2}\ddot x-H_L ,\label{eq:wheelL2}\\[4pt]
-M_w\ddot x&=-\frac{k_mk_e}{Rr^2}\dot x+\frac{k_m}{Rr}V
+M_w\ddot x&=-\frac{k_mk_e}{Rr}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)+\frac{k_m}{Rr}V
 -\frac{I_w}{r^2}\ddot x-H_R .\label{eq:wheelR2}
 \end{align}
 Adding \eqref{eq:wheelL2} and \eqref{eq:wheelR2} gives the equation of motion
 for the combined wheel system,
 \begin{equation}\label{eq:wheelcomb}
 2\left(M_w+\frac{I_w}{r^2}\right)\ddot x
-=-\frac{2k_mk_e}{Rr^2}\dot x+\frac{2k_m}{Rr}V-\bigl(H_L+H_R\bigr).
+=-\frac{2k_mk_e}{Rr}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)+\frac{2k_m}{Rr}V-\bigl(H_L+H_R\bigr).
 \end{equation}
 
 \subsection{Pendulum Dynamics}
@@ -214,27 +217,23 @@ P_L+P_R&=M_pg+M_p\Bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\Bigr).
 \end{align}
 
 Summing moments about the pendulum center of gravity, with the
-\rev{counterclockwise direction (the sense of $\theta$, since
-$\bm{\omega}_p=\dot\theta\,\hat k$) taken as positive,}
+counterclockwise direction (the sense of $\theta$, since
+$\bm{\omega}_p=\dot\theta\,\hat k$) taken as positive,
 \begin{equation}\label{eq:pendm}
 \sum M=\bigl(C_L+C_R\bigr)-\bigl(H_L+H_R\bigr)l\cos\theta
 -\bigl(P_L+P_R\bigr)l\sin\theta=I_p\ddot\theta .
 \end{equation}
-\rev{The motors are mounted on the pendulum, so the torque $C_L+C_R$ that turns the
+The motors are mounted on the pendulum, so the torque $C_L+C_R$ that turns the
 wheels clockwise reacts on the pendulum counterclockwise, with positive sign.
-Revision~7 entered this reaction with a negative sign and described the sum as
-clockwise-positive, while the $H$ and $P$ terms and $I_p\ddot\theta$ are written
-counterclockwise-positive. That error reverses the motor's reaction on the body;
-it propagates to \eqref{eq:nl1}, \eqref{eq:lin1}, and the second and fourth rows
-of \eqref{eq:linss}, all corrected below. Remark~\ref{rem:momentum} gives an
-independent check.}
+Remark~\ref{rem:momentum} gives an independent check of this sign, and
+Section~\ref{sec:modelsim} tests it against the robot's recorded motion.
 
 \subsection{Combined Equations of Motion}
 
 Combining \eqref{eq:CL}, \eqref{eq:Hsum}, \eqref{eq:Psum}, and \eqref{eq:pendm},
 \begin{equation}\label{eq:combined}
 \begin{aligned}
-\left(-\frac{2k_mk_e}{R}\dot\theta_w+\frac{2k_m}{R}V_a\right)
+\left(-\frac{2k_mk_e}{R}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)+\frac{2k_m}{R}V\right)
 &-\Bigl(M_p\bigl(\ddot x+\ddot\theta l\cos\theta-\dot\theta^2l\sin\theta\bigr)\Bigr)l\cos\theta\\
 &-\Bigl(M_pg+M_p\bigl(\ddot\theta l\sin\theta+\dot\theta^2l\cos\theta\bigr)\Bigr)l\sin\theta
 =I_p\ddot\theta .
@@ -244,7 +243,7 @@ Cancelling terms, rearranging, and applying the identity
 $\sin^2\theta+\cos^2\theta=1$ gives the first nonlinear equation of motion,
 \begin{equation}\label{eq:nl1}
 \bigl(I_p+M_pl^2\bigr)\ddot\theta
-+\frac{2k_mk_e}{Rr}\dot x
++\frac{2k_mk_e}{R}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)
 -\frac{2k_m}{R}V
 +M_pgl\sin\theta
 =-M_pl\ddot x\cos\theta .
@@ -253,13 +252,19 @@ Using \eqref{eq:Hsum} to remove the body forces from \eqref{eq:wheelcomb} gives
 the second nonlinear equation of motion,
 \begin{equation}\label{eq:nl2}
 \frac{2k_m}{Rr}V=\left(2M_w+\frac{2I_w}{r^2}+M_p\right)\ddot x
-+\frac{2k_mk_e}{Rr^2}\dot x
++\frac{2k_mk_e}{Rr}\Bigl(\frac{\dot x}{r}+\dot\theta\Bigr)
 +M_pl\ddot\theta\cos\theta
 -M_pl\dot\theta^2\sin\theta .
 \end{equation}
 
 Equations \eqref{eq:nl1} and \eqref{eq:nl2} describe the full nonlinear motion
-of the two-wheeled inverted pendulum.
+of the two-wheeled inverted pendulum. The motor torque acts between the body and
+the wheels through the relative angle $x/r+\theta$: it enters the wheel equation
+\eqref{eq:nl2} as $T/r$ and the pendulum equation \eqref{eq:nl1} as $+T$, with
+$T=(2k_m/R)\bigl(V-k_e(\dot x/r+\dot\theta)\bigr)$ the total motor torque, which is
+the virtual work of $T$ acting through that angle. At zero voltage the power
+delivered by the motors is $-(2k_mk_e/R)(\dot x/r+\dot\theta)^2\le0$, so the
+back-EMF is strictly dissipative.
 
 \subsection{Linearization}
 
@@ -278,45 +283,46 @@ together with the assumption that the squared angular rate is small,
 Applying \eqref{eq:smallangle} and \eqref{eq:smallrate} to \eqref{eq:nl1} and
 \eqref{eq:nl2} yields the linearized equations of motion,
 \begin{align}
-\bigl(I_p+M_pl^2\bigr)\ddot\phi+\frac{2k_mk_e}{Rr}\dot x
+\bigl(I_p+M_pl^2\bigr)\ddot\phi+\frac{2k_mk_e}{R}\Bigl(\frac{\dot x}{r}+\dot\phi\Bigr)
 -\frac{2k_m}{R}V-M_pgl\phi&=M_pl\ddot x ,\label{eq:lin1}\\[4pt]
 \frac{2k_m}{Rr}V=\left(2M_w+\frac{2I_w}{r^2}+M_p\right)\ddot x
-+\frac{2k_mk_e}{Rr^2}\dot x-M_pl\ddot\phi&. \label{eq:lin2}
++\frac{2k_mk_e}{Rr}\Bigl(\frac{\dot x}{r}+\dot\phi\Bigr)-M_pl\ddot\phi&. \label{eq:lin2}
 \end{align}
 
-\rev{\begin{remark}[Sign of the gravity term]\label{rem:gravsign}
+\begin{remark}[Sign of the gravity term]\label{rem:gravsign}
 Rearranging \eqref{eq:lin1} gives
 $\bigl(I_p+M_pl^2\bigr)\ddot\phi=M_pgl\phi+\cdots$, so the gravitational term
 enters with positive sign and is destabilizing. This is the expected signature
 of an upright linearization and confirms the convention: $\phi$ is the
 displacement from the \emph{unstable} equilibrium, not from the hanging one. It
 is also consistent with \eqref{eq:linss}, whose $(2,3)$ and $(4,3)$ entries are
-both positive. The description of $\theta=\pi$ in revision~7 as the
-``statically stable vertical point'' is a mislabeling; the corrected reading is
-given in Section~\ref{sec:simchecks}.
-\end{remark}}
+both positive. Section~\ref{sec:simchecks} checks both equilibria of the
+implemented equations.
+\end{remark}
 
-Rearranging \eqref{eq:lin1} and \eqref{eq:lin2} into state-space form
-$\dot{\mathbf{x}}=\mathcal{A}\mathbf{x}+\mathcal{B}V$ with
-$\mathbf{x}=\begin{bmatrix}x&\dot x&\phi&\dot\phi\end{bmatrix}^T$ gives
+Rearranging \eqref{eq:lin1} and \eqref{eq:lin2} into the state-space form
+$\dot{\mathbf{x}}=\mathcal{A}\mathbf{x}+\mathcal{B}V$, with state
+$\mathbf{x}=[\,x\;\;\dot x\;\;\phi\;\;\dot\phi\,]^T$, gives
 \begin{equation}\label{eq:linss}
+\begin{gathered}
 \mathcal{A}=
 \begin{bmatrix}
 0 & 1 & 0 & 0\\[4pt]
 0 & -\dfrac{2k_mk_e\bigl(I_p+M_pl^2+M_plr\bigr)}{Rr^2\alpha}
-  & \dfrac{M_p^2gl^2}{\alpha} & 0\\[8pt]
+  & \dfrac{M_p^2gl^2}{\alpha}
+  & -\dfrac{2k_mk_e\bigl(I_p+M_pl^2+M_plr\bigr)}{Rr\alpha}\\[8pt]
 0 & 0 & 0 & 1\\[4pt]
 0 & -\dfrac{2k_mk_e\bigl(r\beta+M_pl\bigr)}{Rr^2\alpha}
-  & \dfrac{M_pgl\beta}{\alpha} & 0
+  & \dfrac{M_pgl\beta}{\alpha}
+  & -\dfrac{2k_mk_e\bigl(r\beta+M_pl\bigr)}{Rr\alpha}
 \end{bmatrix},
-\qquad
+\\[8pt]
 \mathcal{B}=
 \begin{bmatrix}
-0\\[4pt]
-\dfrac{2k_m\bigl(I_p+M_pl^2+M_plr\bigr)}{Rr\alpha}\\[8pt]
-0\\[4pt]
-\dfrac{2k_m\bigl(r\beta+M_pl\bigr)}{Rr\alpha}
-\end{bmatrix},
+0 & \dfrac{2k_m\bigl(I_p+M_pl^2+M_plr\bigr)}{Rr\alpha} & 0
+  & \dfrac{2k_m\bigl(r\beta+M_pl\bigr)}{Rr\alpha}
+\end{bmatrix}^T,
+\end{gathered}
 \end{equation}
 where
 \begin{equation}\label{eq:beta}
@@ -326,8 +332,12 @@ and
 \begin{equation}\label{eq:alphadef}
 \alpha:=I_p\beta+2M_pl^2\left(M_w+\frac{I_w}{r^2}\right).
 \end{equation}
+The tilt-rate entries $\mathcal{A}_{24}=r\mathcal{A}_{22}$ and
+$\mathcal{A}_{44}=r\mathcal{A}_{42}$ come from the relative rate in
+\eqref{eq:CL}; they are what make the motor dissipative at zero voltage, and
+they are small (Table~\ref{tab:linvals}).
 
-\rev{\begin{remark}[Check on the input direction]\label{rem:momentum}
+\begin{remark}[Check on the input direction]\label{rem:momentum}
 The motor torque acts between the pendulum and the wheels, so it cannot change
 the angular momentum of the robot about the wheel contact point; only gravity,
 which has no moment about that point when the robot is upright, and the motion
@@ -340,12 +350,13 @@ rate of change is zero only if
 \frac{\mathcal{B}_2}{\mathcal{B}_4}=\frac{I_p+M_pl^2+M_plr}{r\beta+M_pl} .
 \end{equation}
 The input vector of \eqref{eq:linss} satisfies \eqref{eq:momentum}, and the same
-ratio relates $\mathcal{A}_{22}$ to $\mathcal{A}_{42}$, since the back-EMF torque
-is internal too. Both entries of $\mathcal{B}$ are positive: a positive voltage
-pushes the base forward and turns the body backward. The input vector of
-revision~7, with $I_p+M_pl^2-M_plr$ and $M_pl-r\beta$ in place of the corrected
-factors, fails this check.
-\end{remark}}
+ratio relates $\mathcal{A}_{22}$ to $\mathcal{A}_{42}$ and $\mathcal{A}_{24}$ to
+$\mathcal{A}_{44}$, since the back-EMF torque is internal too. Both entries of
+$\mathcal{B}$ are positive: a positive voltage pushes the base forward and turns
+the body backward. Had the reaction torque been entered in \eqref{eq:pendm} with
+the opposite sign, the factors would read $I_p+M_pl^2-M_plr$ and $M_pl-r\beta$,
+and the check would fail.
+\end{remark}
 
 For the development in Chapter~\ref{ch:control} it is convenient to name the
 entries of \eqref{eq:linss} directly. Writing $x_1=x$, $x_2=\dot x$, $x_3=\phi$,
@@ -354,68 +365,70 @@ $d_1$ and $d_2$,
 \begin{equation}\label{eq:plantform}
 \begin{aligned}
 \dot x_1&=x_2,\\
-\dot x_2&=A_1x_2+A_2x_3+B_1u+d_1(\mathbf{x}),\\
+\dot x_2&=A_1x_2+A_2x_3+A_5x_4+B_1u+d_1(\mathbf{x}),\\
 \dot x_3&=x_4,\\
-\dot x_4&=A_3x_2+A_4x_3+B_2u+d_2(\mathbf{x}),
+\dot x_4&=A_3x_2+A_4x_3+A_6x_4+B_2u+d_2(\mathbf{x}),
 \end{aligned}
 \end{equation}
-with $A_1,\dots,A_4,B_1,B_2$ read off from \eqref{eq:linss}: $A_1=\mathcal{A}_{22}$,
-$A_2=\mathcal{A}_{23}$, $A_3=\mathcal{A}_{42}$, $A_4=\mathcal{A}_{43}$,
-$B_1=\mathcal{B}_2$, $B_2=\mathcal{B}_4$. \rev{The tilt rate $x_4$ does not appear
-because \eqref{eq:CL} was evaluated with the absolute wheel rate. With the
-relative rate of Section~\ref{sec:simmodel} the terms $\mathcal{A}_{24}x_4$ and
-$\mathcal{A}_{44}x_4$ join the second and fourth equations; the designs of
-Chapter~\ref{ch:control} carry them as known terms, and the uncertainties $d_1$
-and $d_2$ absorb whatever the nominal model leaves out. (Revision~7 stated
-instead that $A_4=0$ in the nominal model; $A_4$ is the gravity coefficient
-$\mathcal{A}_{43}$, which is not zero.)}
+with the coefficients read off from \eqref{eq:linss}: $A_1=\mathcal{A}_{22}$,
+$A_2=\mathcal{A}_{23}$, $A_5=\mathcal{A}_{24}$, $A_3=\mathcal{A}_{42}$,
+$A_4=\mathcal{A}_{43}$, $A_6=\mathcal{A}_{44}$, $B_1=\mathcal{B}_2$,
+$B_2=\mathcal{B}_4$. The designs of Chapter~\ref{ch:control} carry the known
+coefficients as such, and the uncertainties $d_1$ and $d_2$ absorb whatever the
+nominal model leaves out.
 
-\rev{\begin{remark}[Structural consequences]
+\begin{remark}[Structural consequences]
 Two features of \eqref{eq:plantform} drive everything that follows. First,
 $B_1$ and $B_2$ are both nonzero and the input is scalar, so the system is
 underactuated and no choice of $u$ cancels both $d_1$ and $d_2$: the uncertainty
-is unmatched. Second, $A_2\neq0$, so the tilt state enters the translational
-acceleration directly. This is what makes $x_3$ usable as a virtual control for
-the position subsystem, and it is also the term that couples the two error
+is unmatched. Second, the tilt drives the translational motion. With the input
+eliminated between the two acceleration equations, the tilt enters with the gain
+$a_2=A_2-(B_1/B_2)A_4=-M_pgl/(r\beta+M_pl)$, which is nonzero for any $l>0$
+(Section~\ref{sec:flatcf}). This is what makes $x_3$ usable as a virtual control
+for the position subsystem, and it is also the term that couples the two error
 subsystems in the backstepping design. It must be retained; see
 Section~\ref{sec:cffb}.
-\end{remark}}
+\end{remark}
 
 \section{MODEL VALIDATION}
 \label{sec:modelsim}
 
-\rev{The model of Section~\ref{sec:twipmodel} is used three times in this
+The model of Section~\ref{sec:twipmodel} is used three times in this
 thesis: it sets the controller gains of Chapter~\ref{ch:control}, it is the
 prediction model $F,G$ inside every observer, and it is the truth model of
-Chapter~\ref{ch:results}. Revision~7 checked it only by simulating it. A
-simulation shows that the equations are implemented as written, not that they
-describe the robot, so this section tests the model against the robot's
-recorded data. Each test is stated with the value every candidate model
+Chapter~\ref{ch:results}. A simulation shows that the equations are implemented
+as written, not that they describe the robot, so this section tests the model
+against the robot's recorded data. The feature of the derivation that the data
+can decide is the sign with which the motor torque reacts on the body in
+\eqref{eq:pendm}, so the model is tested alongside two alternatives that carry
+the opposite sign. Each test is stated with the value every candidate model
 predicts. A candidate is called contradicted by a test when its prediction
 misses the measurement by several times the error of the best candidate, or,
 for a fitted coefficient, lies well outside the bootstrap interval of the
-measurement; by the second rule some measured coefficients contradict M1 as
-well, and they are reported.}
+measurement; by the second rule some measured coefficients contradict the model
+of this chapter as well, and they are reported.
 
 \subsection{Candidate Models}
 \label{sec:candidates}
 
-\rev{Three candidates span the questions the derivation leaves open: the sign
+Three candidates span the questions the derivation leaves open: the sign
 of the motor reaction on the body, the motor constants, and the mass
 properties. They share the mass matrix and differ in how the motor couples the
 wheels to the body.
-\begin{description}[leftmargin=*]
-\item[M1 (corrected).] Reaction $+(C_L+C_R)$ on the body, as in
+\begin{description}[style=unboxed,leftmargin=0pt]
+\item[M1.] The model of this chapter: reaction $+(C_L+C_R)$ on the body, as in
 \eqref{eq:pendm}; back-EMF on the wheel rate relative to the body,
-\eqref{eq:relemf}; parameters of Section~\ref{sec:simmodel}. This is the model
+\eqref{eq:CL}; parameters of Chapter~\ref{ch:platform}. This is the model
 behind the results of Chapter~\ref{ch:results}.
-\item[M2 (revision~7 sign).] Reaction $-(C_L+C_R)$, with the back-EMF on
-$\dot x/r-\dot\phi$, the relative rate that makes $-T$ energy-consistent;
-parameters of Section~\ref{sec:simmodel}. It differs from M1 only in the
-disputed sign.
-\item[M3 (revision~7).] Reaction $-(C_L+C_R)$, back-EMF on the absolute wheel
-rate $\dot x/r$, and the values $k_e=\SI{0.00361}{V.s/rad}$ and
-$I_p=\SI{0.025}{kg.m^2}$ used in revision~7.
+\item[M2 (reversed sign).] Reaction $-(C_L+C_R)$, with the back-EMF on
+$\dot x/r-\dot\phi$, the relative rate that makes the reversed reaction
+energy-consistent; parameters of Chapter~\ref{ch:platform}. It differs from M1
+only in the sign of the reaction.
+\item[M3 (firmware model).] The model programmed into the robot's on-board
+estimator for the recorded runs (Section~\ref{sec:datatests}): reaction
+$-(C_L+C_R)$, back-EMF on the absolute wheel rate $\dot x/r$,
+$k_e=\SI{0.00361}{V.s/rad}$, and $I_p=\SI{0.025}{kg.m^2}$, the inertia about
+the wheel axis used as the inertia about the center of gravity.
 \end{description}
 Table~\ref{tab:candidates} lists the predictions used below. Both input gains
 are positive in every candidate at the parameters used here, so a positive
@@ -425,7 +438,7 @@ range searched in Section~\ref{sec:gaintest}; the M2 plants there fall with
 either sign of the command.) The sign question therefore does not
 show up as a reversed response. It shows up in the magnitudes: per volt, M1
 turns the body seven to ten times faster than M2 and M3, and it moves the
-base much less per unit of body rotation.}
+base much less per unit of body rotation.
 
 \begin{table}[htbp]
 \centering
@@ -450,14 +463,13 @@ $c_2$ of \eqref{eq:momenc} (\si{m.rad^{-1}.s^{-2}}) & $-5.62$ & $-38.7$ & $-38.7
 
 The uncontrolled nonlinear equations \eqref{eq:nl1}--\eqref{eq:nl2} are
 integrated from two initial conditions with the motor voltage held at zero.
-\rev{In the convention of \eqref{eq:smallangle}, $\theta=\pi$ is the upright
+In the convention of \eqref{eq:smallangle}, $\theta=\pi$ is the upright
 configuration and $\theta=0$ the hanging one. Started at
 $\theta=\SI{180}{\degree}$ with zero rate, the system remains there
 (Figure~\ref{fig:stab180}). This confirms that the upright configuration is an
 equilibrium of the implemented equations; it is not evidence of stability, and
 as Remark~\ref{rem:gravsign} establishes, a perturbation of \SI{0.1}{\degree}
-grows to \SI{10}{\degree} in \SI{0.88}{s}. Revision~7 described the two
-equilibria in the opposite sense.
+grows to \SI{10}{\degree} in \SI{0.88}{s}.
 
 Started at $\theta=\SI{10}{\degree}$, the system oscillates about the hanging
 equilibrium (Figure~\ref{fig:stab10}) with a period of \SI{0.84}{s}. The swing
@@ -468,7 +480,7 @@ the positive direction and oscillates between \SI{-1}{mm} and \SI{17}{mm}.
 
 These checks would catch a sign or transcription error in the implemented
 equations, but they are not validation. Table~\ref{tab:simchecks} shows that
-all three candidates pass them, so they cannot decide between them.}
+all three candidates pass them, so they cannot decide between them.
 
 \begin{table}[htbp]
 \centering
@@ -503,7 +515,7 @@ Swing period about $\theta=0$ (\si{s}) & 0.840 & 1.144 & 1.001 \\
 \subsection{Recorded Data and Sign Conventions}
 \label{sec:datatests}
 
-\rev{Four logs of the robot balancing under LQR control are analysed here:
+Four logs of the robot balancing under LQR control are analysed here:
 \begin{itemize}[leftmargin=*]
 \item \texttt{implementationtest1.txt} and \texttt{implementationtest2.txt}:
 firmware v8, \SI{13}{ms} loop, \SI{3.0}{s} and \SI{3.9}{s} long, with the
@@ -527,8 +539,8 @@ accompanying code, which writes its results to
 \texttt{generated/plant\_validation.json}.
 
 Three rules apply throughout. The on-board estimates are not used as
-measurements, because they were computed with the revision~7 matrices $F$ and
-$G$; they are used only to recover the gains. The tilt is the integrated
+measurements, because they were computed with the matrices $F$ and $G$ of M3;
+they are used only to recover the gains. The tilt is the integrated
 gyroscope, started from the filtered tilt, because the accelerometer and the
 complementary filter read tilt relative to the apparent vertical, which is
 displaced by about $\ddot x/g$ whenever the robot accelerates. And the inertial
@@ -558,14 +570,15 @@ encoder tests below use this same transient, so their positive $c_1$ is not an
 independent check of the mirror. The accelerometer is, because its sign is
 fixed by gravity through the tilt: in this frame it gives an axle coefficient
 of the same sign as the encoder (0.19 and 0.24, against 0.16 and 0.16 from the
-encoder). The mirror is inferred from these two v9 transients alone and assumed
-for v8. The closed loop of Section~\ref{sec:gaintest} does not decide it, and
-a hand check would (Section~\ref{sec:valresults}).}
+encoder). The mirror is inferred from these two v9 transients and assumed for
+v8. The closed loop of Section~\ref{sec:gaintest} does not decide it, since
+the model holds the base in either frame given enough rolling resistance, and
+the hand check of Table~\ref{tab:benchtests} settles it.
 
 \subsection{Input-Free Angular Momentum Test}
 \label{sec:momtest}
 
-\rev{Multiplying \eqref{eq:lin2} by $r$ and adding it to \eqref{eq:lin1}
+Multiplying \eqref{eq:lin2} by $r$ and adding it to \eqref{eq:lin1}
 eliminates the voltage and every back-EMF term:
 \begin{equation}\label{eq:momtest}
 \bigl(r\beta+M_pl\bigr)\ddot x
@@ -573,9 +586,9 @@ eliminates the voltage and every back-EMF term:
 \end{equation}
 This is the angular momentum balance about the wheel contact point of
 Remark~\ref{rem:momentum}: the motor torque acts between body and wheels and
-drops out, and only gravity remains. With the revision~7 sign of the reaction
+drops out, and only gravity remains. With the reversed sign of the reaction
 the same elimination gives instead
-\begin{equation}\label{eq:momrev7}
+\begin{equation}\label{eq:mommodels}
 \bigl(M_pl-r\beta\bigr)\ddot x
 =\bigl(I_p+M_pl^2-M_plr\bigr)\ddot\phi-M_pgl\phi .
 \end{equation}
@@ -587,7 +600,7 @@ c_1=\frac{I_p+M_pl^2+M_plr}{r\beta+M_pl}+r ,
 \qquad
 c_2=-\frac{M_pgl}{r\beta+M_pl},
 \end{equation}
-and \eqref{eq:momrev7} gives the same form with the coefficients of M2 and M3
+and \eqref{eq:mommodels} gives the same form with the coefficients of M2 and M3
 in Table~\ref{tab:candidates}. The axle acceleration $\ddot x$ satisfies the
 same relation with $c_1-r$ in place of $c_1$, and it can be measured without
 the encoder by the accelerometer, corrected for gravity and for its height
@@ -622,20 +635,20 @@ coupling win by default. The accelerometer is not behind the gearbox.
 
 Fitting $c_1$ freely, instead of taking it from a candidate, gives $c_1=0.205$
 (bootstrap interval 0.12 to 0.25) in test~4 and 0.203 (0.15 to 0.26) in test~5,
-against 0.204 for M1 and 0.79 or 1.08 for the $-T$ models. Without the
+against 0.204 for M1 and 0.79 or 1.08 for the reversed-sign models. Without the
 \SI{7}{ms} IMU correction these become 0.15 and 0.14, so the close agreement
 with M1 depends on the correction, while the separation from M2 and M3 does
 not. The accelerometer, which the correction does not affect, gives the axle
 coefficient $c_1-r=0.189$ (0.169 to 0.210) and 0.242 (0.208 to 0.274) in
 tests~4 and~5 (M1: 0.159; M2: 0.741; M3: 1.037). These values are far from
-the $-T$ models, but they are 20 to 50\% above M1 with intervals that exclude
-it, and in test~5 the value lies above the whole encoder interval ($c_1-r=0.158$,
-0.101 to 0.211). Within M1 the axle coefficient depends mainly on $I_p$, and
-the test~4 value corresponds to $I_p\approx\SI{0.023}{kg.m^2}$ at the nominal
-$l$, against the \SI{0.0169}{kg.m^2} of Table~\ref{tab:phys}. The test~5 value
-is not converted, because the same fit gives a gravity coefficient of $+43$ (28
-to 59), which no candidate allows. A rolling resistance of the floor would not
-explain the excess: in simulation it biases the coefficient low
+the reversed-sign models, but they are 20 to 50\% above M1 with intervals that
+exclude it, and in test~5 the value lies above the whole encoder interval
+($c_1-r=0.158$, 0.101 to 0.211). Within M1 the axle coefficient depends mainly
+on $I_p$, and the test~4 value corresponds to $I_p\approx\SI{0.023}{kg.m^2}$ at
+the nominal $l$, against the \SI{0.0169}{kg.m^2} of Table~\ref{tab:phys}. The
+test~5 value is not converted, because the same fit gives a gravity coefficient
+of $+43$ (28 to 59), which no candidate allows. A rolling resistance of the
+floor would not explain the excess: in simulation it biases the coefficient low
 (Section~\ref{sec:gaintest}). In tests~1 and~2 the fits are mixed: the test~1
 accelerometer gives $c_1-r=0.18$ (0.13 to 0.22) and the test~2 encoder
 $c_1=0.19$ (0.13 to 0.25), both consistent with M1 and far from M2 and M3,
@@ -645,7 +658,7 @@ test~1 accelerometer is the only accelerometer interval that contains M1, and
 it comes from a third event. The gravity coefficient $c_2$ is not identified in
 the v9 encoder fits, and where a free fit does identify it (the test~5
 accelerometer, the test~1 accelerometer, the test~2 encoder) it is positive,
-the wrong sign for every candidate.}
+the wrong sign for every candidate.
 
 \begin{table}[htbp]
 \centering
@@ -674,11 +687,11 @@ over \SIrange{0.1}{1.5}{s} (Table~\ref{tab:momtest} uses
 and \SI{1.2}{mm} in test~4 but grow to 5.5 and \SI{4.1}{mm} in test~5). Top: the logged
 encoder position and each candidate's prediction from the measured tilt
 history. Bottom: residual of the doubly integrated accelerometer against each
-candidate.}
+candidate. In the legend, $+T$ is M1, $-T$ is M2 and rev7 is M3.}
 \label{fig:pvtransient}
 \end{figure}
 
-\rev{\paragraph{Steady balancing.} After the first second the robot is in a
+\paragraph{Steady balancing.} After the first second the robot is in a
 stick-slip limit cycle: the encoder stays frozen for several tenths of a second
 while the body sways, then jumps by a few counts. During those
 intervals $p$ does not follow the wheel, and \eqref{eq:momenc} fails for every
@@ -705,11 +718,11 @@ simulated M2 plant with backlash reproduces the low values measured.
 eight simulated closed-loop runs: M1 and M2 plants, clean and with gearbox
 friction, \SI{2}{\degree} of backlash and a rolling resistance of 2\% of the
 weight, two noise seeds each, passed through the robot's sensor models and
-loop. The M2 runs use the gyroscope alone ($\alpha=1$), since with the robot's
-filter they fall, and three M2 runs with friction that fell were replaced by
-the next seed. On \SIrange{0.1}{0.8}{s} the switch-on test ranked the true
-plant first in all 16 run and sensor cases, and the free fit recovered $c_1$
-between 0.200 and 0.204 for M1 and between 0.70 and 0.79 for M2.
+loop. The M2 runs use the gyroscope alone ($\lambda_c=1$), since with the
+robot's filter they fall, and three M2 runs with friction that fell were
+replaced by the next seed. On \SIrange{0.1}{0.8}{s} the switch-on test ranked
+the true plant first in all 16 run and sensor cases, and the free fit recovered
+$c_1$ between 0.200 and 0.204 for M1 and between 0.70 and 0.79 for M2.
 Figure~\ref{fig:pvcoef} collects the simulated and measured coefficients. The
 check has limits. The simulated plants obey the input-free relation by
 construction apart from the rolling resistance, they have no IMU delay, and
@@ -725,7 +738,7 @@ of Section~\ref{sec:gaintest}), M1 plants are still ranked first, with the
 accelerometer coefficient 6 to 8\% low at 6\% and 25 to 52\% low at 10\%; M2
 plants with that much resistance do not balance at all. The stick-slip of the robot is stronger
 than the simulated backlash and friction produce, which is why the steady-state
-encoder fit works in simulation and not on the logs.}
+encoder fit works in simulation and not on the logs.
 
 \begin{figure}[htbp]
 \centering
@@ -734,15 +747,15 @@ encoder fit works in simulation and not on the logs.}
 (transient and steady fits) and from the accelerometer (the transient fit $a$
 shifted by $r$, and the steady $\ddot\phi$ coefficient shifted by $r$ plus the
 IMU height): one seed of each simulated case (top) and the recorded runs
-(bottom). Vertical lines: M1, M2 and M3. Eight of the twelve measured intervals
-exclude M1; none includes M2 or M3.}
+(bottom). Vertical lines: M1 ($+T$), M2 ($-T$) and M3 (rev7). Eight of the
+twelve measured intervals exclude M1; none includes M2 or M3.}
 \label{fig:pvcoef}
 \end{figure}
 
 \subsection{Response to the Voltage}
 \label{sec:voltagetest}
 
-\rev{The switch-on transient also tests the input gain, because for at least
+The switch-on transient also tests the input gain, because for at least
 the first \SI{60}{ms} the command is saturated at a known \SI{-10}{V} and the
 motion is large. It is a consistency check rather than a clean test: the robot
 may still have been touching the hand or stand that held it, and the models
@@ -762,12 +775,12 @@ gravity at these angles, and the body is still falling further into its lean.
 With the command reversed they fall faster still. At \SI{100}{ms} the measured
 rate is \SI{-193}{\degree/s} and \SI{-178}{\degree/s}, against
 \SI{-206}{\degree/s} and \SI{-130}{\degree/s} for M1, while M2 and M3 are still
-turning the wrong way. The direction excludes the $-T$ models only for $k_m$
-near its data-sheet value, however. At nominal $I_p$ and $l$, M3 turns the body
-back within \SI{50}{ms} from 2.5 times that $k_m$ in test~4 but from 1.2 times
-in test~5, inside the 35\% spread of the data sheets, and M2 from 7.5 and 1.6
-times. Reaching the measured rate needs at least 5.4 times for M3 and is
-beyond M2 up to 12 times.
+turning the wrong way. The direction excludes the reversed-sign models only for
+$k_m$ near its data-sheet value, however. At nominal $I_p$ and $l$, M3 turns
+the body back within \SI{50}{ms} from 2.5 times that $k_m$ in test~4 but from
+1.2 times in test~5, inside the 35\% spread of the data sheets, and M2 from 7.5
+and 1.6 times. Reaching the measured rate needs at least 5.4 times for M3 and
+is beyond M2 up to 12 times.
 
 The size of the response fixes the tilt input gain of M1 only loosely. Scaling
 $k_m$ to fit the filtered tilt over the first \SI{100}{ms} needs a factor of
@@ -790,10 +803,10 @@ prediction of M3 (\SI{-47}{mm} and \SI{-48}{mm}) is closer than that of M1
 with Section~\ref{sec:momtest} and with the frame of
 Section~\ref{sec:datatests}.
 
-This is how the sign error shows in the voltages: not as a reversed response
-to the voltage, but, at the data-sheet motor constant, as a tilt authority too
-small to turn the body back against gravity within the first \SI{50}{ms}, which
-the robot did.}
+This is how the reaction sign shows in the voltages: not as a reversed response
+to the voltage, but, at the data-sheet motor constant, as a tilt authority
+large enough to turn the body back against gravity within the first
+\SI{50}{ms}, which the robot did and which the reversed-sign models cannot.
 
 \begin{figure}[htbp]
 \centering
@@ -802,14 +815,15 @@ the robot did.}
 filtered tilt and the encoder position, and each candidate simulated open loop
 from rest at the logged initial tilt with the logged voltages. The filtered
 tilt overstates the fall during these accelerations; the gyroscope rates
-quoted in the text are the cleaner comparison.}
+quoted in the text are the cleaner comparison. In the legend, $+T$ is M1, $-T$
+is M2 and rev7 is M3.}
 \label{fig:pvstartup}
 \end{figure}
 
 \subsection{Gains Used on the Robot}
 \label{sec:gaintest}
 
-\rev{The v9 firmware computes the command as a linear function of the logged
+The v9 firmware computes the command as a linear function of the logged
 on-board estimates, so the gains are recovered by least squares. In the
 firmware's frame both v9 runs used
 \begin{equation*}
@@ -862,7 +876,7 @@ with gearbox friction, backlash and rolling resistance, with the encoder
 mirrored, not mirrored, and with the tilt gains alone
 (Table~\ref{tab:v9sim}). With the robot's filter no M2 plant stayed up longer
 than \SI{5.3}{s}. This does not rest on the complementary filter: with the gyroscope alone
-($\alpha=1$), the nominal M2 loop falls within 0.7 to \SI{5.5}{s} in every
+($\lambda_c=1$), the nominal M2 loop falls within 0.7 to \SI{5.5}{s} in every
 frame, clean or with friction and backlash. M3 stayed up only with the encoder
 not mirrored, and then drove at least \SI{1.9}{m} away. With gearbox friction,
 backlash and 2\% rolling resistance, M1 balanced with the base held in 61 of
@@ -880,15 +894,15 @@ robot ran on was not recorded. The simulation, from
 \texttt{scripts/validate\_closed\_loop.py}, writes its results to
 \texttt{generated/plant\_closedloop.json}.
 
-This is how the sign error shows in the controller results. With the gains the
-robot actually ran, no plant with the revision~7 sign balances with its base
-held over the parameter range tried: M2 falls within \SI{5.3}{s} in every set
-and frame, and M3 stays up only with the encoder not mirrored, where it drives
-at least \SI{1.9}{m} away, while the robot balanced for \SI{21}{s} with its
-base held within a few millimeters. Only M1 balances with its base held, and
-only if the floor resists rolling, by about 2\% of the weight with the encoder
-not mirrored and about 6\% in the frame inferred from the switch-on transients.
-In the simulated loop that resistance does not reproduce the steady-balancing
+This is how the reaction sign shows in the controller results. With the gains
+the robot actually ran, no reversed-sign plant balances with its base held
+over the parameter range tried: M2 falls within \SI{5.3}{s} in every set and
+frame, and M3 stays up only with the encoder not mirrored, where it drives at
+least \SI{1.9}{m} away, while the robot balanced for \SI{21}{s} with its base
+held within a few millimeters. Only M1 balances with its base held, and only
+if the floor resists rolling, by about 2\% of the weight with the encoder not
+mirrored and about 6\% in the frame inferred from the switch-on transients. In
+the simulated loop that resistance does not reproduce the steady-balancing
 coefficients of Section~\ref{sec:momtest}, so the two do not yet support each
 other. The closed loop therefore confirms the sign but does not decide the
 frame. The floor resistance and the encoder frame are what the logs leave open
@@ -898,10 +912,10 @@ about how the v9 runs held their base; two bench checks settle them
 A last consistency check concerns the tilt measurement. In closed loop, the
 base acceleration needed to balance an M2 plant makes the accelerometer read
 about $-2.95\phi$ at low frequency, against $+0.43\phi$ for M1. With the
-robot's complementary filter ($\alpha=0.99$) in the loop, simulated clean M2
+robot's complementary filter ($\lambda_c=0.99$) in the loop, simulated clean M2
 plants fell within \SIrange{1.5}{2.2}{s} under each of three LQR weightings,
 while M1 balanced under all of them. M3 and plants with friction and backlash
-were not simulated, so this check weighs only weakly against M2.}
+were not simulated, so this check weighs only weakly against M2.
 
 \begin{table}[htbp]
 \centering
@@ -952,7 +966,7 @@ Nominal, mirrored, floor 4, 6, 10\%: base range & 28, 8, \SI{4}{mm} & falls & fa
 \subsection{Input Regression, Prediction and Motor Data}
 \label{sec:predtest}
 
-\rev{Regressing $\ddot\phi$ on the states and the voltage over the switch-on
+Regressing $\ddot\phi$ on the states and the voltage over the switch-on
 transients does not settle $\mathcal{B}_4$. With the command acting in the same
 loop, tests~1, 2, 4 and~5 give 8.2, 1.2, 2.5 and 9.5 per volt; with the command
 acting in the next loop they give $-0.3$, 2.8, 4.2 and 6.7. With the
@@ -997,15 +1011,15 @@ recorded on the earlier 34:1 gearmotors, and no torque was logged, so $k_m$
 cannot be found from them. Scaled by the gear ratio they still exceed the
 $k_e$ of M1, \SI{0.307}{V.s/rad}, by 40 to 65\%. Since the motors differ, they
 confirm only the order of magnitude of $k_e$ in M1 and M2; the value
-\SI{0.00361}{V.s/rad} of M3 is two orders too small.}
+\SI{0.00361}{V.s/rad} of M3 is two orders too small.
 
 \subsection{Conclusions and Remaining Measurements}
 \label{sec:valresults}
 
-\rev{Would the sign error show in the voltages and in the controller results?
-Not as a reversed response: in all three candidates a positive voltage pushes
-the base forward and turns the body backward. It shows in the size of the
-response, and the logs measure it in three places
+Does the sign of the motor reaction show in the voltages and in the controller
+results? Not as a reversed response: in all three candidates a positive voltage
+pushes the base forward and turns the body backward. It shows in the size of
+the response, and the logs measure it in three places
 (Table~\ref{tab:verdict}). First, at switch-on, with the command saturated at
 \SI{-10}{V}, the gyroscope reads \SI{-98}{\degree/s} and \SI{-110}{\degree/s}
 after \SI{50}{ms}: the body is already turning back toward upright. M1
@@ -1026,11 +1040,11 @@ so this run separates M1 from M3 only in the inferred frame. The
 \SI{1.6}{s^{-1}} drift of test~2 is missed by M1 and M2 by similar factors.
 The first two come from the same two switch-on events, the third from a third
 run. With the v9 gains no linear model is stable in the inferred frame, so
-those runs speak only through the simulated loop, where no plant with the
-revision~7 sign balances with its base held over the parameter range tried:
-with the robot's filter M2 falls within \SI{5.3}{s}, and M3 stays up only with
-the encoder not mirrored, then driving at least \SI{1.9}{m} away, while the robot balanced
-for \SI{21}{s} with its base held within a few millimeters. This confirms the
+those runs speak only through the simulated loop, where no reversed-sign plant
+balances with its base held over the parameter range tried: with the robot's
+filter M2 falls within \SI{5.3}{s}, and M3 stays up only with the encoder not
+mirrored, then driving at least \SI{1.9}{m} away, while the robot balanced for
+\SI{21}{s} with its base held within a few millimeters. This confirms the
 reaction sign of \eqref{eq:pendm} by measurement, independently of the
 momentum argument of Remark~\ref{rem:momentum}. The 26 unanalysed v7 logs are
 the natural further replication.
@@ -1082,17 +1096,17 @@ coefficient, 0.25, inside the test~5 accelerometer interval, and to 0.24,
 inside the v9 encoder intervals, only at $I_p=\SI{0.005}{kg.m^2}$, less than a
 third of the lumped-mass value. The switch-on response, tilt and encoder
 together, and the closed loop exclude M2 over the whole range tried; the
-direction of the body rate at \SI{50}{ms} alone excludes the $-T$ models, at
-nominal $I_p$ and $l$, only for $k_m$ below 2.5 times its data-sheet value in
-test~4 and 1.2 times in test~5. A few bench measurements would complete the validation
-(Table~\ref{tab:benchtests}). The swing period of the body with the wheels
-clamped gives $I_p$ at a measured $l$. Free-run and locked-rotor tests give
-$k_e$, $k_m$, $R$ and the reflected armature inertia. Blocking the wheels and
-applying \SI{1}{V} is a direct, model-free check of the reaction sign, since
-the body must pitch opposite to the way the wheels would roll. Rolling the
-robot by hand with the motors off fixes the encoder frame, and the force needed
-to push it slowly over the floor it balanced on gives the rolling resistance;
-together they decide how the v9 runs held their base.}
+direction of the body rate at \SI{50}{ms} alone excludes the reversed-sign
+models, at nominal $I_p$ and $l$, only for $k_m$ below 2.5 times its data-sheet
+value in test~4 and 1.2 times in test~5. A few bench measurements would
+complete the validation (Table~\ref{tab:benchtests}). The swing period of the
+body with the wheels clamped gives $I_p$ at a measured $l$. Free-run and
+locked-rotor tests give $k_e$, $k_m$, $R$ and the reflected armature inertia.
+Blocking the wheels and applying \SI{1}{V} is a direct, model-free check of the
+reaction sign, since the body must pitch opposite to the way the wheels would
+roll. Rolling the robot by hand with the motors off fixes the encoder frame,
+and the force needed to push it slowly over the floor it balanced on gives the
+rolling resistance; together they decide how the v9 runs held their base.
 
 \begin{table}[htbp]
 \centering

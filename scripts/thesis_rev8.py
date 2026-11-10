@@ -196,10 +196,15 @@ TEX_NAME = {
     "KF, nominal Q": r"KF, nominal $Q_{\mathrm{K}}$",
     "KF, inflated Q": r"KF, inflated $Q_{\mathrm{K}}$",
     "Augmented-state KF": "Augmented-state KF",
-    "DMSO (rev. 7)": "DMSO, revision 7",
+    "DMSO (rev. 7)": r"DMSO, $\Km=I$, $\Gamma=0.1$",
     "DMSO (rev. 8)": "DMSO",
     "DMSO (rev. 8) + sigma-mod": r"DMSO with $\sigma$-mod",
     "DMSO (rev. 8), Kalman-gain injection": r"DMSO, Kalman-gain $\Km$\,$^\dagger$",
+}
+LEGEND_NAME = {
+    "DMSO (rev. 8)": "DMSO",
+    "DMSO (rev. 7)": r"DMSO, $\Gamma=0.1$, $K_{MSO}=I$",
+    "Augmented-state KF": "Augmented-state KF",
 }
 
 
@@ -288,7 +293,7 @@ def observer_study():
     # fig O2: error norm against b_e
     fig, ax = plt.subplots(figsize=(6.5, 3.2))
     for en_name, st in (("DMSO (rev. 8)", "-"), ("DMSO (rev. 7)", "--"), ("Augmented-state KF", ":")):
-        ax.semilogy(t, np.linalg.norm(observer_error(runs["O2"][en_name], tr), axis=0), st, label=en_name.replace("rev.", "revision"))
+        ax.semilogy(t, np.linalg.norm(observer_error(runs["O2"][en_name], tr), axis=0), st, label=LEGEND_NAME[en_name])
     ax.axhline(be, color="k", lw=1)
     ax.annotate(rf"$b_e={be:.3f}$", (t[-1] * 0.8, be * 1.3))
     ax.set(xlabel="Time (s)", ylabel=r"$\|e_k\|$")
@@ -300,7 +305,7 @@ def observer_study():
     for i, ax in enumerate(axs):
         ax.plot(t, tr.f[i], "k", lw=1.2, label="truth")
         for en_name, st in (("DMSO (rev. 8)", "-"), ("DMSO (rev. 7)", "--"), ("Augmented-state KF", ":")):
-            ax.plot(t, runs["O2"][en_name].fhat[i], st, lw=0.9, label=en_name.replace("rev.", "revision"))
+            ax.plot(t, runs["O2"][en_name].fhat[i], st, lw=0.9, label=LEGEND_NAME[en_name])
         ax.set(ylabel=rf"$f_{i + 1}$")
     axs[0].legend(fontsize=7, ncol=2)
     axs[1].set_xlabel("Time (s)")
@@ -367,7 +372,7 @@ def observer_study():
 CONTROLLERS = ("LQR", "Two-step", "CF (flat), no NN", "CF (flat) + NN")
 CTRL_TEX = {
     "LQR": "LQR alone",
-    "Two-step": "LQR + two-step (rev.~7)",
+    "Two-step": "LQR + two-step extra control",
     "CF (flat), no NN": "Command-filtered, flat output, networks off",
     "CF (flat) + NN": "Command-filtered, flat output, networks on",
 }
@@ -431,7 +436,7 @@ def control_study():
                 cell += f" ({d['fell_runs']} fell)"
             row.append(cell)
         lines.append(" & ".join(row) + r" \\")
-    lines.append(r"Command-filtered, as in Section~\ref{sec:cffb} & \multicolumn{4}{c}{unstable for all gains tested (Section~\ref{sec:cfinstab})} \\")
+    lines.append(r"Command-filtered, tracking $x_1$ directly & \multicolumn{4}{c}{unstable for all gains tested (Section~\ref{sec:cfinstab})} \\")
     write_table("tab_ctrleff", lines)
 
     styles = {"LQR": "-", "Two-step": "--", "CF (flat) + NN": "-"}
@@ -467,13 +472,13 @@ def control_study():
     scales = np.logspace(-0.7, 1.0, 25)
     fig, (ax, bx) = plt.subplots(1, 2, figsize=(7.0, 3.4))
     worst = []
-    for lab, c in {"as written, $c=(1,2,6,12)$": (1, 2, 6, 12), "as written, $c=(2,4,12,25)$": (2, 4, 12, 25)}.items():
+    for lab, c in {"tracking $x_1$, $c=(1,2,6,12)$": (1, 2, 6, 12), "tracking $x_1$, $c=(2,4,12,25)$": (2, 4, 12, 25)}.items():
         mx = [np.linalg.eigvals(_cfb_jacobian(CFBGains(c=c, wn=tuple(s * w for w in (20, 40, 60))))).real.max() for s in scales]
         worst.append(min(mx))
         ax.semilogx(scales * 40, mx, marker=".", ms=3, label=lab)
     mx = [np.linalg.eigvals(_cfb_jacobian(CFBGains(c=FLAT_GAINS.c, wn=tuple(s * w for w in (20, 40, 60))), flat=True)).real.max() for s in scales]
     best_flat = mx
-    ax.semilogx(scales * 40, mx, "k", marker=".", ms=3, label="flat output (corrected)")
+    ax.semilogx(scales * 40, mx, "k", marker=".", ms=3, label="flat output $y=x_1-bx_3$")
     ax.axhline(zrhp, color="k", ls="--", lw=0.8)
     ax.annotate(f"RHP zero +{zrhp:.2f}", (scales[0] * 40, zrhp + 1.0), fontsize=7)
     ax.axhline(0, color="0.5", lw=0.8)
@@ -499,7 +504,7 @@ def control_study():
     wn2_limit = 0.2 * (2 * math.pi / 0.01) / 1.5
     bx.axvline(wn2_limit, color="0.4", lw=0.8, ls="--")
     bx.annotate("App. A limit", (wn2_limit * 1.03, bx.get_ylim()[0] * 1.5), fontsize=7, rotation=90)
-    bx.set(xlabel=r"$\varpi_2$ (rad/s), $\varpi_1:\varpi_2:\varpi_3=1:2:3$", ylabel="RMS filter error", title="(b) corrected design, case C2")
+    bx.set(xlabel=r"$\varpi_2$ (rad/s), $\varpi_1:\varpi_2:\varpi_3=1:2:3$", ylabel="RMS filter error", title="(b) flat-output design, case C2")
     ticks = [20, 30, 40, 60, 80, 120]
     bx.set_xticks(ticks)
     bx.set_xticklabels([str(t) for t in ticks])
@@ -518,6 +523,42 @@ def control_study():
         "A2": float(m.A2),
     }
     gain_sweeps(K, m)
+    network_init_study(K, m, ctrl)
+
+
+NET_INIT_SEEDS = range(10)
+
+
+def network_init_study(K, m, ctrl):
+    """Spread of the networks-on result over the random initialisation of the networks
+    (fixed input layer and starting first-layer weights): change in RMS position error
+    relative to networks off, mean over the five noise seeds, for each initialisation
+    seed.  Seed 0 is the initialisation behind the networks-on row of Table 8.x."""
+    from dataclasses import replace
+
+    out = {}
+    for name, case in CONTROL_CASES.items():
+        off = ctrl[name]["CF (flat), no NN"]["rms_pos_err"]
+        change = []
+        for init in NET_INIT_SEEDS:
+            errs = []
+            for sd in SEEDS:
+                cfg = control_sim_config(replace(case, seed=sd))
+                c = CommandFilteredBackstepping(K, m, np.array(cfg.x0), gains=FLAT_GAINS, networks=True, output="flat", seed=init)
+                r = simulate(c, KalmanEstimator(sensors=cfg.sensors), cfg)
+                xd = np.array([m.x_des(k) for k in range(len(r.time))]).T
+                errs.append(None if r.fell else float(np.sqrt(np.mean((r.x[0, SETTLE:] - xd[0, SETTLE:]) ** 2))))
+            change.append(None if None in errs else float(np.mean(errs) / off - 1.0))
+        ok = [v for v in change if v is not None]
+        out[name] = {
+            "init_seeds": len(change),
+            "fell": len(change) - len(ok),
+            "change_mean": float(np.mean(ok)),
+            "change_min": float(np.min(ok)),
+            "change_max": float(np.max(ok)),
+            "change": change,
+        }
+    results["cfb_network_init"] = out
 
 
 # Gain grids behind the sweep counts quoted in Sections 6.7 and 8.3.1.  Every point
@@ -700,7 +741,7 @@ def hardware():
         lab, unit, sc = STATE[i]
         ax.plot(tt, meas[i][s0:] * sc, color="0.6", lw=0.8, label="measured")
         ax.plot(tt, onboard[i][s0:] * sc, lw=0.8, label="on-board DMSO (v9)")
-        ax.plot(tt, dm_c[i, s0:] * sc, "--", lw=0.8, label="DMSO (rev. 8)")
+        ax.plot(tt, dm_c[i, s0:] * sc, "--", lw=0.8, label="DMSO (offline replay)")
         ax.set(title=lab, ylabel=unit)
     axs[0, 0].legend(fontsize=6)
     for ax in axs[1]:

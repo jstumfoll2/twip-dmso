@@ -2,7 +2,6 @@
 %  Discrete-Time Modified State Observer and Command-Filtered Neural
 %  Control for a Two-Wheeled Inverted Pendulum
 %
-%  Revision 8 -- corrected stability derivations
 %  Build:  latexmk -pdf main.tex     (or: pdflatex main; bibtex main; x2)
 %=======================================================================
 \documentclass[12pt,letterpaper,oneside]{report}
@@ -53,16 +52,6 @@
 \newcommand{\dd}{\mathrm{d}}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
-% placeholder for a figure not yet regenerated
-\usepackage{xcolor}
-\newcommand{\figslot}[2][0.8]{%
-  \fboxsep=0pt\fcolorbox{black!35}{black!4}{%
-    \parbox[c][\dimexpr #1\textwidth*55/100\relax][c]{#1\textwidth}{%
-      \centering\small\itshape\color{black!55}#2}}}
-
-% change-bar marker for material that differs from revision 7
-\newcommand{\rev}[1]{#1}
-
 %------------------------- front matter titles ------------------------
 \renewcommand{\bibname}{BIBLIOGRAPHY}
 
@@ -85,7 +74,6 @@
 
 \appendix
 \include{chapters/appA_validation}
-\include{chapters/appB_errata}
 
 \bibliographystyle{ieeetr}
 \bibliography{refs}

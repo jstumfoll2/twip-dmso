@@ -33,26 +33,25 @@ This work makes three contributions.
 proof.} The MSO of Rajagopal et al.\ is extended to discrete time. Every digital
 implementation is a discrete-time system, so a discrete-time result is required
 before the technique can be claimed for digital flight control, rover autonomy,
-or hardware-in-the-loop use. \rev{The proof given in
-Chapter~\ref{ch:dmso} evaluates the Lyapunov first difference exactly. The
-resulting admissibility conditions are $\sigmax(F-\Km)<1$ together with an upper
-bound on the adaptation gain, both of which are satisfiable over an open set of
-designs.}
+or hardware-in-the-loop use. The proof given in Chapter~\ref{ch:dmso} evaluates
+the Lyapunov first difference exactly. The resulting admissibility conditions
+are $\sigmax(F-\Km)<1$ together with an upper bound on the adaptation gain, both
+of which are satisfiable over an open set of designs.
 
 \item \textbf{A command-filtered neural control law for unmatched uncertainty.}
 Chapter~\ref{ch:control} develops an additive control signal that uses the tilt
-angle as a virtual control for the position subsystem. \rev{The design is posed
-as a four-step backstepping procedure with command filtering, which assigns
-damping to every error coordinate, retains and cancels the coupling between the
-position and attitude error subsystems, and makes each neural network's
-approximation target a function of measured state and reference trajectory
-alone.}
+angle as a virtual control for the position subsystem. The design is a
+four-step backstepping procedure with command filtering, carried out on the
+flat output of the linearized robot. It assigns damping to every error
+coordinate, retains and cancels the coupling between the position and attitude
+error subsystems, and makes each neural network's approximation target a
+function of measured state and reference trajectory alone.
 
 \item \textbf{Hardware validation.} The observer is implemented on a physical
-TWIP robot\rev{, and the model of the robot is tested against its recorded
-balancing runs (Section~\ref{sec:modelsim})}. Chapter~\ref{ch:platform} documents the platform and the practical
-obstacles encountered; Appendix~\ref{app:validation} gives a staged validation
-procedure for reproducing and extending the results.
+TWIP robot, and the model of the robot is tested against its recorded balancing
+runs (Section~\ref{sec:modelsim}). Chapter~\ref{ch:platform} documents the
+platform and the practical obstacles encountered; Appendix~\ref{app:validation}
+gives a staged validation procedure for reproducing and extending the results.
 
 \end{enumerate}
 
@@ -62,12 +61,10 @@ Chapter~\ref{ch:lit} reviews the relevant literature on two-wheeled inverted
 pendulum control and on modified state observers. Chapter~\ref{ch:dmso} develops
 the DMSO and its stability proof. Chapter~\ref{ch:platform} describes the
 physical robot. Chapter~\ref{ch:model} derives the TWIP equations of motion from
-the DC motor model upward \rev{and tests them against the robot's recorded
-data}. Chapter~\ref{ch:control} presents the LQR baseline
-and the command-filtered neural controller. Chapter~\ref{ch:simulation}
-describes the simulation environment, including the discretization, the noise
-models, and the actuator nonlinearities. Chapter~\ref{ch:results} presents
-results. Chapter~\ref{ch:conclusions} concludes.
-Appendix~\ref{app:validation} gives implementation and test guidance;
-Appendix~\ref{app:errata} records the specific technical differences between
-this revision and revision~7.
+the DC motor model upward and tests them against the robot's recorded data.
+Chapter~\ref{ch:control} presents the LQR baseline and the command-filtered
+neural controller. Chapter~\ref{ch:simulation} describes the simulation
+environment, including the discretization, the noise models, and the actuator
+nonlinearities. Chapter~\ref{ch:results} presents results.
+Chapter~\ref{ch:conclusions} concludes. Appendix~\ref{app:validation} gives
+implementation and test guidance.

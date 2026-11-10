@@ -34,7 +34,7 @@ In Partial Fulfillment of the Requirements for the Degree
 MASTER OF SCIENCE IN AEROSPACE ENGINEERING
 
 \vspace{0.5in}
-Revision 8
+2015
 
 \vfill
 \end{center}
@@ -54,40 +54,38 @@ to orbit uncertainty estimation, atmospheric reentry uncertainty estimation, and
 the control of a nonlinear electrohydraulic system with parameter uncertainty.
 
 This work develops the discrete-time extension of the MSO (DMSO) and establishes
-its stability using Lyapunov theory. \rev{The stability argument presented here
-evaluates the Lyapunov first difference exactly rather than bounding it term by
-term. Doing so exposes a family of cancellations produced by the adaptation law
-itself, and yields admissibility conditions that are both satisfiable and
-physically interpretable: the error-injection matrix must satisfy
-$\sigmax(F-\Km)<1$, and the adaptation gain must be bounded above. In
-particular, small adaptation gains are admissible, which a term-by-term bound
-incorrectly excludes.}
+its stability using Lyapunov theory. The stability argument evaluates the
+Lyapunov first difference exactly rather than bounding it term by term. Doing so
+exposes a family of cancellations produced by the adaptation law itself, and
+yields admissibility conditions that are both satisfiable and physically
+interpretable: the error-injection matrix must satisfy $\sigmax(F-\Km)<1$, and
+the adaptation gain must be bounded above. In particular, small adaptation gains
+are admissible.
 
 To demonstrate the DMSO, simulation studies are performed on a two-wheeled
 inverted pendulum (TWIP) robot, an unstable nonlinear system with unmatched
-uncertainties, and the observer is implemented on hardware. \rev{The robot
-model is tested against the robot's recorded balancing runs: an input-free
-angular-momentum test and the response to the saturated voltage at switch-on,
-and the closed loop with the gains the robot ran, confirm the corrected sign of
-the motor's reaction torque, although the model is not validated
-quantitatively.}
+uncertainties, and the observer is implemented on hardware. The robot model is
+tested against the robot's recorded balancing runs: an input-free
+angular-momentum test, the response to the saturated voltage at switch-on, and
+the closed loop with the gains the robot ran fix the sign of the motor's
+reaction torque on the body, although the model is not validated
+quantitatively.
 
-\rev{A command-filtered backstepping controller with neural network uncertainty
+A command-filtered backstepping controller with neural network uncertainty
 compensation is then developed for the TWIP. The controller uses the tilt angle
-as a virtual control for the position subsystem. Relative to a two-step design,
-the formulation here (i) retains the coupling term between the position and
-attitude error subsystems and cancels it explicitly, (ii) assigns damping to
+as a virtual control for the position subsystem, in coordinates built on the
+flat output of the linearized robot, so that the voltage enters only at the
+last step. The formulation (i) retains the coupling term between the position
+and attitude error subsystems and cancels it explicitly, (ii) assigns damping to
 every error coordinate rather than only to the two driven coordinates, and (iii)
 uses command filtering so that the functions approximated by the neural networks
-depend only on measured states and the reference trajectory, removing the
+depend only on measured states and the reference trajectory, removing any
 algebraic dependence of each network's target on the other network's output.
 Uniform ultimate boundedness of all tracking errors and all weight estimation
 errors follows under a command-filter error assumption, with
 $\sigma$-modification supplying weight boundedness without a
-persistency-of-excitation requirement. Tracking the position, the construction
-inverts a right-half-plane zero and the assumption fails; recast on the flat
-output of the linearized robot it holds, and in simulation the controller
-reduces the RMS position tracking error of an LQR by factors of 4 to 22.}
+persistency-of-excitation requirement. In simulation the controller reduces the
+RMS position tracking error of an LQR by factors of 4 to 20.
 
 \clearpage
 
@@ -138,11 +136,15 @@ $\psi_k$     \> Functional approximation error, $\psi_k=\Wt_k^T\phi_k$ \\
 $\epsilon_k$ \> Network reconstruction error, $\norm{\epsilon_k}\le\epsilon_N$ \\
 $\Gamma$     \> Observer network adaptation gain \\
 $\kappa$     \> $\sigma$-modification (leakage) gain \\
+$y,\,\eta$   \> Flat output of the linearized robot, $y=x_1-bx_3$, and its derivative \\
+$b$          \> Input-gain ratio $B_1/B_2$ \\
+$a_2$        \> Virtual-control gain of the position subsystem, $a_2=A_2-bA_4$ \\
 $z_i$        \> Backstepping error coordinates, $i=1,\dots,4$ \\
 $\chi_i$     \> Command filter errors \\
 $c_i$        \> Backstepping damping gains \\
+$w$          \> Attitude weight in the controller Lyapunov function \\
 $\varpi_i$   \> Command filter bandwidths \\
-$\theta$     \> Pendulum tilt angle from vertical \\
+$\theta$     \> Pendulum angle; $\phi=\theta-\pi$ is the tilt from upright \\
 $V$          \> Motor terminal voltage (control input) \\
 \end{tabbing}
 \doublespacing

@@ -277,7 +277,8 @@ class CommandFilteredBackstepping(LQRTracking):
         # effective adaptation speed does not depend on the Lyapunov weighting.
         s2 = 1.0 / self.w
         self.nn = [
-            TwoLayerNet(4, 10, g.hidden[0], rng, g.gamma[0], g.gamma[1], g.kappa[0], g.kappa[1]),
+            # P1 = [x2, x3, x4, eta_c_dot, 1]: D1 = d1 - b d2 depends on the tilt rate too
+            TwoLayerNet(5, 10, g.hidden[0], rng, g.gamma[0], g.gamma[1], g.kappa[0], g.kappa[1]),
             TwoLayerNet(5, 10, g.hidden[1], rng, g.gamma[0] * s2, g.gamma[1] * s2, g.kappa[0], g.kappa[1]),
         ]
         for n in self.nn:
@@ -301,7 +302,7 @@ class CommandFilteredBackstepping(LQRTracking):
         else:
             z = np.array([x1 - x1d, x2 - q1, x3 - x3c, x4 - x4c])
         # (3) approximations: known model part + network estimate of the uncertainty
-        n1 = self.nn[0].forward(np.array([x2, x3, q1_dot, 1.0]))
+        n1 = self.nn[0].forward(np.array([x2, x3, x4, q1_dot, 1.0]))
         n2 = self.nn[1].forward(np.array([x2, x3, x4, x4c_dot, 1.0]))
         if flat:
             F1 = self.a1 * x2 + self.a4 * x4 - q1_dot + n1
