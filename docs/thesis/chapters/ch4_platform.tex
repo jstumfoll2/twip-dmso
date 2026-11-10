@@ -94,7 +94,12 @@ k_e=\frac{\SI{12}{V}-(\SI{0.3}{A})(\SI{2.5}{\ohm})}{\SI{36.65}{rad/s}}
 =\SI{0.307}{V.s/rad}.
 \]
 The torque constant $k_m$ is the data-sheet value. The stall data give
-$k_m\approx\SI{0.155}{N.m/A}$, 35\% above it; the discrepancy is one reason
+$k_m\approx\SI{0.155}{N.m/A}$, 35\% above it. For a lossless motor $k_m$ and
+$k_e$ are equal in SI units, and the values used here differ by a factor of
+2.7, or 2.0 with the stall-data $k_m$. The model carries the two as independent
+constants, and the recorded switch-on response bounds the tilt input gain,
+which is proportional to $k_m$, to within about 40\% of its nominal value
+(Section~\ref{sec:voltagetest}). These discrepancies are one reason
 Stage~0 of Appendix~\ref{app:validation} calls for direct measurement. The
 nominal terminal resistance is measured directly across the output terminals at
 several shaft positions and averaged. The motor constants are summarized in

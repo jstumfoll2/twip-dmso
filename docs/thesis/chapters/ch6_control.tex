@@ -505,8 +505,12 @@ The filter-error assumption, Assumption~\ref{as:filt}, is consistent with the
 construction. The virtual controls depend on the state, the filter states, and
 the network outputs, but not on the control, and the tracked output has no
 zero dynamics. So bounded tracking errors imply bounded virtual controls and
-bounded derivatives. It does not follow that the filter errors shrink without
-limit as the bandwidth is raised. The $O(1/\varpi_i)$ scaling of
+bounded derivatives. This is consistency, not a proof:
+Theorem~\ref{thm:control} is conditional on Assumption~\ref{as:filt}, and a
+result that does not assume it would use the compensated tracking errors of
+Farrell et al.\ \cite{farrell2009command} or the invariant-set argument of
+Swaroop et al.\ \cite{swaroop2000dsc}. Nor does it follow that the filter
+errors shrink without limit as the bandwidth is raised. The $O(1/\varpi_i)$ scaling of
 Assumption~\ref{as:filt} holds for smooth virtual controls; with measurement
 noise the virtual controls are themselves noisy, and a wider filter passes more
 of that noise. Figure~\ref{fig:chi} shows both effects: $\chi_1$ and $\chi_2$
