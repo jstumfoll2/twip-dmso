@@ -285,13 +285,13 @@ $\sigma_{i1},\sigma_{i2}$ bounded activation functions. The estimates are
 \bigl(\What_{i1}^T\hat\sigma_{i1}(V_i^TP_i)\bigr).
 \end{equation}
 Network inputs are taken as
-$P_1=\bigl[x_2,\ x_3,\ \dot\eta^c,\ 1\bigr]^T$ and
+$P_1=\bigl[x_2,\ x_3,\ x_4,\ \dot\eta^c,\ 1\bigr]^T$ and
 $P_2=\bigl[x_2,\ x_3,\ x_4,\ \dot x_4^c,\ 1\bigr]^T$; by construction neither
-contains a control signal or an adaptive parameter. The target of network one,
-$D_1$, also depends on $x_4$, through the nonlinear terms and, under parameter
-error, through a term $r$ times its $x_2$ term (coefficients 0.04 and 0.93 in
-case C2 of Chapter~\ref{ch:results}). That part is not available to the network
-and remains in $\varepsilon_1$.
+contains a control signal or an adaptive parameter. Both targets depend on the
+velocity, the tilt and the tilt rate, so each network is given all three. The
+dependence of $D_1$ on $x_4$ is through the nonlinear terms and, under
+parameter error, through the back-EMF, which contributes a term $r$ times its
+$x_2$ term.
 
 Writing $\Wt_{ij}:=W_{ij}-\What_{ij}$ and expanding the hidden-layer activation
 about $\What_{i1}^T\hat\sigma_{i1}$ in the standard manner
@@ -478,7 +478,8 @@ bandwidths $\varpi_i$ are raised, limited by the sample rate, by the
 unmodeled structural modes of the chassis, and by the measurement noise
 (Section~\ref{sec:assumptions}). The network residuals $\delta_{i0}^2$ shrink with
 the richness of the basis, down to the part of each target that the network
-inputs do not determine (Section~\ref{sec:nn}). The leakage terms $\kappa_{ij}W_{ijm}^2$ shrink with
+inputs do not determine, the input-gain terms of
+Section~\ref{sec:assumptions}. The leakage terms $\kappa_{ij}W_{ijm}^2$ shrink with
 $\kappa_{ij}$, at the cost of weaker protection against weight drift. This
 decomposition gives the tuning order recommended in
 Appendix~\ref{app:validation}.

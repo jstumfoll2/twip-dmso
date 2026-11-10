@@ -39,9 +39,13 @@ shaft positions and average, since commutator position changes the reading.
 Obtain $k_e$ by back-driving the motor at a measured rate and reading the
 open-circuit terminal voltage; $k_e$ from the slope of $V$ against
 $\dot\vartheta$ is far more reliable than $k_e$ inferred from catalog free-run
-and stall figures. For a brushed DC motor in SI units $k_m=k_e$, and any
-substantial discrepancy between a measured $k_e$ and a catalog-derived $k_m$
-indicates that one of the two is wrong.
+and stall figures. Obtain $k_m$ from a locked-rotor test, as the torque at the
+wheel per ampere of armature current, in both directions of rotation. The two
+constants are tied by \eqref{eq:kmke}: referred to the output shaft,
+$k_m=\eta_gk_e$, with $\eta_g$ the fraction of the armature torque that the
+gear train passes. A measured ratio $k_m/k_e$ above one, or far below the
+efficiency expected of the gear train, indicates that one of the two is
+wrong.
 
 \paragraph{Deadzone and backlash.} Ramp the commanded voltage slowly in both
 directions with the wheels off the ground and record the breakaway voltages

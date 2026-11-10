@@ -380,18 +380,24 @@ noise seeds. All four controllers balanced in all twenty runs of every case.
 
 The flat-output design reduces the RMS position tracking error relative to the
 LQR by a factor of 13 in the nominal case C1, 4.2 with parameter uncertainty
-(C2), 5.8 with the deadzone (C3), and 22 with deadzone and backlash (C4). The
+(C2), 5.8 with the deadzone (C3), and 20 with deadzone and backlash (C4). The
 price is control effort: its RMS voltage is higher than the LQR's by 30\%, 24\%,
-22\%, and 137\% in the four cases, and its peak voltage during the initial
+22\%, and 136\% in the four cases, and its peak voltage during the initial
 recovery is about \SI{9.7}{V}, close to the \SI{10}{V} limit, against
 \SI{2.6}{V} for the LQR, which does not saturate.
 
-Most of the improvement comes from the structure, not the adaptation. With the
-networks disabled the errors are within 1\% in C1--C3, and the networks reduce
-the error by 6\% only in C4. That is consistent with Section~\ref{sec:assumptions}:
-part of the uncertainty in these cases is the input-gain error, which the
-networks are not given the information to learn. Backlash and deadzone, which
-do enter as functions of the state, are where the networks help. A persistent
+The improvement comes from the structure, not the adaptation. With the
+networks enabled the error is within 0.3\% of the networks-off value in C1--C3
+and 2\% above it in C4. The sign and size of that difference depend on the
+random initialization of the networks, that is, on the fixed input layer and
+the starting first-layer weights. Over ten initializations the mean change is
+$-0.2\%$, $-0.8\%$, $-1.0\%$, and $-1.4\%$ in C1--C4, and in C4 it ranges from
+$-5.8\%$ to $+2.0\%$; the table reports one of the ten. At these learning rates
+the networks therefore make no measurable contribution to the tracking. That is
+consistent with Section~\ref{sec:assumptions}: part of the uncertainty in these
+cases is the input-gain error, which the networks are not given the information
+to learn, and the deadzone and backlash act on the voltage and are not functions
+of the network inputs. A persistent
 small-amplitude oscillation remains in C4 (Figure~\ref{fig:C4}), the signature
 of the nonsmooth input nonlinearity described in Remark~\ref{rem:backlash}.
 

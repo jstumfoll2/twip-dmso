@@ -52,11 +52,11 @@ a recursion on the position would have to invert; on the flat output the
 control enters only at the last step, and the attitude coordinates are weighted
 by $a_2^2$ in the Lyapunov function. In simulation it balanced in every run and
 reduced the RMS position tracking error relative to the LQR by factors of 4 to
-22, at 22\% to 137\% more RMS control effort and with peak voltages near the
-\SI{10}{V} limit. Most of that gain comes from the structure. The networks
-contribute measurably only under deadzone and backlash, in part because the
-parameter error acts on the input gain, which the networks are not given the
-information to learn.
+20, at 22\% to 136\% more RMS control effort and with peak voltages near the
+\SI{10}{V} limit. That gain comes from the structure. At the learning rates
+used, the networks changed the error by less than its spread over their random
+initialization, in part because the parameter error acts on the input gain,
+which the networks are not given the information to learn.
 
 Five directions follow naturally from this work.
 

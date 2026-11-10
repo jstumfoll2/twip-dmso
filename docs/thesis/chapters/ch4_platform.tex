@@ -94,15 +94,33 @@ k_e=\frac{\SI{12}{V}-(\SI{0.3}{A})(\SI{2.5}{\ohm})}{\SI{36.65}{rad/s}}
 =\SI{0.307}{V.s/rad}.
 \]
 The torque constant $k_m$ is the data-sheet value. The stall data give
-$k_m\approx\SI{0.155}{N.m/A}$, 35\% above it. For a lossless motor $k_m$ and
-$k_e$ are equal in SI units, and the values used here differ by a factor of
-2.7, or 2.0 with the stall-data $k_m$. The model carries the two as independent
-constants, and the recorded switch-on response bounds the tilt input gain,
-which is proportional to $k_m$, to within about 40\% of its nominal value
-(Section~\ref{sec:voltagetest}). These discrepancies are one reason
-Stage~0 of Appendix~\ref{app:validation} calls for direct measurement. The
-nominal terminal resistance is measured directly across the output terminals at
-several shaft positions and averaged. The motor constants are summarized in
+$k_m\approx\SI{0.155}{N.m/A}$, 35\% above it.
+
+The two constants are related but not equal. At the armature they are the same
+quantity: the electrical power $ei$ taken up by the back-EMF $e$ is the
+mechanical power $\tau\omega$ developed, so the torque per ampere and the
+back-EMF per unit speed are equal in SI units. Both constants here are referred
+to the output shaft of the gearbox, and the gear train treats them differently.
+The gear ratio $N$ multiplies the back-EMF constant exactly, because the ratio
+of the two shaft speeds is fixed by the teeth. It multiplies the torque as
+well, but friction in the motor and the gears takes part of it, so only a
+fraction $\eta_g<1$ reaches the output shaft. With $k_a$ the armature constant,
+\begin{equation}\label{eq:kmke}
+k_e=N\,k_a,\qquad k_m=\eta_g\,N\,k_a,\qquad\text{so that}\qquad k_m=\eta_g\,k_e .
+\end{equation}
+The values of Table~\ref{tab:motor} correspond to $\eta_g=0.38$, and the stall
+data to $\eta_g=0.51$. The fraction is not a constant of the motor. It depends
+on load and speed, and when the wheel drives the motor the friction adds to the
+motor torque instead of subtracting from it. A single $k_m$ is therefore an
+average, and what it leaves out is part of the uncertainty that the observer of
+Chapter~\ref{ch:dmso} is meant to estimate. The recorded switch-on response
+bounds the tilt input gain, which is proportional to $k_m$, to within about
+40\% of its nominal value (Section~\ref{sec:voltagetest}), and Stage~0 of
+Appendix~\ref{app:validation} describes the direct measurement of both
+constants.
+
+The nominal terminal resistance is measured directly across the output
+terminals at several shaft positions and averaged. The motor constants are summarized in
 Table~\ref{tab:motor}.
 
 Motor drive is provided by a Pololu Dual VNH5019 Motor Driver Arduino Shield.

@@ -523,6 +523,42 @@ def control_study():
         "A2": float(m.A2),
     }
     gain_sweeps(K, m)
+    network_init_study(K, m, ctrl)
+
+
+NET_INIT_SEEDS = range(10)
+
+
+def network_init_study(K, m, ctrl):
+    """Spread of the networks-on result over the random initialisation of the networks
+    (fixed input layer and starting first-layer weights): change in RMS position error
+    relative to networks off, mean over the five noise seeds, for each initialisation
+    seed.  Seed 0 is the initialisation behind the networks-on row of Table 8.x."""
+    from dataclasses import replace
+
+    out = {}
+    for name, case in CONTROL_CASES.items():
+        off = ctrl[name]["CF (flat), no NN"]["rms_pos_err"]
+        change = []
+        for init in NET_INIT_SEEDS:
+            errs = []
+            for sd in SEEDS:
+                cfg = control_sim_config(replace(case, seed=sd))
+                c = CommandFilteredBackstepping(K, m, np.array(cfg.x0), gains=FLAT_GAINS, networks=True, output="flat", seed=init)
+                r = simulate(c, KalmanEstimator(sensors=cfg.sensors), cfg)
+                xd = np.array([m.x_des(k) for k in range(len(r.time))]).T
+                errs.append(None if r.fell else float(np.sqrt(np.mean((r.x[0, SETTLE:] - xd[0, SETTLE:]) ** 2))))
+            change.append(None if None in errs else float(np.mean(errs) / off - 1.0))
+        ok = [v for v in change if v is not None]
+        out[name] = {
+            "init_seeds": len(change),
+            "fell": len(change) - len(ok),
+            "change_mean": float(np.mean(ok)),
+            "change_min": float(np.min(ok)),
+            "change_max": float(np.max(ok)),
+            "change": change,
+        }
+    results["cfb_network_init"] = out
 
 
 # Gain grids behind the sweep counts quoted in Sections 6.7 and 8.3.1.  Every point
